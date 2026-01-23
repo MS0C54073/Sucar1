@@ -131,7 +131,27 @@ export const login = asyncHandler(async (req: Request, res: Response): Promise<v
   console.log(`   IP: ${req.ip}`);
 
   // Find user
-  const user = await DBService.findUserByEmail(email);
+  let user;
+  try {
+    user = await DBService.findUserByEmail(email);
+  } catch (error: any) {
+    console.error(`❌ Database error during login:`, error);
+    
+    // Check if this is a connection error
+    if (error.message?.includes('fetch failed') || 
+        error.message?.includes('ECONNREFUSED') ||
+        error.code === 'PGRST116' ||
+        error.message?.includes('connection')) {
+      console.error('💡 Database connection issue detected!');
+      console.error('   This usually means Supabase is not running.');
+      console.error('   Fix: Start Supabase with: supabase start');
+      throw new InternalServerError('Database connection failed. Please check if Supabase is running.');
+    }
+    
+    // Re-throw other database errors
+    throw error;
+  }
+  
   if (!user) {
     console.log(`❌ Login failed: User not found for email ${email}`);
     throw new UnauthorizedError('Invalid email or password');

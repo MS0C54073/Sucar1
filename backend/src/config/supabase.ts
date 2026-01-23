@@ -71,8 +71,22 @@ export const testConnection = async (): Promise<boolean> => {
   } catch (error: any) {
     console.error('❌ Supabase connection error:', error.message);
 
-    // Provide helpful error messages based on error type
-    if (error.message?.includes('fetch failed')) {
+    // Check if this is a local Supabase connection issue
+    const isLocalSupabase = supabaseUrl.includes('localhost') || supabaseUrl.includes('127.0.0.1');
+    const isConnectionRefused = error.message?.includes('ECONNREFUSED') || error.message?.includes('fetch failed');
+
+    if (isLocalSupabase && isConnectionRefused) {
+      console.error('\n💡 Local Supabase is not running!');
+      console.error('   Your .env is configured for local Supabase, but it\'s not started.');
+      console.error('');
+      console.error('   To fix this:');
+      console.error('   1. Start Docker Desktop (if not running)');
+      console.error('   2. Run: supabase start');
+      console.error('   3. Or use: .\\start-supabase.ps1');
+      console.error('');
+      console.error('   Alternative: Switch to remote Supabase in backend/.env');
+      console.error('   See: FIX_SUPABASE_CONNECTION.md for details');
+    } else if (error.message?.includes('fetch failed')) {
       console.error('\n💡 Network connection issue detected:');
       console.error('   1. Check your internet connection');
       console.error('   2. Verify SUPABASE_URL is correct');

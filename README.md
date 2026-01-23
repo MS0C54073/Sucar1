@@ -43,9 +43,12 @@ SuCAR (SuKA) is a full-stack application designed to automate car wash bookings 
 ### Backend
 - **Node.js** with **Express**
 - **TypeScript**
-- **MongoDB** with **Mongoose**
+- **Supabase** (PostgreSQL) for database
 - **JWT** for authentication
 - **bcryptjs** for password hashing
+- **Mapbox** for location services
+- **Twilio** for SMS/OTP (optional)
+- **Google OAuth** for social login
 
 ### Frontend (Web Dashboard)
 - **React** with **TypeScript**
@@ -67,7 +70,7 @@ SuCAR (SuKA) is a full-stack application designed to automate car wash bookings 
 Sucar/
 ├── backend/          # Node.js/Express API
 │   ├── src/
-│   │   ├── models/      # MongoDB models
+│   │   ├── models/      # TypeScript models
 │   │   ├── controllers/ # Route controllers
 │   │   ├── routes/      # API routes
 │   │   ├── middleware/  # Auth middleware
@@ -90,7 +93,8 @@ Sucar/
 
 ### Prerequisites
 - Node.js (v18 or higher)
-- MongoDB (local or cloud instance)
+- Supabase (local via Docker or cloud instance)
+- Docker Desktop (for local Supabase)
 - npm or yarn
 
 ### Backend Setup
@@ -108,10 +112,19 @@ npm install
 3. Create `.env` file:
 ```env
 PORT=5000
-MONGODB_URI=mongodb://localhost:27017/sucar
+SUPABASE_URL=http://localhost:54325
+SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 JWT_SECRET=your-super-secret-jwt-key-change-in-production
 JWT_EXPIRE=7d
 NODE_ENV=development
+```
+
+**Note**: For local development, start Supabase first:
+```bash
+# From project root
+.\start-supabase.ps1
+# Or manually: supabase start
 ```
 
 4. Start the server:
@@ -254,6 +267,426 @@ npm run android
 - **Bookings**: Booking records with status tracking
 - **Services**: Car wash services and pricing
 - **Payments**: Payment records
+
+## Entity Relationship (ER) Diagram
+
+```mermaid
+erDiagram
+    USERS ||--o{ VEHICLES : "owns"
+    USERS ||--o{ BOOKINGS : "creates"
+    USERS ||--o{ BOOKINGS : "assigned_to"
+    USERS ||--o{ BOOKINGS : "washes_at"
+    USERS ||--o{ SERVICES : "offers"
+    BOOKINGS ||--|| VEHICLES : "for"
+    BOOKINGS ||--|| SERVICES : "includes"
+    BOOKINGS ||--|| PAYMENTS : "has"
+    
+    USERS {
+        uuid id PK
+        string name
+        string email UK
+        string password
+        string phone
+        string nrc UK
+        enum role "client|driver|carwash|admin"
+        boolean is_active
+        string business_name
+        boolean is_business
+        string license_no
+        string license_type
+        date license_expiry
+        text address
+        string marital_status
+        boolean availability
+        string car_wash_name
+        string location
+        integer washing_bays
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    VEHICLES {
+        uuid id PK
+        uuid client_id FK
+        string make
+        string model
+        string plate_no
+        string color
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    SERVICES {
+        uuid id PK
+        uuid car_wash_id FK
+        string name
+        text description
+        decimal price
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    BOOKINGS {
+        uuid id PK
+        uuid client_id FK
+        uuid driver_id FK
+        uuid car_wash_id FK
+        uuid vehicle_id FK
+        uuid service_id FK
+        enum booking_type "pickup_delivery|drive_in"
+        text pickup_location
+        jsonb pickup_coordinates
+        enum status "pending|accepted|declined|picked_up|at_wash|waiting_bay|washing_bay|drying_bay|wash_completed|delivered|completed|cancelled"
+        decimal total_amount
+        enum payment_status "pending|paid|failed|refunded"
+        timestamp scheduled_pickup_time
+        timestamp actual_pickup_time
+        timestamp wash_start_time
+        timestamp wash_complete_time
+        timestamp delivery_time
+        integer queue_position
+        integer estimated_wait_time
+        text notes
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    PAYMENTS {
+        uuid id PK
+        uuid booking_id FK
+        decimal amount
+        enum method "cash|card|mobile_money|bank_transfer"
+        enum status "pending|completed|failed|refunded"
+        string transaction_id
+        timestamp payment_date
+        timestamp created_at
+        timestamp updated_at
+    }
+```
+
+## UML Diagrams
+
+### System Architecture Diagram
+
+```mermaid
+graph TB
+    subgraph "Client Layer"
+        WEB[Web Dashboard<br/>React + TypeScript]
+        MOBILE[Mobile App<br/>React Native/Flutter]
+    end
+    
+    subgraph "API Gateway"
+        API[REST API<br/>Express + TypeScript]
+    end
+    
+    subgraph "Business Logic Layer"
+        AUTH[Authentication Service]
+        BOOKING[Booking Service]
+        PAYMENT[Payment Service]
+        LOCATION[Location Service]
+        NOTIFICATION[Notification Service]
+    end
+    
+    subgraph "Data Layer"
+        DB[(Supabase PostgreSQL)]
+        CACHE[(Redis Cache)]
+    end
+    
+    subgraph "External Services"
+        MAPBOX[Mapbox API]
+        TWILIO[Twilio SMS]
+        GOOGLE[Google OAuth]
+    end
+    
+    WEB --> API
+    MOBILE --> API
+    API --> AUTH
+    API --> BOOKING
+    API --> PAYMENT
+    API --> LOCATION
+    API --> NOTIFICATION
+    AUTH --> DB
+    BOOKING --> DB
+    PAYMENT --> DB
+    LOCATION --> DB
+    NOTIFICATION --> DB
+    BOOKING --> CACHE
+    LOCATION --> MAPBOX
+    NOTIFICATION --> TWILIO
+    AUTH --> GOOGLE
+```
+
+### Class Diagram - Backend Core Classes
+
+```mermaid
+classDiagram
+    class DBService {
+        +findUserByEmail(email: string): User
+        +findUserById(id: string): User
+        +createUser(userData: User): User
+        +updateUser(id: string, data: User): User
+        +comparePassword(plain: string, hashed: string): boolean
+        +getBookings(filters: object): Booking[]
+        +createBooking(bookingData: Booking): Booking
+        +updateBooking(id: string, data: Booking): Booking
+    }
+    
+    class AuthController {
+        +register(req: Request, res: Response): void
+        +login(req: Request, res: Response): void
+        +getMe(req: Request, res: Response): void
+        +updateProfile(req: Request, res: Response): void
+        +googleLogin(req: Request, res: Response): void
+        +sendOTP(req: Request, res: Response): void
+        +verifyOTP(req: Request, res: Response): void
+    }
+    
+    class BookingController {
+        +getBookings(req: Request, res: Response): void
+        +createBooking(req: Request, res: Response): void
+        +getBookingById(req: Request, res: Response): void
+        +updateBookingStatus(req: Request, res: Response): void
+        +cancelBooking(req: Request, res: Response): void
+    }
+    
+    class User {
+        +id: UUID
+        +name: string
+        +email: string
+        +password: string
+        +phone: string
+        +nrc: string
+        +role: enum
+        +isActive: boolean
+    }
+    
+    class Booking {
+        +id: UUID
+        +clientId: UUID
+        +driverId: UUID
+        +carWashId: UUID
+        +vehicleId: UUID
+        +serviceId: UUID
+        +status: enum
+        +totalAmount: decimal
+        +paymentStatus: enum
+    }
+    
+    class Vehicle {
+        +id: UUID
+        +clientId: UUID
+        +make: string
+        +model: string
+        +plateNo: string
+        +color: string
+    }
+    
+    class Service {
+        +id: UUID
+        +carWashId: UUID
+        +name: string
+        +description: string
+        +price: decimal
+        +isActive: boolean
+    }
+    
+    AuthController --> DBService : uses
+    BookingController --> DBService : uses
+    DBService --> User : manages
+    DBService --> Booking : manages
+    DBService --> Vehicle : manages
+    DBService --> Service : manages
+    Booking --> User : references
+    Booking --> Vehicle : references
+    Booking --> Service : references
+    Vehicle --> User : belongs to
+    Service --> User : belongs to
+```
+
+### Sequence Diagram - User Login Flow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant API
+    participant AuthController
+    participant DBService
+    participant Supabase
+    participant JWT
+    
+    User->>Frontend: Enter email & password
+    Frontend->>API: POST /api/auth/login
+    API->>AuthController: login(req, res)
+    AuthController->>AuthController: Validate input
+    AuthController->>DBService: findUserByEmail(email)
+    DBService->>Supabase: SELECT * FROM users WHERE email = ?
+    Supabase-->>DBService: User data
+    DBService-->>AuthController: User object
+    AuthController->>DBService: comparePassword(password, user.password)
+    DBService->>Supabase: Verify password hash
+    Supabase-->>DBService: Password match result
+    DBService-->>AuthController: Password verified
+    AuthController->>JWT: generateToken(user.id)
+    JWT-->>AuthController: JWT token
+    AuthController-->>API: { success: true, data: { user, token } }
+    API-->>Frontend: HTTP 200 Response
+    Frontend->>Frontend: Store token in localStorage
+    Frontend->>Frontend: Navigate to dashboard
+    Frontend-->>User: Show dashboard
+```
+
+### Sequence Diagram - Booking Creation Flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Frontend
+    participant API
+    participant BookingController
+    participant DBService
+    participant Supabase
+    participant PaymentService
+    
+    Client->>Frontend: Select service & vehicle
+    Frontend->>API: POST /api/bookings
+    API->>BookingController: createBooking(req, res)
+    BookingController->>BookingController: Validate request
+    BookingController->>DBService: getServiceById(serviceId)
+    DBService->>Supabase: SELECT * FROM services WHERE id = ?
+    Supabase-->>DBService: Service data
+    DBService-->>BookingController: Service object
+    BookingController->>BookingController: Calculate total amount
+    BookingController->>DBService: createBooking(bookingData)
+    DBService->>Supabase: INSERT INTO bookings
+    Supabase-->>DBService: New booking
+    DBService-->>BookingController: Booking object
+    BookingController->>PaymentService: createPayment(bookingId, amount)
+    PaymentService->>DBService: createPayment(paymentData)
+    DBService->>Supabase: INSERT INTO payments
+    Supabase-->>DBService: Payment record
+    DBService-->>PaymentService: Payment object
+    PaymentService-->>BookingController: Payment created
+    BookingController-->>API: { success: true, data: booking }
+    API-->>Frontend: HTTP 201 Created
+    Frontend->>Frontend: Update UI
+    Frontend-->>Client: Show booking confirmation
+```
+
+### Use Case Diagram
+
+```mermaid
+graph LR
+    subgraph "Client"
+        UC1[Register/Login]
+        UC2[Book Car Wash]
+        UC3[Manage Vehicles]
+        UC4[Track Booking]
+        UC5[View History]
+    end
+    
+    subgraph "Driver"
+        UC6[Register/Login]
+        UC7[Accept Booking]
+        UC8[Update Status]
+        UC9[View Assignments]
+        UC10[Track Performance]
+    end
+    
+    subgraph "Car Wash"
+        UC11[Register/Login]
+        UC12[Manage Services]
+        UC13[Update Wash Status]
+        UC14[View Bookings]
+        UC15[Monitor Revenue]
+    end
+    
+    subgraph "Admin"
+        UC16[Login]
+        UC17[Manage Users]
+        UC18[Manage Bookings]
+        UC19[Assign Drivers]
+        UC20[View Reports]
+        UC21[Payment Tracking]
+    end
+    
+    Client --> UC1
+    Client --> UC2
+    Client --> UC3
+    Client --> UC4
+    Client --> UC5
+    
+    Driver --> UC6
+    Driver --> UC7
+    Driver --> UC8
+    Driver --> UC9
+    Driver --> UC10
+    
+    CarWash --> UC11
+    CarWash --> UC12
+    CarWash --> UC13
+    CarWash --> UC14
+    CarWash --> UC15
+    
+    Admin --> UC16
+    Admin --> UC17
+    Admin --> UC18
+    Admin --> UC19
+    Admin --> UC20
+    Admin --> UC21
+```
+
+### Component Diagram - Frontend Architecture
+
+```mermaid
+graph TB
+    subgraph "Frontend Application"
+        subgraph "Pages"
+            LP[Login Page]
+            RP[Register Page]
+            CH[Client Home]
+            DH[Driver Home]
+            CW[Car Wash Dashboard]
+            AD[Admin Dashboard]
+        end
+        
+        subgraph "Components"
+            BC[Booking Components]
+            VC[Vehicle Components]
+            MC[Map Components]
+            NC[Notification Components]
+        end
+        
+        subgraph "State Management"
+            AC[Auth Context]
+            RQ[React Query]
+            LS[Local State]
+        end
+        
+        subgraph "Services"
+            API[API Client]
+            MS[Mapping Service]
+            NS[Notification Service]
+        end
+    end
+    
+    LP --> AC
+    RP --> AC
+    CH --> BC
+    CH --> VC
+    CH --> MC
+    DH --> BC
+    CW --> BC
+    AD --> BC
+    BC --> RQ
+    VC --> RQ
+    MC --> MS
+    NC --> NS
+    RQ --> API
+    AC --> API
+    API --> Backend[Backend API]
+```
 
 ## Security
 
