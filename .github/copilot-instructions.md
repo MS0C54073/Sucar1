@@ -32,7 +32,7 @@ frontend/src/
   ├── components/booking/BookingCard.tsx    # Unified booking display (all roles)
   ├── components/chat/ChatWindow.tsx        # Real-time chat with polling
   ├── components/queue/                     # Queue display & management
-  ├── components/driver/                    # Route optimizer, earnings
+  ├── components/driver/    cfc                 # Route optimizer, earnings
   ├── pages/                                # Role-specific dashboards
   ├── services/api.ts                       # Axios API client (handles auth headers)
   └── context/                              # Auth/user state context

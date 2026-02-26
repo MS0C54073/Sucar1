@@ -9,7 +9,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { useAuth } from '../../context/AuthContext';
+
 import { useBookings } from '../../hooks/useBookings';
 import MapView from '../MapView';
 import api from '../../services/api';
@@ -17,7 +17,7 @@ import LoadingSpinner from '../LoadingSpinner';
 import './AdminMapView.css';
 
 const AdminMapView = () => {
-  const { user } = useAuth();
+
 
   // Fetch all bookings
   const { data: bookings, isLoading: bookingsLoading } = useBookings({
@@ -58,7 +58,7 @@ const AdminMapView = () => {
   const isLoading = bookingsLoading || carWashesLoading || driversLoading;
 
   // Get bookings with coordinates for map
-  const mapBookings = bookings?.filter((booking: any) => 
+  const mapBookings = bookings?.filter((booking: any) =>
     booking.pickupCoordinates
   ) || [];
 

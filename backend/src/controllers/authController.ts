@@ -160,14 +160,25 @@ export const login = asyncHandler(async (req: Request, res: Response): Promise<v
   console.log(`✅ User found: ${user.name} (${user.role})`);
 
   // Verify password
-  if (!user.password) {
+  // Check both camelCase and snake_case for password field
+  const userPassword = user.password || (user as any).password_hash || (user as any).passwordHash;
+  
+  if (!userPassword) {
     console.log(`❌ Login failed: User ${email} has no password set`);
+    console.log(`   User object keys:`, Object.keys(user));
+    console.log(`   Password field:`, user.password ? 'exists' : 'missing');
     throw new UnauthorizedError('Invalid email or password');
   }
 
-  const isMatch = await DBService.comparePassword(password, user.password);
+  console.log(`   Password hash found (length: ${userPassword.length})`);
+  
+  const isMatch = await DBService.comparePassword(password, userPassword);
   if (!isMatch) {
     console.log(`❌ Login failed: Password mismatch for email ${email}`);
+    console.log(`   This could mean:`);
+    console.log(`   1. Password is incorrect`);
+    console.log(`   2. Password hash in database is invalid`);
+    console.log(`   3. Password was not hashed with bcrypt`);
     throw new UnauthorizedError('Invalid email or password');
   }
 

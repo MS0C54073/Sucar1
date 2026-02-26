@@ -118,7 +118,7 @@ export const startLocationTracking = (
   status: LocationUpdate['status'] = 'idle'
 ): (() => void) => {
   let watchId: number = -1;
-  let isTracking = false;
+
 
   const updateLocation = () => {
     if (!navigator.geolocation) {
@@ -163,13 +163,13 @@ export const startLocationTracking = (
 
   // Start tracking
   updateLocation();
-  isTracking = true;
+
 
   // Return stop function
   return () => {
     if (watchId >= 0 && navigator.geolocation) {
       navigator.geolocation.clearWatch(watchId);
-      isTracking = false;
+
     }
   };
 };

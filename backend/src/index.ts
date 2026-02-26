@@ -32,13 +32,17 @@ connectDB().then(async () => {
 
 const app = express();
 
-// Security middleware
+// Security middleware - allow Android emulator and local dev
 app.use(cors({
   origin: [
     'http://localhost:5173',
     'http://localhost:5174',
     'http://127.0.0.1:5173',
     'http://127.0.0.1:5174',
+    'http://10.0.2.2:5000',   // Android emulator
+    'http://10.0.2.2:5173',
+    'http://localhost:5000',
+    'http://127.0.0.1:5000',
     process.env.FRONTEND_URL || ''
   ].filter(Boolean),
   credentials: true,
@@ -90,12 +94,15 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
+const HOST = process.env.HOST || '0.0.0.0'; // Listen on all interfaces for mobile access
 
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, HOST, () => {
   console.log(`🚀 SuCAR API Server`);
   console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`   Host: ${HOST}`);
   console.log(`   Port: ${PORT}`);
   console.log(`   Health: http://localhost:${PORT}/api/health`);
+  console.log(`   Mobile (Android): http://10.0.2.2:${PORT}/api/health`);
 }).on('error', (error: NodeJS.ErrnoException) => {
   if (error.code === 'EADDRINUSE') {
     console.error(`\n❌ Port ${PORT} is already in use!`);

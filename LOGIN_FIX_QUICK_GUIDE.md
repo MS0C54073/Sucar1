@@ -70,6 +70,18 @@ This creates all test users with the credentials above.
 
 ## Diagnostic Tools
 
+### Quick Fix Script (Recommended)
+```powershell
+.\fix-login.ps1
+```
+
+This automated script will:
+- ✅ Check Docker Desktop
+- ✅ Check and start Supabase if needed
+- ✅ Check Backend server
+- ✅ Run comprehensive login tests
+- ✅ Provide fix recommendations
+
 ### Run Full Diagnostic
 ```powershell
 .\diagnose-login.ps1
@@ -80,6 +92,14 @@ This will check:
 - ✅ Supabase connection
 - ✅ Configuration files
 - ✅ Login endpoint
+
+### Comprehensive Login Test
+```powershell
+cd backend
+node scripts/test-login-comprehensive.js
+```
+
+This tests login for all user types and provides detailed error information.
 
 ### Check Supabase Only
 ```powershell

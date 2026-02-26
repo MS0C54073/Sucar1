@@ -267,7 +267,9 @@ export const updateBookingStatus = asyncHandler(async (req: AuthRequest, res: Re
       throw new BadRequestError(`Invalid status for driver. Allowed: ${allowedStatuses.join(', ')}`);
     }
 
-    // New workflow: driver marks as 'picked_up' -> becomes 'picked_up_pending_confirmation'
+    // Driver marks as 'picked_up' -> we represent this as an intermediate
+    // status so the client must explicitly confirm the pickup. This leaves
+    // a clear audit trail and prevents accidental confirmations by drivers.
     if (status === 'picked_up') {
       const actualStatus = 'picked_up_pending_confirmation';
       req.body.status = actualStatus;
@@ -276,7 +278,8 @@ export const updateBookingStatus = asyncHandler(async (req: AuthRequest, res: Re
     if (bookingClientId !== req.user.id) {
       throw new ForbiddenError('This booking does not belong to you');
     }
-    // Clients can confirm pickup or cancel
+    // Clients can confirm pickup or cancel. They can only confirm when the
+    // driver has marked the vehicle as picked up (pending confirmation).
     const allowedStatuses = ['picked_up', 'cancelled'];
     if (!allowedStatuses.includes(status)) {
       throw new BadRequestError('Clients can only confirm pickup or cancel bookings');

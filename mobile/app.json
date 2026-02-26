@@ -4,29 +4,47 @@
     "slug": "sucar-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/Sucar.png",
       "resizeMode": "contain",
       "backgroundColor": "#667eea"
     },
     "assetBundlePatterns": [
-      "**/*"
+      "**/*",
+      "assets/**/*"
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.sucar.app"
+      "bundleIdentifier": "com.sucar.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "This app needs access to your location to help you find nearby car washes and set pickup locations.",
+        "NSLocationAlwaysUsageDescription": "This app needs access to your location to provide location-based services."
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#667eea"
       },
-      "package": "com.sucar.app"
+      "package": "com.sucar.app",
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ],
+      "usesCleartextTraffic": true,
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyDummyKeyReplaceWithRealKey"
+        }
+      }
     },
     "web": {
-      "favicon": "./assets/favicon.png"
-    }
+      "favicon": "./assets/Sucar.png"
+    },
+    "plugins": [
+      "expo-font"
+    ]
   }
 }

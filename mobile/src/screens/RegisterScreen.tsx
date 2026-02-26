@@ -8,10 +8,21 @@ import {
   Alert,
   ActivityIndicator,
   ScrollView,
+  Image,
+  Animated,
+  Dimensions,
 } from 'react-native';
+import * as Animatable from 'react-native-animatable';
 import { useNavigation } from '@react-navigation/native';
+import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 
+/**
+ * Multi‑role registration screen.
+ *
+ * Collects different fields depending on whether the user is a client,
+ * driver, or car wash, and submits them via AuthContext.register.
+ */
 const RegisterScreen = () => {
   const [formData, setFormData] = useState({
     name: '',
@@ -37,6 +48,43 @@ const RegisterScreen = () => {
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const navigation = useNavigation();
+  const { width } = Dimensions.get('window');
+  const { theme, toggle } = useTheme();
+
+  const MovingCar: React.FC<{delay?: number; top?: number; color?: string}> = ({ delay = 0, top = 18, color = '#fff' }) => {
+    const translateX = React.useRef(new Animated.Value(-120)).current;
+
+    React.useEffect(() => {
+      const anim = Animated.loop(
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.timing(translateX, {
+            toValue: width + 120,
+            duration: 4200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(translateX, {
+            toValue: -120,
+            duration: 0,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      anim.start();
+      return () => anim.stop();
+    }, [delay, translateX]);
+
+    return (
+      <Animated.View
+        style={[styles.movingCar, { top, transform: [{ translateX }] }]}
+        pointerEvents="none"
+      >
+        <View style={[styles.carBody, { backgroundColor: color }]} />
+        <View style={[styles.carWheel, { left: 6 }]} />
+        <View style={[styles.carWheel, { right: 6 }]} />
+      </Animated.View>
+    );
+  };
 
   const handleRegister = async () => {
     if (!formData.name || !formData.email || !formData.password || !formData.phone || !formData.nrc) {
@@ -74,8 +122,29 @@ const RegisterScreen = () => {
 
       await register(registerData);
       Alert.alert('Success', 'Registration successful!');
+      // Navigation will happen automatically via AuthContext when user is set
     } catch (error: any) {
-      Alert.alert('Registration Failed', error.response?.data?.message || 'Registration failed');
+      // Error is now a string message from AuthContext
+      let errorMessage = error?.message || error?.toString() || 'Registration failed. Please try again.';
+      
+      // Format error message for better display
+      errorMessage = errorMessage.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+      
+      // If it's a connection error, provide actionable steps
+      if (errorMessage.includes('Cannot connect to server') || 
+          errorMessage.includes('ECONNREFUSED') ||
+          errorMessage.includes('Network Error') ||
+          errorMessage.includes('Network request failed')) {
+        Alert.alert(
+          'Connection Error',
+          'Cannot connect to backend server.\n\n🔧 Quick Fix:\n1. Open PowerShell in project root\n2. Run: .\\start-backend-for-mobile.ps1\n\nOr manually:\n• cd backend\n• npm run dev\n• Wait for "✅ Supabase connected successfully"\n• Wait for "🚀 SuCAR API Server"\n\nThen try again!',
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert('Registration Failed', errorMessage);
+      }
+      
+      console.error('Registration error:', error);
     } finally {
       setLoading(false);
     }
@@ -84,7 +153,21 @@ const RegisterScreen = () => {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.form}>
-        <Text style={styles.title}>Register</Text>
+        <Animatable.View style={[styles.headerSection, { backgroundColor: theme.colors.headerGradientStart }]} animation="fadeInDown" duration={700} useNativeDriver>
+          <MovingCar delay={0} top={18} color="#ffd166" />
+          <MovingCar delay={700} top={58} color="#06d6a0" />
+          <TouchableOpacity onPress={toggle} style={styles.themeToggle}>
+            <Text style={{ color: theme.colors.textPrimary }}>{theme.name === 'light' ? '🌤' : '🌙'}</Text>
+          </TouchableOpacity>
+          <View style={styles.imageContainer}>
+            <Image 
+              source={require('../../assets/Sucar.png')}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
+          </View>
+          <Text style={styles.title}>Register</Text>
+        </Animatable.View>
         
         <Text style={styles.label}>Role</Text>
         <View style={styles.roleContainer}>
@@ -237,11 +320,34 @@ const styles = StyleSheet.create({
   form: {
     padding: 20,
   },
+  headerSection: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  imageContainer: {
+    width: 150,
+    height: 150,
+    marginBottom: 15,
+    borderRadius: 15,
+    overflow: 'hidden',
+    backgroundColor: '#fff',
+    padding: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  logoImage: {
+    width: '100%',
+    height: '100%',
+  },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     marginBottom: 20,
     textAlign: 'center',
+    color: '#333',
   },
   label: {
     fontSize: 14,
@@ -260,7 +366,6 @@ const styles = StyleSheet.create({
   roleContainer: {
     flexDirection: 'row',
     marginBottom: 15,
-    gap: 10,
   },
   roleButton: {
     flex: 1,
@@ -269,6 +374,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#667eea',
     alignItems: 'center',
+    marginRight: 8,
   },
   roleButtonActive: {
     backgroundColor: '#667eea',
@@ -299,6 +405,39 @@ const styles = StyleSheet.create({
   linkText: {
     color: '#667eea',
     fontSize: 14,
+  },
+  movingCar: {
+    position: 'absolute',
+    left: -120,
+    width: 100,
+    height: 28,
+    flexDirection: 'row',
+    alignItems: 'center',
+    zIndex: 0,
+  },
+  carBody: {
+    width: 80,
+    height: 22,
+    borderRadius: 6,
+  },
+  carWheel: {
+    position: 'absolute',
+    bottom: -6,
+    width: 10,
+    height: 10,
+    borderRadius: 10,
+    backgroundColor: '#111',
+  },
+  themeToggle: {
+    position: 'absolute',
+    right: 12,
+    top: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.12)'
   },
 });
 
