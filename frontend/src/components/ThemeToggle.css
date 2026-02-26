@@ -1,37 +1,8 @@
-.theme-toggle-container {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  z-index: 1000;
-}
+.theme-toggle-container { display: flex; align-items: center; gap: 8px; }
 
-.theme-toggle-btn,
-.view-toggle-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  background: var(--toggle-bg, #2563eb);
-  color: white;
-  border: none;
-  border-radius: 50px;
-  cursor: pointer;
-  font-size: 0.875rem;
-  font-weight: 600;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transition: all 0.3s ease;
-  min-width: 120px;
-  justify-content: center;
-}
+.theme-toggle-btn { display:inline-flex; align-items:center; gap:4px; padding:4px 8px; background: transparent; color: var(--text-primary); border:1px solid var(--border-primary); border-radius:6px; cursor:pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.2s ease; }
 
-.theme-toggle-btn:hover,
-.view-toggle-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
-}
+.theme-toggle-btn:hover { background: var(--bg-secondary); }
 
 .theme-toggle-btn:active,
 .view-toggle-btn:active {
@@ -50,11 +21,7 @@
 }
 
 /* Dark theme adjustments */
-[data-theme='dark'] .theme-toggle-btn,
-[data-theme='dark'] .view-toggle-btn {
-  background: var(--toggle-bg-dark, #1e40af);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
+[data-theme='dark'] .theme-toggle-btn { color: var(--text-primary); }
 
 [data-theme='dark'] .theme-toggle-btn:hover,
 [data-theme='dark'] .view-toggle-btn:hover {
@@ -62,40 +29,11 @@
 }
 
 /* Mobile view adjustments */
-@media (max-width: 640px) {
-  .theme-toggle-container {
-    bottom: 15px;
-    right: 15px;
-    gap: 0.5rem;
-  }
-
-  .theme-toggle-btn,
-  .view-toggle-btn {
-    padding: 0.625rem 0.875rem;
-    min-width: 100px;
-    font-size: 0.75rem;
-  }
-
-  .theme-icon,
-  .view-icon {
-    font-size: 1rem;
-  }
-}
+@media (max-width: 640px) { .theme-toggle-btn { padding: 4px 6px; font-size: 0.8rem; } }
 
 /* When in mobile view mode, show smaller buttons */
-[data-view-mode='mobile'] .theme-toggle-container {
-  bottom: 10px;
-  right: 10px;
-}
+[data-view-mode='mobile'] .theme-toggle-btn, [data-view-mode='mobile'] .view-toggle-btn { padding: 6px 8px; font-size: 0.75rem; }
 
-[data-view-mode='mobile'] .theme-toggle-btn,
-[data-view-mode='mobile'] .view-toggle-btn {
-  padding: 0.5rem 0.75rem;
-  min-width: 90px;
-  font-size: 0.7rem;
-}
-
-[data-view-mode='mobile'] .theme-icon,
-[data-view-mode='mobile'] .view-icon {
-  font-size: 0.9rem;
-}
+/* generic icon button so toggles look consistent elsewhere */
+.icon-btn { background: transparent; border:1px solid var(--border-primary); border-radius:6px; padding:4px 8px; cursor:pointer; }
+.icon-btn:hover { background: var(--bg-secondary); }

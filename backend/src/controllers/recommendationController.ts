@@ -14,15 +14,16 @@ import {
 /**
  * Get recommended car washes for a user
  */
-export const getRecommendedCarWashes = async (req: Request, res: Response) => {
+export const getRecommendedCarWashes = async (req: Request, res: Response): Promise<void> => {
   try {
     const { lat, lng, serviceType, maxDistance } = req.query;
 
     if (!lat || !lng) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Location coordinates (lat, lng) are required'
       });
+      return;
     }
 
     const userLocation = {
@@ -54,15 +55,16 @@ export const getRecommendedCarWashes = async (req: Request, res: Response) => {
 /**
  * Get recommended drivers for a user
  */
-export const getRecommendedDrivers = async (req: Request, res: Response) => {
+export const getRecommendedDrivers = async (req: Request, res: Response): Promise<void> => {
   try {
     const { lat, lng, maxDistance } = req.query;
 
     if (!lat || !lng) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Location coordinates (lat, lng) are required'
       });
+      return;
     }
 
     const userLocation = {
@@ -93,15 +95,16 @@ export const getRecommendedDrivers = async (req: Request, res: Response) => {
 /**
  * Get nearby car washes
  */
-export const getNearbyCarWashesController = async (req: Request, res: Response) => {
+export const getNearbyCarWashesController = async (req: Request, res: Response): Promise<void> => {
   try {
     const { lat, lng, radius } = req.query;
 
     if (!lat || !lng) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Location coordinates (lat, lng) are required'
       });
+      return;
     }
 
     const userLocation = {
@@ -132,15 +135,16 @@ export const getNearbyCarWashesController = async (req: Request, res: Response) 
 /**
  * Get nearby drivers
  */
-export const getNearbyDriversController = async (req: Request, res: Response) => {
+export const getNearbyDriversController = async (req: Request, res: Response): Promise<void> => {
   try {
     const { lat, lng, radius } = req.query;
 
     if (!lat || !lng) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Location coordinates (lat, lng) are required'
       });
+      return;
     }
 
     const userLocation = {

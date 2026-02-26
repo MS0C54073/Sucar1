@@ -3,6 +3,46 @@
   background: var(--bg-secondary);
 }
 
+.payment-wait {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  background: var(--bg-primary);
+}
+
+.progress-bar {
+  position: relative;
+  height: 8px;
+  background: var(--bg-secondary);
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 12px 0 6px 0;
+}
+.progress-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 40%;
+  background: linear-gradient(90deg, var(--color-primary-500), var(--color-primary-700));
+  border-radius: 999px;
+  animation: loadingPulse 1.2s infinite ease-in-out;
+}
+
+@keyframes loadingPulse {
+  0%   { transform: translateX(-40%); width: 30%; }
+  50%  { transform: translateX(50%);  width: 50%; }
+  100% { transform: translateX(120%); width: 30%; }
+}
+
+.post-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+  justify-content: center;
+}
+
 .payment-header {
   background: var(--bg-primary);
   border-bottom: 1px solid var(--border-primary);

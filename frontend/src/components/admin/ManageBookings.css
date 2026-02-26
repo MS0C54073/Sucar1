@@ -1,5 +1,6 @@
 .manage-bookings {
   width: 100%;
+  padding: var(--space-4);
 }
 
 .manage-bookings .admin-card-header {
@@ -19,6 +20,169 @@
   font-size: var(--text-sm);
   color: var(--text-secondary);
   font-weight: var(--font-normal);
+}
+
+/* Table shell */
+.table-container {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: auto;
+}
+
+.table-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: var(--space-4) 0;
+}
+
+.toolbar-left, .toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.input-wrap {
+  position: relative;
+}
+.input-wrap .icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.6;
+}
+.search-input {
+  padding: 8px 10px 8px 30px;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-width: 320px;
+}
+
+.select {
+  padding: 8px 10px;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border-primary);
+  padding: 6px 10px;
+  border-radius: var(--radius-md);
+}
+
+.cols-toggle-wrap { position: relative; }
+.cols-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: 8px 10px;
+  display: grid;
+  gap: 6px;
+  z-index: 5;
+}
+.cols-item { display: flex; gap: 8px; align-items: center; font-size: var(--text-sm); }
+
+.data-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 980px;
+}
+
+.data-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--bg-secondary);
+  text-align: left;
+  padding: 12px 16px;
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.th-sortable {
+  cursor: pointer;
+  user-select: none;
+}
+.th-sortable .th-icon { opacity: 0.6; margin-left: 6px; }
+
+.data-table tbody td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-primary);
+  vertical-align: middle;
+}
+
+.data-table tbody tr:nth-child(even) td {
+  background: var(--bg-secondary);
+}
+
+.data-table tbody tr:hover td {
+  background: var(--color-primary-50);
+}
+
+.actions-column {
+  width: 320px;
+}
+
+.row-actions { display: flex; gap: 8px; align-items: center; }
+.icon-btn {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  padding: 6px 8px;
+  cursor: pointer;
+}
+.icon-btn:hover { background: var(--bg-secondary); }
+.assign-inline { display: flex; gap: 8px; align-items: center; }
+
+.user-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-avatar-small {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary-600);
+  color: #fff;
+  font-weight: var(--font-bold);
+}
+
+.table-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border-primary);
+}
+.table-pagination .pager {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.table-pagination .page-info {
+  color: var(--text-secondary);
 }
 
 .driver-assigned {
@@ -44,6 +208,10 @@
   align-items: center;
 }
 
+.assign-driver-controls .btn {
+  white-space: nowrap;
+}
+
 .driver-select {
   padding: var(--space-2) var(--space-3);
   border: 1px solid var(--border-primary);
@@ -63,6 +231,10 @@
 }
 
 @media (max-width: 768px) {
+  .manage-bookings {
+    padding: var(--space-2);
+  }
+
   .assign-driver-controls {
     flex-direction: column;
     align-items: stretch;
@@ -70,5 +242,17 @@
 
   .driver-select {
     width: 100%;
+  }
+
+  .actions-column {
+    width: 220px;
+  }
+
+  .search-input {
+    min-width: 200px;
+  }
+  .table-toolbar {
+    flex-direction: column;
+    align-items: stretch;
   }
 }

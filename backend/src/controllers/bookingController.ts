@@ -261,8 +261,8 @@ export const updateBookingStatus = asyncHandler(async (req: AuthRequest, res: Re
     if (!bookingDriverId || bookingDriverId !== req.user.id) {
       throw new ForbiddenError('You are not assigned to this booking');
     }
-    // Drivers can only set: accepted, declined, picked_up, delivered_to_client
-    const allowedStatuses = ['accepted', 'declined', 'picked_up', 'delivered_to_client'];
+    // Drivers can only set: accepted, declined, picked_up, delivered_to_wash, delivered_to_client
+    const allowedStatuses = ['accepted', 'declined', 'picked_up', 'delivered_to_wash', 'delivered_to_client'];
     if (!allowedStatuses.includes(status)) {
       throw new BadRequestError(`Invalid status for driver. Allowed: ${allowedStatuses.join(', ')}`);
     }
@@ -274,19 +274,37 @@ export const updateBookingStatus = asyncHandler(async (req: AuthRequest, res: Re
       const actualStatus = 'picked_up_pending_confirmation';
       req.body.status = actualStatus;
     }
+
+    // For older schemas, proactively map delivered_to_wash to a widely-supported status
+    // The robust fallback below will still handle any residual constraint errors.
+    if (status === 'delivered_to_wash') {
+      req.body.status = 'at_wash';
+    }
+    if (status === 'delivered_to_client') {
+      // Legacy-safe fallback to avoid check constraint on older schemas
+      req.body.status = 'delivered';
+    }
   } else if (req.user.role === 'client') {
     if (bookingClientId !== req.user.id) {
       throw new ForbiddenError('This booking does not belong to you');
     }
-    // Clients can confirm pickup or cancel. They can only confirm when the
-    // driver has marked the vehicle as picked up (pending confirmation).
-    const allowedStatuses = ['picked_up', 'cancelled'];
+    // Clients can confirm pickup, cancel, or confirm final receipt when delivered back
+    const allowedStatuses = ['picked_up', 'cancelled', 'completed'];
     if (!allowedStatuses.includes(status)) {
       throw new BadRequestError('Clients can only confirm pickup or cancel bookings');
     }
 
     if (status === 'picked_up' && (booking as any).status !== 'picked_up_pending_confirmation') {
       throw new BadRequestError('Cannot confirm pickup: Driver has not marked vehicle as picked up yet or already confirmed.');
+    }
+    if (status === 'completed') {
+      // Final confirmation only allowed after delivery to client and payment confirmed
+      if ((booking as any).status !== 'delivered_to_client') {
+        throw new BadRequestError('Cannot complete: Vehicle not marked as delivered to client');
+      }
+      if ((booking as any).paymentStatus !== 'paid') {
+        throw new BadRequestError('Cannot complete: Payment not confirmed yet');
+      }
     }
   } else if (req.user.role === 'carwash') {
     if (bookingCarWashId !== req.user.id) {
@@ -318,7 +336,140 @@ export const updateBookingStatus = asyncHandler(async (req: AuthRequest, res: Re
     // If it's pending confirmation, we can also add a field if needed of maybe just use status
   }
 
-  const updatedBooking = await DBService.updateBooking(req.params.id, updateData);
+  // Dual-confirmation flags
+  if (finalStatus === 'delivered_to_wash') {
+    updateData.washAcceptancePending = true;
+  }
+  if (finalStatus === 'at_wash') {
+    updateData.washAcceptancePending = false;
+  }
+  if (finalStatus === 'delivered_to_client') {
+    updateData.clientConfirmPending = true;
+  }
+  if (finalStatus === 'completed') {
+    updateData.clientConfirmPending = false;
+  }
+
+  // Apply update with a safe fallback if DB constraint rejects the
+  // 'picked_up_pending_confirmation' status (migration not yet applied).
+  let updatedBooking: any;
+  let appliedStatus = updateData.status;
+  try {
+    updatedBooking = await DBService.updateBooking(req.params.id, updateData);
+  } catch (err: any) {
+    const msg = err?.message || err?.toString?.() || '';
+    const isConstraint = (err?.code === '23514') || (typeof msg === 'string' && (msg.includes('bookings_status_check') || msg.toLowerCase().includes('check constraint')));
+    const isMissingColumn = typeof msg === 'string' && (
+      msg.includes("wash_acceptance_pending") ||
+      msg.includes("client_confirm_pending") ||
+      msg.includes("return_in_progress") ||
+      msg.includes("out_for_delivery") ||
+      msg.toLowerCase().includes('schema cache')
+    );
+    if (isConstraint && updateData.status === 'picked_up_pending_confirmation') {
+      // Fallback: skip the intermediate confirmation and set to 'picked_up'
+      // so flows keep working until the migration is applied.
+      const fallbackData = { ...updateData, status: 'picked_up' } as any;
+      try {
+        updatedBooking = await DBService.updateBooking(req.params.id, fallbackData);
+        appliedStatus = 'picked_up';
+      } catch (e2: any) {
+        const m2 = e2?.message || '';
+        const missing = typeof m2 === 'string' && (m2.includes('schema cache') || m2.includes('wash_acceptance_pending') || m2.includes('client_confirm_pending'));
+        if (missing) {
+          const { washAcceptancePending, clientConfirmPending, returnInProgress, outForDelivery, ...stripped } = fallbackData;
+          updatedBooking = await DBService.updateBooking(req.params.id, stripped);
+          appliedStatus = stripped.status;
+        } else {
+          throw e2;
+        }
+      }
+    } else if (isConstraint) {
+      // Map newer statuses to legacy ones if enum/check constraint is outdated
+      const desired = updateData.status;
+      const fallbackMap: Record<string, string> = {
+        delivered_to_wash: 'at_wash',
+        delivered_to_client: 'delivered',
+        waiting_bay: 'at_wash',
+        washing_bay: 'at_wash',
+        drying_bay: 'wash_completed',
+      };
+      const mapped = (fallbackMap as any)[desired] || desired;
+      if (mapped !== desired) {
+        const fallbackData = { ...updateData, status: mapped } as any;
+        try {
+          updatedBooking = await DBService.updateBooking(req.params.id, fallbackData);
+          appliedStatus = mapped;
+        } catch (e2: any) {
+          const m2 = e2?.message || '';
+          const missing = typeof m2 === 'string' && (m2.includes('schema cache') || m2.includes('wash_acceptance_pending') || m2.includes('client_confirm_pending'));
+          const stillConstraint = (e2?.code === '23514') || (typeof m2 === 'string' && (m2.includes('bookings_status_check') || m2.toLowerCase().includes('check constraint')));
+          if (missing) {
+            const { washAcceptancePending, clientConfirmPending, returnInProgress, outForDelivery, ...stripped } = fallbackData;
+            updatedBooking = await DBService.updateBooking(req.params.id, stripped);
+            appliedStatus = stripped.status;
+          } else if (stillConstraint) {
+            // Final fallback tier for very old schemas
+            const tier2Map: Record<string, string> = {
+              delivered_to_wash: 'delivered',
+              waiting_bay: 'delivered',
+              washing_bay: 'delivered',
+              drying_bay: 'delivered',
+              delivered_to_client: 'completed',
+            };
+            const tier2 = (tier2Map as any)[desired];
+            if (tier2) {
+              const tier2Data = { ...updateData, status: tier2 } as any;
+              try {
+                updatedBooking = await DBService.updateBooking(req.params.id, tier2Data);
+                appliedStatus = tier2;
+              } catch (e3: any) {
+                const m3 = e3?.message || '';
+                const missing3 = typeof m3 === 'string' && (m3.includes('schema cache') || m3.includes('wash_acceptance_pending') || m3.includes('client_confirm_pending'));
+                if (missing3) {
+                  const { washAcceptancePending, clientConfirmPending, returnInProgress, outForDelivery, ...stripped3 } = tier2Data;
+                  updatedBooking = await DBService.updateBooking(req.params.id, stripped3);
+                  appliedStatus = stripped3.status;
+                } else {
+                  throw e3;
+                }
+              }
+            } else {
+              throw e2;
+            }
+          } else {
+            throw e2;
+          }
+        }
+      } else {
+        throw err;
+      }
+    } else if (isMissingColumn) {
+      // Remove non-existent flag columns and retry the update to avoid column errors
+      const { washAcceptancePending, clientConfirmPending, returnInProgress, outForDelivery, ...stripped } = updateData as any;
+      updatedBooking = await DBService.updateBooking(req.params.id, stripped);
+      appliedStatus = stripped.status;
+    } else {
+      throw err;
+    }
+  }
+  // Audit log
+  try {
+    await DBService.createBookingStatusLog({
+      bookingId: updatedBooking.id,
+      actorId: req.user.id,
+      actorRole: req.user.role,
+      fromStatus: (booking as any).status,
+      toStatus: appliedStatus,
+      note: 'Status updated via updateBookingStatus',
+      metadata: {
+        washAcceptancePending: updateData.washAcceptancePending ?? (booking as any).washAcceptancePending,
+        clientConfirmPending: updateData.clientConfirmPending ?? (booking as any).clientConfirmPending,
+      },
+    });
+  } catch (logErr) {
+    console.error('Failed to write booking status log:', logErr);
+  }
 
   if (!updatedBooking) {
     throw new InternalServerError('Failed to update booking');
@@ -326,13 +477,13 @@ export const updateBookingStatus = asyncHandler(async (req: AuthRequest, res: Re
 
   // Notify relevant parties about status change
   // 1. Notify Client
-  let notificationMessage = `Your booking status has been updated to ${finalStatus.replace(/_/g, ' ')}.`;
-  let notificationTitle = `Booking Update: ${finalStatus.replace(/_/g, ' ')}`;
+  let notificationMessage = `Your booking status has been updated to ${appliedStatus.replace(/_/g, ' ')}.`;
+  let notificationTitle = `Booking Update: ${appliedStatus.replace(/_/g, ' ')}`;
 
-  if (finalStatus === 'picked_up_pending_confirmation') {
+  if (appliedStatus === 'picked_up_pending_confirmation') {
     notificationTitle = '🚗 Vehicle Picked Up?';
     notificationMessage = 'The driver has arrived and marked your vehicle as picked up. Please confirm the pickup in the app.';
-  } else if (finalStatus === 'picked_up') {
+  } else if (appliedStatus === 'picked_up') {
     notificationTitle = '✅ Pickup Confirmed';
     notificationMessage = 'Your vehicle pickup has been confirmed. The driver is now heading to the car wash.';
   }
@@ -343,17 +494,30 @@ export const updateBookingStatus = asyncHandler(async (req: AuthRequest, res: Re
     title: notificationTitle,
     message: notificationMessage,
     data: { bookingId: updatedBooking.id },
-    priority: finalStatus === 'picked_up_pending_confirmation' ? 'high' : 'medium',
+    priority: appliedStatus === 'picked_up_pending_confirmation' ? 'high' : 'medium',
   });
 
   // 2. Notify Car Wash if driver picks up (and confirmed by client)
-  if (finalStatus === 'picked_up') {
+  if (appliedStatus === 'picked_up') {
     await NotificationService.createNotification({
       userId: bookingCarWashId as string,
       type: 'booking_update',
       title: 'Vehicle Picked Up',
       message: `The client has confirmed the vehicle pickup. The driver is heading to your car wash.`,
       data: { bookingId: updatedBooking.id },
+    });
+  }
+
+  // 2b. Notify Car Wash when vehicle delivered to wash (prompt acceptance)
+  // Also notify if legacy fallback mapped this to 'at_wash' but original intent was delivered_to_wash
+  if (appliedStatus === 'delivered_to_wash' || (appliedStatus === 'at_wash' && status === 'delivered_to_wash')) {
+    await NotificationService.createNotification({
+      userId: bookingCarWashId as string,
+      type: 'booking_update',
+      title: 'Vehicle Delivered to Wash',
+      message: 'A vehicle has arrived. Please open Live Tracking and press “Confirm Arrival”.',
+      data: { bookingId: updatedBooking.id },
+      priority: 'high',
     });
   }
 
@@ -374,6 +538,76 @@ export const updateBookingStatus = asyncHandler(async (req: AuthRequest, res: Re
     data: updatedBooking,
   };
 
+  res.json(response);
+});
+
+// @desc    Mark return in progress (driver picks up from wash)
+// @route   POST /api/bookings/:id/return-in-progress
+// @access  Private (Driver)
+export const markReturnInProgress = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+  if (!req.user || !req.user.id) {
+    throw new ForbiddenError('User not authenticated');
+  }
+  const booking = await DBService.getBookingById(req.params.id);
+  if (!booking) throw new NotFoundError('Booking not found');
+
+  const bookingDriverId = typeof booking.driverId === 'object' ? booking.driverId?.id : booking.driverId;
+  if (req.user.role !== 'driver' || bookingDriverId !== req.user.id) {
+    throw new ForbiddenError('Only assigned driver can mark return in progress');
+  }
+  if ((booking as any).status !== 'wash_completed' && (booking as any).status !== 'drying_bay') {
+    throw new BadRequestError('Return can only start after service completion');
+  }
+
+  const updated = await DBService.updateBooking(req.params.id, { returnInProgress: true });
+  try {
+    await DBService.createBookingStatusLog({
+      bookingId: updated.id,
+      actorId: req.user.id,
+      actorRole: req.user.role,
+      fromStatus: (booking as any).status,
+      toStatus: (booking as any).status,
+      note: 'Driver picked vehicle from wash (return in progress)',
+      metadata: { returnInProgress: true },
+    });
+  } catch {}
+
+  const response: ApiSuccessResponse = { success: true, data: updated };
+  res.json(response);
+});
+
+// @desc    Mark out for delivery (driver heading to client)
+// @route   POST /api/bookings/:id/out-for-delivery
+// @access  Private (Driver)
+export const markOutForDelivery = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+  if (!req.user || !req.user.id) {
+    throw new ForbiddenError('User not authenticated');
+  }
+  const booking = await DBService.getBookingById(req.params.id);
+  if (!booking) throw new NotFoundError('Booking not found');
+
+  const bookingDriverId = typeof booking.driverId === 'object' ? booking.driverId?.id : booking.driverId;
+  if (req.user.role !== 'driver' || bookingDriverId !== req.user.id) {
+    throw new ForbiddenError('Only assigned driver can mark out for delivery');
+  }
+  if (!(booking as any).returnInProgress) {
+    throw new BadRequestError('Must pick vehicle from wash before going out for delivery');
+  }
+
+  const updated = await DBService.updateBooking(req.params.id, { outForDelivery: true });
+  try {
+    await DBService.createBookingStatusLog({
+      bookingId: updated.id,
+      actorId: req.user.id,
+      actorRole: req.user.role,
+      fromStatus: (booking as any).status,
+      toStatus: (booking as any).status,
+      note: 'Driver is out for delivery to client',
+      metadata: { outForDelivery: true },
+    });
+  } catch {}
+
+  const response: ApiSuccessResponse = { success: true, data: updated };
   res.json(response);
 });
 

@@ -50,8 +50,8 @@ export const errorHandler = (
     };
 
     // Add validation errors if present
-    if ('errors' in err && err.errors) {
-      response.errors = err.errors;
+    if ('errors' in err && (err as any).errors) {
+      response.errors = (err as any).errors as Record<string, string[]>;
     }
 
     // Add stack trace in development

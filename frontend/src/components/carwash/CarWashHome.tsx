@@ -1,14 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import MapView from '../MapView';
 import { useBookings } from '../../hooks/useBookings';
+import LiveTracking from '../LiveTracking';
 import './CarWashHome.css';
 
 const CarWashHome = () => {
   const { user } = useAuth();
   const [showMap, setShowMap] = useState(false);
+  const [trackingBookingId, setTrackingBookingId] = useState<string | null>(null);
   
   const { data, isLoading } = useQuery({
     queryKey: ['carwash-dashboard'],
@@ -24,6 +26,15 @@ const CarWashHome = () => {
     filters: { role: 'carwash' },
     refetchInterval: 10000,
   });
+
+  // Listen for tracking events from BookingCard
+  useEffect(() => {
+    const handleOpenTracking = (event: any) => {
+      setTrackingBookingId(event.detail.bookingId);
+    };
+    window.addEventListener('openTracking' as any, handleOpenTracking as EventListener);
+    return () => window.removeEventListener('openTracking' as any, handleOpenTracking as EventListener);
+  }, []);
 
   // Don't block - show skeleton while loading
   const isInitialLoad = isLoading && !data;
@@ -96,10 +107,21 @@ const CarWashHome = () => {
               showCarWashes={true}
               showDrivers={true}
               height="500px"
+              onBookingClick={(booking: any) => {
+                const event = new CustomEvent('openTracking', { detail: { bookingId: booking.id || booking._id } });
+                window.dispatchEvent(event);
+              }}
             />
           </div>
         )}
       </div>
+      {trackingBookingId && (
+        <div className="live-tracking-overlay" onClick={() => setTrackingBookingId(null)}>
+          <div onClick={(e) => e.stopPropagation()}>
+            <LiveTracking bookingId={trackingBookingId} onClose={() => setTrackingBookingId(null)} />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

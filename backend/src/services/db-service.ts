@@ -594,6 +594,36 @@ export class DBService {
     return toCamelCase(data);
   }
 
+  // Booking status log
+  static async createBookingStatusLog(entry: {
+    bookingId: string;
+    actorId: string;
+    actorRole: string;
+    fromStatus?: string | null;
+    toStatus?: string | null;
+    note?: string | null;
+    metadata?: any;
+  }) {
+    const payload = toSnakeCase({
+      bookingId: entry.bookingId,
+      actorId: entry.actorId,
+      actorRole: entry.actorRole,
+      fromStatus: entry.fromStatus || null,
+      toStatus: entry.toStatus || null,
+      note: entry.note || null,
+      metadata: entry.metadata || null,
+    });
+
+    const { data, error } = await supabase
+      .from('booking_status_log')
+      .insert(payload)
+      .select('*')
+      .single();
+
+    if (error) throw error;
+    return toCamelCase(data);
+  }
+
   static async getPaymentByBookingId(bookingId: string) {
     const { data, error } = await supabase
       .from('payments')

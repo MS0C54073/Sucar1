@@ -38,9 +38,9 @@ async function test() {
         console.log('Fetching:', restUrl);
         const res = await fetch(restUrl, {
             headers: {
-                'apikey': key,
-                'Authorization': `Bearer ${key}`
-            }
+                'apikey': key as string,
+                'Authorization': `Bearer ${key as string}`
+            } as Record<string, string>
         });
         console.log('Status:', res.status);
         const text = await res.text();

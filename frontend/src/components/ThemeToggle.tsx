@@ -2,10 +2,10 @@ import { useTheme } from '../context/ThemeContext';
 import './ThemeToggle.css';
 
 const ThemeToggle = () => {
-  const { theme, viewMode, toggleTheme, toggleViewMode } = useTheme();
+  const { theme, toggleTheme } = useTheme();
 
   return (
-    <div className="theme-toggle-container">
+    <div className="theme-toggle-container" role="group" aria-label="Theme controls">
       <button
         className="theme-toggle-btn"
         onClick={toggleTheme}
@@ -13,29 +13,9 @@ const ThemeToggle = () => {
         aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
       >
         {theme === 'light' ? (
-          <span className="theme-icon">🌙</span>
+          <span className="theme-icon" aria-hidden>🌙</span>
         ) : (
-          <span className="theme-icon">☀️</span>
-        )}
-        <span className="theme-label">{theme === 'light' ? 'Dark' : 'Light'}</span>
-      </button>
-
-      <button
-        className="view-toggle-btn"
-        onClick={toggleViewMode}
-        title={`Switch to ${viewMode === 'mobile' ? 'desktop' : 'mobile'} view`}
-        aria-label={`Switch to ${viewMode === 'mobile' ? 'desktop' : 'mobile'} view`}
-      >
-        {viewMode === 'mobile' ? (
-          <>
-            <span className="view-icon">💻</span>
-            <span className="view-label">Desktop</span>
-          </>
-        ) : (
-          <>
-            <span className="view-icon">📱</span>
-            <span className="view-label">Mobile</span>
-          </>
+          <span className="theme-icon" aria-hidden>☀️</span>
         )}
       </button>
     </div>

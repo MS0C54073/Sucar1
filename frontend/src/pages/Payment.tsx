@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import api from '../services/api';
@@ -11,6 +11,10 @@ const Payment = () => {
   const navigate = useNavigate();
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [transactionId, setTransactionId] = useState('');
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
+  const [methodLabel, setMethodLabel] = useState('Cash Payment');
+  const pollTimer = useRef<number | undefined>(undefined);
 
   const { data: booking } = useQuery({
     queryKey: ['booking', bookingId],
@@ -36,7 +40,27 @@ const Payment = () => {
       return response.data;
     },
     onSuccess: () => {
-      navigate('/client');
+      setAwaitingConfirmation(true);
+      // set human label
+      const label = paymentMethods.find(m => m.value === paymentMethod)?.label || 'Payment';
+      setMethodLabel(label);
+      // start polling for confirmation
+      if (!pollTimer.current && bookingId) {
+        // poll every 2 seconds
+        const t = window.setInterval(async () => {
+          try {
+            const res = await api.get(`/payments/booking/${bookingId}`);
+            const p = res.data?.data;
+            if (p && p.status === 'completed') {
+              window.clearInterval(t);
+              pollTimer.current = undefined;
+              setConfirmed(true);
+              setAwaitingConfirmation(false);
+            }
+          } catch {}
+        }, 2000);
+        pollTimer.current = t as unknown as number;
+      }
     },
   });
 
@@ -51,6 +75,16 @@ const Payment = () => {
     });
   };
 
+  // Cleanup polling timer on unmount
+  useEffect(() => {
+    return () => {
+      if (pollTimer.current) {
+        window.clearInterval(pollTimer.current);
+        pollTimer.current = undefined;
+      }
+    };
+  }, []);
+
   if (!booking) {
     return (
       <div className="payment-loading">
@@ -62,7 +96,7 @@ const Payment = () => {
   const paymentMethods = [
     { value: 'cash', label: 'Cash Payment', icon: '💵', description: 'Pay with cash on delivery' },
     { value: 'card', label: 'Card Payment', icon: '💳', description: 'Credit or debit card' },
-    { value: 'mobile_money', label: 'Mobile Money', icon: '📱', description: 'MTN, Airtel, or other mobile money' },
+    { value: 'mobile_money', label: 'Mobile Money', icon: '📱', description: 'Pay using Mobile Money (e.g., Airtel, MTN)' },
     { value: 'bank_transfer', label: 'Bank Transfer', icon: '🏦', description: 'Direct bank transfer' },
   ];
 
@@ -107,6 +141,7 @@ const Payment = () => {
           </div>
         </div>
 
+        {!awaitingConfirmation && !confirmed && (
         <form onSubmit={handleSubmit} className="payment-form">
           <h3 className="form-title">Select Payment Method</h3>
           
@@ -145,13 +180,10 @@ const Payment = () => {
                 type="text"
                 value={transactionId}
                 onChange={(e) => setTransactionId(e.target.value)}
-                placeholder="Enter your transaction reference number"
+                placeholder="Optional: Enter your transaction reference number"
                 className="form-input"
-                required={paymentMethod !== 'cash'}
               />
-              <p className="form-hint">
-                Please enter the transaction ID from your payment confirmation
-              </p>
+              <p className="form-hint">Optional: you may leave this blank.</p>
             </div>
           )}
 
@@ -169,7 +201,7 @@ const Payment = () => {
             <button
               type="submit"
               className="btn btn-primary btn-lg pay-btn"
-              disabled={initiatePaymentMutation.isPending || (paymentMethod !== 'cash' && !transactionId)}
+              disabled={initiatePaymentMutation.isPending}
             >
               {initiatePaymentMutation.isPending ? (
                 <>
@@ -188,18 +220,40 @@ const Payment = () => {
             )}
           </div>
         </form>
+        )}
 
-        {payment && payment.status === 'completed' && (
+        {awaitingConfirmation && !confirmed && (
+          <div className="payment-wait">
+            <h3>Awaiting {methodLabel} Confirmation</h3>
+            <p>The driver or car wash will confirm your payment shortly.</p>
+            <div className="progress-bar">
+              <div className="progress-fill" />
+            </div>
+            <p className="hint">This will close automatically once confirmed.</p>
+          </div>
+        )}
+
+        {confirmed && (
           <div className="payment-success">
             <div className="success-icon">✓</div>
-            <h3>Payment Successful!</h3>
-            <p>Your payment has been processed successfully.</p>
-            <button
-              className="btn btn-secondary"
-              onClick={() => navigate('/client')}
-            >
-              Return to Dashboard
-            </button>
+            <h3>Payment Confirmed!</h3>
+            <p>Your payment has been confirmed. Thank you.</p>
+            <div className="post-actions">
+              <button className="btn btn-primary" onClick={() => navigate('/client')}>Go to Home</button>
+              <button className="btn btn-secondary" onClick={() => navigate('/client?newBooking=1')}>Make New Booking</button>
+            </div>
+          </div>
+        )}
+
+        {payment && payment.status === 'completed' && !confirmed && (
+          <div className="payment-success">
+            <div className="success-icon">✓</div>
+            <h3>Payment Confirmed!</h3>
+            <p>Your payment has been confirmed. Thank you.</p>
+            <div className="post-actions">
+              <button className="btn btn-primary" onClick={() => navigate('/client')}>Go to Home</button>
+              <button className="btn btn-secondary" onClick={() => navigate('/client?newBooking=1')}>Make New Booking</button>
+            </div>
           </div>
         )}
       </div>

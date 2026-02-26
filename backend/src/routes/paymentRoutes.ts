@@ -4,6 +4,7 @@ import {
   initiatePayment,
   getPaymentByBooking,
   verifyPayment,
+  confirmPayment,
 } from '../controllers/paymentController';
 import { protect, authorize } from '../middleware/auth';
 
@@ -19,5 +20,6 @@ router.use(protect);
 router.post('/initiate', paymentValidation, initiatePayment);
 router.get('/booking/:bookingId', getPaymentByBooking);
 router.post('/verify', authorize('admin'), body('paymentId').notEmpty(), body('status').isIn(['completed', 'failed']), verifyPayment);
+router.post('/confirm', authorize('driver', 'carwash', 'admin', 'subadmin'), body('bookingId').notEmpty(), confirmPayment);
 
 export default router;

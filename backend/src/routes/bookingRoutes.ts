@@ -6,6 +6,8 @@ import {
   getBooking,
   updateBookingStatus,
   cancelBooking,
+  markReturnInProgress,
+  markOutForDelivery,
 } from '../controllers/bookingController';
 import { protect } from '../middleware/auth';
 
@@ -66,5 +68,7 @@ router.get('/', getBookings);
 router.get('/:id', getBooking);
 router.put('/:id/status', body('status').notEmpty(), updateBookingStatus);
 router.put('/:id/cancel', cancelBooking);
+router.post('/:id/return-in-progress', markReturnInProgress);
+router.post('/:id/out-for-delivery', markOutForDelivery);
 
 export default router;

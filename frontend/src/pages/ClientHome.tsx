@@ -15,6 +15,7 @@ import BookingCardSkeleton from '../components/skeletons/BookingCardSkeleton';
 import DashboardSkeleton from '../components/skeletons/DashboardSkeleton';
 import { useQueryClient } from '@tanstack/react-query';
 import './ClientHome.css';
+import ThemeToggle from '../components/ThemeToggle';
 
 const ClientHome = () => {
   const { user, logout } = useAuth();
@@ -123,6 +124,7 @@ const ClientHome = () => {
           </p>
         </div>
         <div className="header-actions">
+          <ThemeToggle />
           <NotificationCenter />
           <button className="avatar-btn" onClick={() => navigate('/profile')} title="My Profile" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
             {user?.profilePictureUrl ? (

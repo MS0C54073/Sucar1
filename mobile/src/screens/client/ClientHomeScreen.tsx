@@ -7,7 +7,7 @@ import {
   ScrollView,
   SafeAreaView,
   RefreshControl,
-  Alert,
+  TextInput,
 } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import * as Animatable from 'react-native-animatable';
@@ -23,14 +23,16 @@ import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../consta
 /**
  * Main home/dashboard screen for client users.
  *
- * Shows booking and vehicle statistics, exposes quick actions
- * (new booking, bookings list, vehicles), and shortcuts to
- * other features like favorites, notifications, help, and profile.
+ * Shows booking and vehicle statistics, a search bar for carwash discovery,
+ * and quick actions (new booking, bookings list, vehicles).
+ * The "More" grid has been removed – those items now live in
+ * the bottom tab bar and the side drawer.
  */
 const ClientHomeScreen = () => {
-  const navigation = useNavigation();
-  const { user, logout } = useAuth();
+  const navigation = useNavigation<any>();
+  const { user } = useAuth();
   const { theme } = useTheme();
+  const [searchQuery, setSearchQuery] = useState('');
   const [stats, setStats] = useState({
     totalBookings: 0,
     activeBookings: 0,
@@ -46,19 +48,17 @@ const ClientHomeScreen = () => {
 
   const fetchStats = async () => {
     try {
-      // Fetch bookings
       const bookingsResponse = await apiClient.get('/bookings');
       const bookings = bookingsResponse.data.data || [];
-      
-      // Fetch vehicles
+
       const vehiclesResponse = await apiClient.get('/vehicles');
       const vehicles = vehiclesResponse.data.data || [];
 
       const activeBookings = bookings.filter(
-        (b: any) => !['completed', 'cancelled', 'delivered'].includes(b.status)
+        (b: any) => !['completed', 'cancelled', 'delivered'].includes(b.status),
       );
       const completedBookings = bookings.filter(
-        (b: any) => ['completed', 'delivered'].includes(b.status)
+        (b: any) => ['completed', 'delivered'].includes(b.status),
       );
 
       setStats({
@@ -69,7 +69,6 @@ const ClientHomeScreen = () => {
       });
     } catch (error: any) {
       console.error('Error fetching stats:', error);
-      // Don't show alert on home screen, just log
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -79,31 +78,6 @@ const ClientHomeScreen = () => {
   const onRefresh = () => {
     setRefreshing(true);
     fetchStats();
-  };
-
-  const handleLogout = async () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await logout();
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'Login' as never }],
-              });
-            } catch (error) {
-              console.error('Logout error:', error);
-            }
-          },
-        },
-      ]
-    );
   };
 
   return (
@@ -122,51 +96,52 @@ const ClientHomeScreen = () => {
             <View style={styles.headerTop}>
               <View>
                 <Text style={[styles.greeting, { color: theme.colors.textPrimary }]}>Hello,</Text>
-                <Text style={[styles.userName, { color: theme.colors.textPrimary }]}>{user?.name?.split(' ')[0] || 'User'}</Text>
+                <Text style={[styles.userName, { color: theme.colors.textPrimary }]}>
+                  {user?.name?.split(' ')[0] || 'User'}
+                </Text>
               </View>
-              <TouchableOpacity
-                onPress={handleLogout}
-                style={styles.logoutButton}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="log-out-outline" size={24} color={theme.colors.white || '#fff'} />
-              </TouchableOpacity>
             </View>
-            <Text style={[styles.subtitle, { color: theme.colors.textPrimary }]}>Let's get your car sparkling clean!</Text>
+            <Text style={[styles.subtitle, { color: theme.colors.textPrimary }]}>
+              Let's get your car sparkling clean!
+            </Text>
           </Animatable.View>
         </GradientBackground>
 
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <View style={styles.searchBar}>
+            <Ionicons name="search-outline" size={20} color={Colors.gray400} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search carwash locations…"
+              placeholderTextColor={Colors.gray400}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <Ionicons name="close-circle" size={20} color={Colors.gray400} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+
         {/* Statistics Cards */}
         <View style={styles.statsContainer}>
-          <StatCard
-            title="Total Bookings"
-            value={stats.totalBookings}
-            icon="calendar-outline"
-            iconColor={Colors.primary}
-          />
-          <StatCard
-            title="Active"
-            value={stats.activeBookings}
-            icon="time-outline"
-            iconColor={Colors.info}
-          />
-          <StatCard
-            title="Completed"
-            value={stats.completedBookings}
-            icon="checkmark-circle-outline"
-            iconColor={Colors.success}
-          />
+          <StatCard title="Total Bookings" value={stats.totalBookings} icon="calendar-outline" iconColor={Colors.primary} />
+          <StatCard title="Active" value={stats.activeBookings} icon="time-outline" iconColor={Colors.info} />
+          <StatCard title="Completed" value={stats.completedBookings} icon="checkmark-circle-outline" iconColor={Colors.success} />
         </View>
 
         {/* Quick Actions */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <ActionCard
-            title="New Booking"
+            title="Book Now"
             description="Book a car wash pickup service"
             icon="add-circle-outline"
             iconColor={Colors.primary}
-            onPress={() => navigation.navigate('Booking' as never)}
+            onPress={() => navigation.navigate('Booking')}
           />
           <ActionCard
             title="My Bookings"
@@ -174,7 +149,7 @@ const ClientHomeScreen = () => {
             icon="list-outline"
             iconColor={Colors.info}
             badge={stats.activeBookings > 0 ? stats.activeBookings : undefined}
-            onPress={() => navigation.navigate('MyBookings' as never)}
+            onPress={() => navigation.navigate('MyBookings')}
           />
           <ActionCard
             title="My Vehicles"
@@ -182,58 +157,8 @@ const ClientHomeScreen = () => {
             icon="car-outline"
             iconColor={Colors.success}
             badge={stats.totalVehicles > 0 ? stats.totalVehicles : undefined}
-            onPress={() => navigation.navigate('VehicleList' as never)}
+            onPress={() => navigation.navigate('VehicleList')}
           />
-        </View>
-
-        {/* Additional Features */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>More</Text>
-          <View style={styles.featureGrid}>
-            <TouchableOpacity
-              style={styles.featureCard}
-              onPress={() => navigation.navigate('MyBookings' as never)}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.featureIconContainer, { backgroundColor: `${Colors.warning}15` }]}>
-                <Ionicons name="star-outline" size={24} color={Colors.warning} />
-              </View>
-              <Text style={styles.featureText}>Favorites</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.featureCard}
-              onPress={() => navigation.navigate('MyBookings' as never)}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.featureIconContainer, { backgroundColor: `${Colors.error}15` }]}>
-                <Ionicons name="notifications-outline" size={24} color={Colors.error} />
-              </View>
-              <Text style={styles.featureText}>Notifications</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.featureCard}
-              onPress={() => navigation.navigate('MyBookings' as never)}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.featureIconContainer, { backgroundColor: `${Colors.info}15` }]}>
-                <Ionicons name="help-circle-outline" size={24} color={Colors.info} />
-              </View>
-              <Text style={styles.featureText}>Help</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.featureCard}
-              onPress={() => navigation.navigate('Profile' as never)}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.featureIconContainer, { backgroundColor: `${Colors.primary}15` }]}>
-                <Ionicons name="person-outline" size={24} color={Colors.primary} />
-              </View>
-              <Text style={styles.featureText}>Profile</Text>
-            </TouchableOpacity>
-          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -241,16 +166,9 @@ const ClientHomeScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  container: {
-    flex: 1,
-  },
-  contentContainer: {
-    paddingBottom: Spacing.xl,
-  },
+  safeArea: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1 },
+  contentContainer: { paddingBottom: 80 }, // extra space for bottom tab bar
   header: {
     paddingTop: Spacing.md,
     paddingBottom: Spacing.xl,
@@ -258,83 +176,38 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: BorderRadius['2xl'],
     borderBottomRightRadius: BorderRadius['2xl'],
   },
-  headerContent: {
-    paddingTop: Spacing.md,
-  },
+  headerContent: { paddingTop: Spacing.md },
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: Spacing.sm,
   },
-  greeting: {
-    fontSize: Typography.base,
-    color: Colors.white,
-    opacity: 0.9,
-    marginBottom: Spacing.xs,
+  greeting: { fontSize: Typography.base, color: Colors.white, opacity: 0.9, marginBottom: Spacing.xs },
+  userName: { fontSize: Typography['3xl'], fontWeight: Typography.bold, color: Colors.white },
+  subtitle: { fontSize: Typography.base, color: Colors.white, opacity: 0.9, marginTop: Spacing.sm },
+  searchContainer: { paddingHorizontal: Spacing.lg, marginTop: -Spacing.md, marginBottom: Spacing.sm },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.lg,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm + 2,
+    ...Shadows.md,
+    gap: Spacing.sm,
   },
-  userName: {
-    fontSize: Typography['3xl'],
-    fontWeight: Typography.bold,
-    color: Colors.white,
-  },
-  logoutButton: {
-    padding: Spacing.sm,
-    borderRadius: BorderRadius.md,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  subtitle: {
-    fontSize: Typography.base,
-    color: Colors.white,
-    opacity: 0.9,
-    marginTop: Spacing.sm,
-  },
+  searchInput: { flex: 1, fontSize: Typography.base, color: Colors.textPrimary },
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.lg,
-    // Slight overlap with header for the card effect — reduced for better alignment
-    marginTop: -Spacing.md,
+    marginTop: Spacing.sm,
     marginBottom: Spacing.lg,
     alignItems: 'flex-start',
   },
-  section: {
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.lg,
-  },
-  sectionTitle: {
-    fontSize: Typography.xl,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-    marginBottom: Spacing.md,
-  },
-  featureGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.md,
-  },
-  featureCard: {
-    width: '47%',
-    backgroundColor: Colors.white,
-    padding: Spacing.md,
-    borderRadius: BorderRadius.lg,
-    alignItems: 'center',
-    ...Shadows.sm,
-  },
-  featureIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: BorderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.sm,
-  },
-  featureText: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.medium,
-    color: Colors.textPrimary,
-    textAlign: 'center',
-  },
+  section: { paddingHorizontal: Spacing.lg, marginBottom: Spacing.lg },
+  sectionTitle: { fontSize: Typography.xl, fontWeight: Typography.bold, color: Colors.textPrimary, marginBottom: Spacing.md },
 });
 
 export default ClientHomeScreen;

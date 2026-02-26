@@ -1,16 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { useBookings } from '../../hooks/useBookings';
 import LoadingSpinner from '../LoadingSpinner';
 import QueueManagement from './QueueManagement';
 import BookingCard from '../booking/BookingCard';
+import LiveTracking from '../LiveTracking';
 
 
 const CarWashBookings = () => {
   const queryClient = useQueryClient();
 
   const [viewMode, setViewMode] = useState<'bookings' | 'queue'>('bookings');
+  const [trackingBookingId, setTrackingBookingId] = useState<string | null>(null);
 
   // Use centralized bookings hook
   const { data: bookings, isLoading } = useBookings({
@@ -18,6 +20,14 @@ const CarWashBookings = () => {
     refetchInterval: 10000, // Refresh every 10 seconds
   });
 
+  // Listen for `openTracking` events emitted by BookingCard
+  useEffect(() => {
+    const handleOpenTracking = (event: any) => {
+      setTrackingBookingId(event.detail.bookingId);
+    };
+    window.addEventListener('openTracking' as any, handleOpenTracking as EventListener);
+    return () => window.removeEventListener('openTracking' as any, handleOpenTracking as EventListener);
+  }, []);
 
 
   if (isLoading) {
@@ -73,6 +83,14 @@ const CarWashBookings = () => {
               <p>No bookings found</p>
             </div>
           )}
+        </div>
+      )}
+
+      {trackingBookingId && (
+        <div className="live-tracking-overlay" onClick={() => setTrackingBookingId(null)}>
+          <div onClick={(e) => e.stopPropagation()}>
+            <LiveTracking bookingId={trackingBookingId} onClose={() => setTrackingBookingId(null)} />
+          </div>
         </div>
       )}
     </div>

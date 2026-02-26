@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -15,7 +15,9 @@ import EmptyState from '../components/EmptyState';
 import DriverEarnings from '../components/driver/DriverEarnings';
 import RouteOptimizer from '../components/driver/RouteOptimizer';
 import { useToast } from '../components/ToastContainer';
+import LiveTracking from '../components/LiveTracking';
 import './DriverHome.css';
+import ThemeToggle from '../components/ThemeToggle';
 
 const DriverHome = () => {
   const { user, logout } = useAuth();
@@ -24,6 +26,7 @@ const DriverHome = () => {
   const { showToast } = useToast();
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [viewMode, setViewMode] = useState<'list' | 'map' | 'earnings' | 'routes'>('list');
+  const [trackingBookingId, setTrackingBookingId] = useState<string | null>(null);
 
   // Use centralized bookings hook
   // Critical data: Load immediately
@@ -39,6 +42,15 @@ const DriverHome = () => {
   if (!user || !user.id) {
     return <DashboardSkeleton />;
   }
+
+  // Listen for tracking events from BookingCard
+  useEffect(() => {
+    const handleOpenTracking = (event: any) => {
+      setTrackingBookingId(event.detail.bookingId);
+    };
+    window.addEventListener('openTracking' as any, handleOpenTracking as EventListener);
+    return () => window.removeEventListener('openTracking' as any, handleOpenTracking as EventListener);
+  }, []);
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ bookingId, status }: { bookingId: string; status: string }) => {
@@ -125,6 +137,7 @@ const DriverHome = () => {
           <p className="welcome-text">Welcome, {user?.name}</p>
         </div>
         <div className="header-actions">
+          <ThemeToggle />
           <NotificationCenter />
           <button className="avatar-btn" onClick={() => navigate('/profile')} title="My Profile" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
             {user?.profilePictureUrl ? (
@@ -238,6 +251,14 @@ const DriverHome = () => {
           </div>
         )}
       </main>
+
+      {trackingBookingId && (
+        <div className="live-tracking-overlay" onClick={() => setTrackingBookingId(null)}>
+          <div onClick={(e) => e.stopPropagation()}>
+            <LiveTracking bookingId={trackingBookingId} onClose={() => setTrackingBookingId(null)} />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

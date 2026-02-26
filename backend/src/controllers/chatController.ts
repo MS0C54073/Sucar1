@@ -19,10 +19,21 @@ export const getMessages = asyncHandler(async (req: AuthRequest, res: Response):
     throw new NotFoundError('Booking not found');
   }
 
+  // Normalize possible shapes: objects with id, camelCase vs snake_case
+  const bookingClientId =
+    (typeof (booking as any).clientId === 'object' ? (booking as any).clientId?.id : (booking as any).clientId) ||
+    (booking as any).client_id;
+  const bookingDriverId =
+    (typeof (booking as any).driverId === 'object' ? (booking as any).driverId?.id : (booking as any).driverId) ||
+    (booking as any).driver_id;
+  const bookingCarWashId =
+    (typeof (booking as any).carWashId === 'object' ? (booking as any).carWashId?.id : (booking as any).carWashId) ||
+    (booking as any).car_wash_id;
+
   const hasAccess =
-    booking.clientId === userId ||
-    booking.driverId === userId ||
-    booking.carWashId === userId ||
+    bookingClientId === userId ||
+    bookingDriverId === userId ||
+    bookingCarWashId === userId ||
     req.user!.role === 'admin' ||
     req.user!.role === 'subadmin';
 
@@ -55,10 +66,21 @@ export const sendMessage = asyncHandler(async (req: AuthRequest, res: Response):
     throw new NotFoundError('Booking not found');
   }
 
+  // Normalize possible shapes: objects with id, camelCase vs snake_case
+  const bookingClientId =
+    (typeof (booking as any).clientId === 'object' ? (booking as any).clientId?.id : (booking as any).clientId) ||
+    (booking as any).client_id;
+  const bookingDriverId =
+    (typeof (booking as any).driverId === 'object' ? (booking as any).driverId?.id : (booking as any).driverId) ||
+    (booking as any).driver_id;
+  const bookingCarWashId =
+    (typeof (booking as any).carWashId === 'object' ? (booking as any).carWashId?.id : (booking as any).carWashId) ||
+    (booking as any).car_wash_id;
+
   const hasAccess =
-    booking.clientId === senderId ||
-    booking.driverId === senderId ||
-    booking.carWashId === senderId ||
+    bookingClientId === senderId ||
+    bookingDriverId === senderId ||
+    bookingCarWashId === senderId ||
     req.user!.role === 'admin' ||
     req.user!.role === 'subadmin';
 

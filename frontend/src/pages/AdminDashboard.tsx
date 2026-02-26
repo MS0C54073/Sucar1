@@ -7,6 +7,7 @@ import OnboardingWelcome from '../components/admin/OnboardingWelcome';
 import HelpCenter from '../components/admin/HelpCenter';
 import { OnboardingService, ONBOARDING_SECTIONS } from '../services/onboarding-service';
 import './AdminDashboard.css';
+import ThemeToggle from '../components/ThemeToggle';
 
 // Lazy load admin components for better performance
 const DashboardHome = lazy(() => import('../components/admin/DashboardHome'));
@@ -197,6 +198,7 @@ const AdminDashboard = () => {
             {menuItems.find(item => isActive(item.path))?.label || 'Dashboard'}
           </div>
           <div className="header-actions">
+            <ThemeToggle />
             <span className="welcome-text">Welcome, {user?.name}</span>
           </div>
         </header>

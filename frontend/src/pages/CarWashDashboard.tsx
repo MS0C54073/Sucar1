@@ -7,6 +7,7 @@ import ManageServices from '../components/carwash/ManageServices';
 import NotificationCenter from '../components/notifications/NotificationCenter';
 import DashboardSkeleton from '../components/skeletons/DashboardSkeleton';
 import './Dashboard.css';
+import ThemeToggle from '../components/ThemeToggle';
 
 const CarWashDashboard = () => {
   const { user, logout } = useAuth();
@@ -39,6 +40,7 @@ const CarWashDashboard = () => {
             <p className="welcome-text">{user?.name}</p>
           </div>
           <div className="user-info">
+            <ThemeToggle />
             <NotificationCenter />
             <button className="avatar-btn" onClick={() => navigate('/profile')} title="My Profile" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
               {user?.profilePictureUrl ? (

@@ -155,6 +155,37 @@
   font-size: var(--text-base);
 }
 
+.tracker-notice {
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: var(--text-sm);
+}
+.tracker-notice.warning {
+  background: rgba(255, 196, 0, 0.12);
+  color: #d48a00;
+  border: 1px solid rgba(255, 196, 0, 0.35);
+}
+
+/* Generic overlay for LiveTracking modal usage across pages */
+.live-tracking-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+.live-tracking-overlay > div {
+  width: min(100%, 980px);
+  max-height: 90vh;
+  background: var(--bg-primary);
+  border-radius: 12px;
+  overflow: auto;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+}
+
 .route-info {
   padding: var(--space-4);
   background: var(--bg-secondary);

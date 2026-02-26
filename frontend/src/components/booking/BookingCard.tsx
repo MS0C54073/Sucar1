@@ -21,6 +21,11 @@ const BookingCard = ({ booking, onStatusUpdate }: BookingCardProps) => {
   const { showToast } = useToast();
   const [showChat, setShowChat] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  // Temporary safeguard: if backend DB hasn't applied the status migration,
+  // attempting to set 'picked_up' (mapped server-side to 'picked_up_pending_confirmation')
+  // will fail with bookings_status_check. When detected, we block further pickup attempts
+  // and show a clear instruction to the user/admin.
+  const [pickupBlocked, setPickupBlocked] = useState(false);
 
   // Determine chat receiver
   const getChatReceiver = () => {
@@ -83,8 +88,69 @@ const BookingCard = ({ booking, onStatusUpdate }: BookingCardProps) => {
     },
     onError: (error: any) => {
       console.error('❌ Error updating booking status:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to update status';
-      showToast(errorMessage, 'error');
+      const rawMessage = error.response?.data?.message || error.message || 'Failed to update status';
+      // Detect database check constraint errors related to booking status
+      if (typeof rawMessage === 'string' && rawMessage.includes('bookings_status_check')) {
+        setPickupBlocked(true);
+        showToast(
+          'Pickup confirmation requires a backend migration. Please ask an admin to run supabase/migrations/20260223091000_add_all_booking_statuses.sql and restart the API.',
+          'error'
+        );
+      } else {
+        showToast(rawMessage, 'error');
+      }
+    },
+  });
+
+  // Confirm payment (driver/carwash)
+  const confirmPaymentMutation = useMutation({
+    mutationFn: async ({ bookingId }: { bookingId: string }) => {
+      const response = await api.post('/payments/confirm', { bookingId });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['driver-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['carwash-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
+      showToast('Payment confirmed successfully', 'success');
+      onStatusUpdate?.();
+    },
+    onError: (error: any) => {
+      showToast(error.response?.data?.message || 'Failed to confirm payment', 'error');
+    },
+  });
+
+  // Driver side: return in progress and out for delivery flags
+  const markReturnMutation = useMutation({
+    mutationFn: async ({ bookingId }: { bookingId: string }) => {
+      const response = await api.post(`/bookings/${bookingId}/return-in-progress`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['driver-bookings'] });
+      showToast('Vehicle picked from wash (return in progress)', 'success');
+      onStatusUpdate?.();
+    },
+    onError: (error: any) => {
+      showToast(error.response?.data?.message || 'Failed to mark return in progress', 'error');
+    },
+  });
+
+  const markOutForDeliveryMutation = useMutation({
+    mutationFn: async ({ bookingId }: { bookingId: string }) => {
+      const response = await api.post(`/bookings/${bookingId}/out-for-delivery`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['driver-bookings'] });
+      showToast('Out for delivery to client', 'success');
+      onStatusUpdate?.();
+    },
+    onError: (error: any) => {
+      showToast(error.response?.data?.message || 'Failed to mark out for delivery', 'error');
     },
   });
 
@@ -138,6 +204,12 @@ const BookingCard = ({ booking, onStatusUpdate }: BookingCardProps) => {
         </div>
 
         <div className="booking-card-body">
+          {/* Payment pending banner */}
+          {['wash_completed', 'delivered_to_client', 'delivered'].includes(booking.status) && booking.paymentStatus === 'pending' && (
+            <div className="status-notice warning" style={{ marginBottom: 12 }}>
+              <span>💳 Payment pending — driver or car wash must confirm after client pays.</span>
+            </div>
+          )}
           <div className="booking-info-grid">
             <div className="info-item">
               <span className="info-label">Car Wash</span>
@@ -231,7 +303,7 @@ const BookingCard = ({ booking, onStatusUpdate }: BookingCardProps) => {
             </button>
           )}
 
-          {user?.role === 'client' && ['accepted', 'picked_up', 'picked_up_pending_confirmation', 'at_wash', 'delivered_to_wash'].includes(booking.status) && (
+          {['client', 'driver', 'carwash', 'admin'].includes(user?.role || '') && ['accepted', 'picked_up', 'picked_up_pending_confirmation', 'at_wash', 'delivered_to_wash', 'waiting_bay', 'washing_bay', 'drying_bay', 'wash_completed', 'delivered_to_client'].includes(booking.status) && (
             <button
               className="action-btn primary-btn"
               onClick={() => {
@@ -283,17 +355,27 @@ const BookingCard = ({ booking, onStatusUpdate }: BookingCardProps) => {
 
           {user?.role === 'driver' && booking.status === 'accepted' && (
             <div className="action-buttons-group">
-              <button
-                className="action-btn primary-btn"
-                onClick={() => {
-                  if (confirm('Mark vehicle as picked up?')) {
-                    updateStatusMutation.mutate({ bookingId, status: 'picked_up' });
-                  }
-                }}
-                disabled={updateStatusMutation.isPending}
-              >
-                {updateStatusMutation.isPending ? 'Updating...' : 'Mark as Picked Up'}
-              </button>
+              {pickupBlocked ? (
+                <button
+                  className="action-btn primary-btn"
+                  title="Action temporarily disabled until backend migration is applied"
+                  disabled
+                >
+                  Mark as Picked Up (Blocked)
+                </button>
+              ) : (
+                <button
+                  className="action-btn primary-btn"
+                  onClick={() => {
+                    if (confirm('Mark vehicle as picked up?')) {
+                      updateStatusMutation.mutate({ bookingId, status: 'picked_up' });
+                    }
+                  }}
+                  disabled={updateStatusMutation.isPending}
+                >
+                  {updateStatusMutation.isPending ? 'Updating...' : 'Mark as Picked Up'}
+                </button>
+              )}
               <button
                 className="action-btn danger-btn"
                 onClick={async () => {
@@ -346,8 +428,58 @@ const BookingCard = ({ booking, onStatusUpdate }: BookingCardProps) => {
             </button>
           )}
 
+          {user?.role === 'driver' && booking.status === 'wash_completed' && (
+            <div className="action-buttons-group">
+              <button
+                className="action-btn secondary-btn"
+                onClick={() => {
+                  if (confirm('Pick vehicle from wash and start return?')) {
+                    markReturnMutation.mutate({ bookingId });
+                  }
+                }}
+                disabled={markReturnMutation.isPending}
+              >
+                {markReturnMutation.isPending ? 'Updating...' : 'Pick from Wash'}
+              </button>
+              <button
+                className="action-btn secondary-btn"
+                onClick={() => {
+                  if (confirm('Start delivery to client?')) {
+                    markOutForDeliveryMutation.mutate({ bookingId });
+                  }
+                }}
+                disabled={markOutForDeliveryMutation.isPending}
+              >
+                {markOutForDeliveryMutation.isPending ? 'Updating...' : 'Out for Delivery'}
+              </button>
+            </div>
+          )}
+
+          {/* Client flow: after delivery, confirm received leads to payment page; Job closes after payment confirmation */}
+          {user?.role === 'client' && ['delivered_to_client','delivered'].includes(booking.status) && booking.paymentStatus === 'pending' && (
+            <button
+              className="action-btn primary-btn"
+              onClick={() => navigate(`/client/payment/${bookingId}`)}
+            >
+              Confirm Vehicle Received & Pay
+            </button>
+          )}
+
           {/* Car Wash Actions */}
-          {user?.role === 'carwash' && ['delivered_to_wash', 'waiting_bay'].includes(booking.status) && (
+          {user?.role === 'carwash' && ((booking.bookingType === 'drive_in' && booking.status === 'waiting_bay') || booking.status === 'delivered_to_wash') && (
+            <button
+              className="action-btn secondary-btn"
+              onClick={() => {
+                if (confirm('Confirm vehicle arrival at car wash?')) {
+                  updateStatusMutation.mutate({ bookingId, status: 'at_wash' });
+                }
+              }}
+              disabled={updateStatusMutation.isPending}
+            >
+              {updateStatusMutation.isPending ? 'Updating...' : 'Confirm Arrival'}
+            </button>
+          )}
+          {user?.role === 'carwash' && ['delivered_to_wash', 'waiting_bay','at_wash'].includes(booking.status) && (
             <button
               className="action-btn primary-btn"
               onClick={() => {
@@ -386,6 +518,21 @@ const BookingCard = ({ booking, onStatusUpdate }: BookingCardProps) => {
               disabled={updateStatusMutation.isPending}
             >
               {updateStatusMutation.isPending ? 'Updating...' : 'Complete Service'}
+            </button>
+          )}
+
+          {/* Payment Confirmation (Driver or Car Wash) */}
+          {(user?.role === 'driver' || user?.role === 'carwash') && ['wash_completed','delivered_to_client','delivered'].includes(booking.status) && booking.paymentStatus === 'pending' && (
+            <button
+              className="action-btn primary-btn"
+              onClick={() => {
+                if (confirm('Confirm that payment proof has been reviewed and accepted?')) {
+                  confirmPaymentMutation.mutate({ bookingId });
+                }
+              }}
+              disabled={confirmPaymentMutation.isPending}
+            >
+              {confirmPaymentMutation.isPending ? 'Confirming...' : 'Confirm Payment'}
             </button>
           )}
 

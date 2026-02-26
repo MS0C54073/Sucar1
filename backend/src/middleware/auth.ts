@@ -5,13 +5,7 @@ import { UnauthorizedError, ForbiddenError } from '../shared/errors/AppError';
 import { asyncHandler } from '../shared/errors/errorHandler';
 
 export interface AuthRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    name: string;
-    role: 'client' | 'driver' | 'carwash' | 'admin' | 'subadmin';
-    [key: string]: any;
-  };
+  user?: any;
 }
 
 /**
