@@ -55,17 +55,39 @@ const createTablesAuto = async () => {
 
 // Method 1: Direct PostgreSQL connection
 const createTablesViaPostgres = async (databaseUrl: string, sql: string) => {
+  const isLocal = /localhost|127\.0\.0\.1/.test(databaseUrl);
   const pool = new Pool({
     connectionString: databaseUrl,
-    ssl: { rejectUnauthorized: false },
+    // Local Supabase Postgres does not use SSL; cloud does.
+    ssl: isLocal ? false : { rejectUnauthorized: false },
   });
 
   try {
     console.log('✅ Connected to PostgreSQL\n');
     console.log('🔄 Creating tables...\n');
 
-    // Execute SQL
+    // Execute base schema SQL
     await pool.query(sql);
+
+    // Apply minimal follow-up migrations required by seeding
+    const extras = [
+      join(__dirname, '../../migrations/add-user-approval-fields.sql'),
+      join(__dirname, '../../migrations/add-location-rating-fields.sql'),
+    ];
+
+    for (const path of extras) {
+      try {
+        const extraSql = readFileSync(path, 'utf-8');
+        await pool.query(extraSql);
+        console.log(`✅ Applied: ${path.split('/').pop()}`);
+      } catch (e: any) {
+        if (e.message?.includes('already exists')) {
+          console.log(`⚠️  Skipped (already applied): ${path.split('/').pop()}`);
+        } else {
+          console.log(`⚠️  Could not apply ${path.split('/').pop()}: ${e.message}`);
+        }
+      }
+    }
 
     console.log('✅ All tables created successfully!\n');
 

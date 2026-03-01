@@ -44,4 +44,4 @@ const FloatingElements: React.FC<FloatingElementsProps> = ({
   );
 };
 
-export default FloatingElements;
+export default React.memo(FloatingElements);

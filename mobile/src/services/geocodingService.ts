@@ -4,8 +4,8 @@
  */
 
 // Mapbox token (same as web version)
-const MAPBOX_TOKEN = 'pk.eyJ1IjoibXV6b3NhbGkiLCJhIjoiY21oc2J2d2tyMGg3ejJtc2N4dXg0NGo4eiJ9.p75SiHMh2nWAlbnFR8kyXQ';
 
+const MAPBOX_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_TOKEN;
 export interface GeocodingResult {
   id: string;
   placeName: string;

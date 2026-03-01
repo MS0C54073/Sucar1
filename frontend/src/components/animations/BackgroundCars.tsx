@@ -49,4 +49,4 @@ const BackgroundCars: React.FC<BackgroundCarsProps> = ({
   );
 };
 
-export default BackgroundCars;
+export default React.memo(BackgroundCars);

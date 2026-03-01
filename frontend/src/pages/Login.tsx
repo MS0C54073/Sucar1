@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -13,56 +13,36 @@ import './Login.css';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
-const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [authMethod, setAuthMethod] = useState<'email' | 'google' | 'phone'>('email');
-  const { login, user } = useAuth();
-  const navigate = useNavigate();
+type AuthMethod = 'email' | 'google' | 'phone';
 
-  // Redirect if already logged in
-  if (user) {
-    if (user.role === 'admin') {
-      navigate('/admin');
-    } else if (user.role === 'carwash') {
-      navigate('/carwash');
-    }
-  }
+type LoginContentProps = {
+  email: string;
+  password: string;
+  error: string;
+  loading: boolean;
+  authMethod: AuthMethod;
+  onChangeEmail: (v: string) => void;
+  onChangePassword: (v: string) => void;
+  onChangeAuthMethod: (m: AuthMethod) => void;
+  onSubmit: (e: React.FormEvent) => void;
+  onChildError: (msg: string) => void;
+  googleClientId: string;
+};
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      await login(email, password);
-      const loggedInUser = user || (await new Promise((resolve) => {
-        setTimeout(() => resolve(null), 100);
-      }));
-      
-      // Navigate based on role - wait for user state to update
-      setTimeout(() => {
-        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-        if (currentUser.role === 'admin') {
-          navigate('/admin');
-        } else if (currentUser.role === 'carwash') {
-          navigate('/carwash');
-        } else if (currentUser.role === 'driver') {
-          navigate('/driver');
-        } else if (currentUser.role === 'client') {
-          navigate('/client');
-        }
-      }, 100);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const LoginContent = () => (
+const LoginContent = memo(({
+  email,
+  password,
+  error,
+  loading,
+  authMethod,
+  onChangeEmail,
+  onChangePassword,
+  onChangeAuthMethod,
+  onSubmit,
+  onChildError,
+  googleClientId,
+}: LoginContentProps) => {
+  return (
     <div className="login-container">
       <BackgroundCars count={5} speed="slow" />
       <FloatingElements type="bubbles" count={8} intensity="low" />
@@ -82,19 +62,19 @@ const Login = () => {
         <div className="auth-method-tabs">
           <button
             className={authMethod === 'email' ? 'active' : ''}
-            onClick={() => setAuthMethod('email')}
+            onClick={() => onChangeAuthMethod('email')}
           >
             Email
           </button>
           <button
             className={authMethod === 'google' ? 'active' : ''}
-            onClick={() => setAuthMethod('google')}
+            onClick={() => onChangeAuthMethod('google')}
           >
             Google
           </button>
           <button
             className={authMethod === 'phone' ? 'active' : ''}
-            onClick={() => setAuthMethod('phone')}
+            onClick={() => onChangeAuthMethod('phone')}
           >
             Phone
           </button>
@@ -102,14 +82,16 @@ const Login = () => {
 
         {/* Email/Password Login */}
         {authMethod === 'email' && (
-          <form onSubmit={handleSubmit}>
-            {error && <div className="error-message">{error}</div>}
+          <form onSubmit={onSubmit}>
+            <div style={{ minHeight: 24 }} aria-live="polite" aria-atomic="true">
+              {error && <div className="error-message">{error}</div>}
+            </div>
             <div className="form-group">
               <label>Email</label>
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => onChangeEmail(e.target.value)}
                 required
               />
             </div>
@@ -118,7 +100,7 @@ const Login = () => {
               <input
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => onChangePassword(e.target.value)}
                 required
               />
             </div>
@@ -138,13 +120,11 @@ const Login = () => {
         {/* Google Login */}
         {authMethod === 'google' && (
           <div className="google-login-section">
-            {GOOGLE_CLIENT_ID ? (
+            {googleClientId ? (
               <GoogleLoginButton
                 role="client"
-                onSuccess={() => {
-                  // Navigation handled in GoogleLoginButton
-                }}
-                onError={(err) => setError(err)}
+                onSuccess={() => {}}
+                onError={(err) => onChildError(err)}
               />
             ) : (
               <div className="error-message">
@@ -158,10 +138,8 @@ const Login = () => {
         {authMethod === 'phone' && (
           <PhoneLogin
             mode="login"
-            onSuccess={() => {
-              // Navigation handled in PhoneLogin
-            }}
-            onError={(err) => setError(err)}
+            onSuccess={() => {}}
+            onError={(err) => onChildError(err)}
           />
         )}
 
@@ -176,15 +154,75 @@ const Login = () => {
       </div>
     </div>
   );
+});
+
+const Login = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [authMethod, setAuthMethod] = useState<AuthMethod>('email');
+  const { login, user } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect if already logged in (side-effect, not during render)
+  useEffect(() => {
+    if (!user) return;
+    if (user.role === 'admin') navigate('/admin');
+    else if (user.role === 'carwash') navigate('/carwash');
+    else if (user.role === 'driver') navigate('/driver');
+    else if (user.role === 'client') navigate('/client');
+  }, [user, navigate]);
+
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      await login(email, password);
+      // Navigation handled by useEffect when user updates
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Login failed');
+    } finally {
+      setLoading(false);
+    }
+  }, [email, password, login]);
+
+  
 
   return (
     <PageLayout>
       {GOOGLE_CLIENT_ID ? (
         <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-          <LoginContent />
+          <LoginContent
+            email={email}
+            password={password}
+            error={error}
+            loading={loading}
+            authMethod={authMethod}
+            onChangeEmail={setEmail}
+            onChangePassword={setPassword}
+            onChangeAuthMethod={setAuthMethod}
+            onSubmit={handleSubmit}
+            onChildError={setError}
+            googleClientId={GOOGLE_CLIENT_ID}
+          />
         </GoogleOAuthProvider>
       ) : (
-        <LoginContent />
+        <LoginContent
+          email={email}
+          password={password}
+          error={error}
+          loading={loading}
+          authMethod={authMethod}
+          onChangeEmail={setEmail}
+          onChangePassword={setPassword}
+          onChangeAuthMethod={setAuthMethod}
+          onSubmit={handleSubmit}
+          onChildError={setError}
+          googleClientId={GOOGLE_CLIENT_ID}
+        />
       )}
     </PageLayout>
   );
