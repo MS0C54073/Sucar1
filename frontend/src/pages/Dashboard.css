@@ -232,24 +232,32 @@
   letter-spacing: 0.5px;
 }
 
+/* Stronger titles for stat cards */
+.stat-card h3 {
+  color: var(--text-primary, #374151);
+}
+  font-weight: 700;
+/* Stronger values for stat cards */
 .stat-card .value {
   font-size: 2rem;
   font-weight: 700;
-  color: var(--text-color, #2c3e50);
-  letter-spacing: -0.5px;
-}
-
+  color: var(--text-primary, #111827);
 [data-theme='dark'] .stat-card .value {
   color: #f3f4f6;
-}
-
+/* Brighter values for stat cards in dark mode */
+[data-theme='dark'] .stat-card .value {
+  color: var(--text-secondary, #d1d5db);
 .table-wrapper {
   overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  margin-bottom: 1.5rem;
+/* Sidebar menu item text colors with dark mode */
+.sidebar-menu-item {
+  color: var(--text-primary, #111827);
 }
-
-table {
+}
+/* Total revenue text stronger for contrast */
+.total-revenue {
+  color: var(--text-primary, #111827);
+}
   width: 100%;
   min-width: 600px;
   border-collapse: collapse;

@@ -340,6 +340,9 @@ const EnhancedNearbyCarWashes = () => {
 
   return (
     <div className="enhanced-nearby-carwashes">
+      <div className="map-tooltip-enhanced" aria-live="polite">
+        {hoveredIcon && hoveredIcon.name && <span>{hoveredIcon.name}</span>}
+      </div>
       <div className="enhanced-header">
         <h3>Bookings & Nearby Services</h3>
         <p className="enhanced-subtitle">Search and book car wash services near you</p>
@@ -377,6 +380,7 @@ const EnhancedNearbyCarWashes = () => {
                     setSearchQuery(carWash.carWashName || carWash.name || '');
                     setShowAutocomplete(false);
                     searchInputRef.current?.blur();
+                    handleCarWashSelect(carWash); // Open profile modal on click
                   }}
                 >
                   <span className="autocomplete-icon">🧼</span>
@@ -427,7 +431,11 @@ const EnhancedNearbyCarWashes = () => {
           
           <div className="carwashes-list">
             {nearbyCarWashes.map((carWash) => (
-              <div key={carWash.id} className="carwash-card">
+              <div 
+                key={carWash.id} 
+                className="carwash-card"
+                style={(carWash.carWashName || '').toLowerCase() === 'crystal clean car wash' ? { boxShadow: '0 0 12px 3px #0ea5e9' } : undefined}
+              >
                 <div className="carwash-card-header">
                   {carWash.carWashPictureUrl ? (
                     <div className="carwash-picture">

@@ -52,12 +52,11 @@ const handleLogout = async () => {
 
 **Problem:** Using react-native-maps instead of Mapbox (already used in web version)
 
-**Solution:**
 - ✅ Replaced `react-native-maps` with Mapbox GL JS via WebView
-- ✅ Uses same Mapbox token as web version (`pk.eyJ1IjoibXV6b3NhbGkiLCJhIjoiY21oc2J2d2tyMGg3ejJtc2N4dXg0NGo4eiJ9.p75SiHMh2nWAlbnFR8kyXQ`)
-- ✅ Shows pickup and destination markers
-- ✅ Displays route line between locations
-- ✅ Auto-zooms to fit markers
+- ✅ Uses Mapbox token from environment variable `MAPBOX_ACCESS_TOKEN` to avoid hardcoding secrets.
+  - ✅ Shows pickup and destination markers
+  - ✅ Displays route line between locations
+  - ✅ Auto-zooms to fit markers
 
 **Files Modified:**
 - ✅ `mobile/src/components/MapView.tsx` - Complete rewrite using Mapbox GL JS

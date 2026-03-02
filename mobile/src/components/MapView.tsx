@@ -9,8 +9,8 @@ import {
 import { WebView } from 'react-native-webview';
 import { Coordinates } from '../services/locationService';
 
-// Mapbox token (same as web version)
-const MAPBOX_TOKEN = 'pk.eyJ1IjoibXV6b3NhbGkiLCJhIjoiY21oc2J2d2tyMGg3ejJtc2N4dXg0NGo4eiJ9.p75SiHMh2nWAlbnFR8kyXQ';
+// Use environment variable for Mapbox token
+const MAPBOX_TOKEN = process.env.MAPBOX_ACCESS_TOKEN || '';
 
 interface MapViewProps {
   pickupLocation?: Coordinates;

@@ -2,7 +2,27 @@
    DESIGN SYSTEM - SuCAR
    Clean, Modern, Production-Ready
    ============================================ */
+/* New tooltip style for map icons with sufficient contrast */
+.map-tooltip-enhanced {
+  position: absolute;
+  display: inline-block;
+  background-color: rgba(0,0,0,0.8);
+  color: #fff;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 1rem;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  z-index: 1000;
+}
 
+/* Bright blue fill for special highlighted carwash icon */
+.carwash-icon-highlight {
+  fill: #0ea5e9 !important;
+  stroke: #0284c7 !important;
+}
 /* === Typography Scale === */
 :root {
   /* Font Families */
