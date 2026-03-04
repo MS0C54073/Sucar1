@@ -3,9 +3,7 @@
  * Uses Mapbox Geocoding API for location search and autocomplete
  */
 
-// Removed import of getMapboxToken to avoid revealing token
-// Token now obtained from environment variable
-const MAPBOX_ACCESS_TOKEN = process.env.MAPBOX_ACCESS_TOKEN || '';
+import { getMapboxToken } from '../config/mapbox';
 
 export interface GeocodingResult {
   id: string;
@@ -29,7 +27,7 @@ export async function searchLocations(
     return [];
   }
 
-  const token = MAPBOX_ACCESS_TOKEN;
+  const token = getMapboxToken();
   const proximityParam = proximity 
     ? `&proximity=${proximity.lng},${proximity.lat}` 
     : '';
@@ -67,11 +65,10 @@ export async function searchLocations(
 /**
  * Reverse geocode coordinates to address
  */
-
 export async function reverseGeocode(
   coordinates: { lat: number; lng: number }
 ): Promise<string | null> {
-  const token = MAPBOX_ACCESS_TOKEN;
+  const token = getMapboxToken();
 
   try {
     const response = await fetch(
@@ -90,4 +87,8 @@ export async function reverseGeocode(
     }
 
     return null;
+  } catch (error) {
+    console.error('Reverse geocoding error:', error);
+    return null;
+  }
 }
