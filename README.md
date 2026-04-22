@@ -656,6 +656,23 @@ graph TB
     style SystemUC fill:#d1c4e9
 ```
 
+**Diagram Explanation:** The Use Case Diagram illustrates all interactions within the SuCAR ecosystem. Five actor groups perform distinct roles:
+
+- **Client (Green)**: Initiates bookings, manages vehicles, tracks progress, and makes payments. Clients can choose between pickup & delivery or drive-in services.
+- **Driver (Orange)**: Accepts available bookings and manages pickup/delivery operations with real-time location updates via Mapbox.
+- **Car Wash (Pink)**: Manages service offerings, processes vehicles through queue stages, and monitors operational metrics.
+- **Admin (Purple)**: Oversees entire platform operations including user management, booking assignments, queue optimization, and dispute resolution.
+- **System (Blue)**: Provides core infrastructure including authentication, payment processing, queue management, and real-time notifications.
+
+Key relationships show:
+- **Include relationships** (dotted lines): Operations that depend on other operations (e.g., all bookings include authentication)
+- **Actor interactions**: How each role participates in the system's workflow
+- **Dependency flow**: Authentication supports all user actions; payments support all transactions; queue management supports drive-in bookings
+
+This diagram ensures all stakeholders understand their responsibilities and how they interact within the platform.
+
+---
+
 ### System Architecture Diagram
 
 ```mermaid
@@ -706,7 +723,26 @@ graph TB
     AUTH --> GOOGLE
 ```
 
-### Class Diagram - Backend Core Classes
+**Diagram Explanation:** The System Architecture Diagram displays how SuCAR's components interact across multiple layers:
+
+- **Client Layer (Top)**: Web Dashboard (React) and Mobile App (React Native/Expo) serve as user interfaces, supporting all four roles accessing the system from different devices.
+
+- **API Gateway (Center)**: Express.js REST API acts as the single entry point, handling all client requests with JWT authentication and routing them to appropriate services.
+
+- **Business Logic Layer**: Five core services handle specific domains:
+  - **Authentication Service**: Manages JWT tokens, OAuth (Google), OTP verification, and session management
+  - **Booking Service**: Orchestrates entire booking lifecycle, handles both pickup & delivery and drive-in workflows
+  - **Payment Service**: Processes payments via multiple methods (cash, card, mobile money), handles refunds and payment status tracking
+  - **Location Service**: Integrates with Mapbox for geolocation, route optimization, and distance calculations
+  - **Notification Service**: Sends SMS via Twilio, push notifications, and in-app chat messages
+
+- **Data Layer**: Supabase PostgreSQL provides persistent storage with Row Level Security (RLS) policies enforcing role-based access. Redis Cache optimizes frequently accessed booking and queue data.
+
+- **External Services**: Mapbox (location/routing), Twilio (SMS communications), Google OAuth (social login) extend platform capabilities.
+
+This architecture ensures scalability, security, and real-time responsiveness across all operations.
+
+---
 
 ```mermaid
 classDiagram
@@ -793,7 +829,30 @@ classDiagram
     Service --> User : belongs to
 ```
 
-### Sequence Diagram - User Login Flow
+**Diagram Explanation:** The Class Diagram represents the backend's core TypeScript classes and their relationships:
+
+- **DBService Class**: Central data access layer providing static methods for all database operations. It handles case-insensitive email lookups to prevent "user not found" errors, password comparison using bcrypt, and converts between snake_case (database) and camelCase (application) formats.
+
+- **AuthController Class**: Manages authentication workflows including registration, login, profile updates, Google OAuth, and OTP verification. All methods return standardized JSON responses with success/error flags.
+
+- **BookingController Class**: Handles complete booking lifecycle - retrieval, creation, status updates, and cancellations. Enforces role-based authorization to ensure users only access their relevant bookings.
+
+- **Entity Classes**:
+  - **User**: Represents all roles (client, driver, car_wash, admin) with role-specific fields
+  - **Booking**: Core entity tracking booking progression through status stages, payment status, timeline, queue position
+  - **Vehicle**: Belongs to clients, defines car properties for booking association
+  - **Service**: Defined by car washes, contains pricing information
+
+- **Relationships**:
+  - Controllers delegate to DBService (dependency injection pattern)
+  - DBService manages all entities (CRUD operations)
+  - Bookings reference Users (client, driver, car wash owner) and Vehicles
+  - Bookings include Services with pricing data
+  - Vehicles belong to Clients
+
+This structure enforces separation of concerns and makes the codebase maintainable and testable.
+
+---
 
 ```mermaid
 sequenceDiagram
@@ -825,6 +884,34 @@ sequenceDiagram
     Frontend->>Frontend: Navigate to dashboard
     Frontend-->>User: Show dashboard
 ```
+
+**Diagram Explanation:** The User Login Flow demonstrates how authentication is secured and managed:
+
+1. **Client Initiation**: User enters credentials (email, password) on the frontend login page.
+
+2. **Request Transmission**: Frontend sends POST request to `/api/auth/login` with email and password payload.
+
+3. **Backend Validation**: AuthController validates input (checks for missing fields, format compliance) before querying the database.
+
+4. **Database Lookup**: DBService queries Supabase for the user using case-insensitive email matching to prevent lookup failures. This is critical for user experience.
+
+5. **Password Verification**: DBService compares the plain-text password against the bcrypt hash stored in the database. This happens asynchronously to prevent timing attacks.
+
+6. **Token Generation**: Upon successful verification, the JWT service generates a token containing:
+   - User ID (payload)
+   - User role (for RBAC)
+   - Expiration time (default 7 days)
+   - Secret key signature (for token integrity)
+
+7. **Response Chain**: AuthController returns success response with user data and JWT token. API forwards this to frontend.
+
+8. **Client-Side Storage**: Frontend stores JWT in localStorage (accessible for all API requests) and navigates user to appropriate dashboard based on role.
+
+9. **Session Management**: On subsequent requests, the JWT token is automatically included in the `Authorization: Bearer <token>` header for all API calls, enabling stateless authentication.
+
+This flow ensures secure credential handling, prevents session hijacking, and provides role-based access control from the login point onward.
+
+---
 
 ### Sequence Diagram - Booking Creation Flow
 
@@ -863,70 +950,44 @@ sequenceDiagram
     Frontend-->>Client: Show booking confirmation
 ```
 
-### Use Case Diagram
+**Diagram Explanation:** The Booking Creation Flow illustrates how the system orchestrates service reservations from client request to payment processing:
 
-```mermaid
-graph LR
-    subgraph "Client"
-        UC1[Register/Login]
-        UC2[Book Car Wash]
-        UC3[Manage Vehicles]
-        UC4[Track Booking]
-        UC5[View History]
-    end
-    
-    subgraph "Driver"
-        UC6[Register/Login]
-        UC7[Accept Booking]
-        UC8[Update Status]
-        UC9[View Assignments]
-        UC10[Track Performance]
-    end
-    
-    subgraph "Car Wash"
-        UC11[Register/Login]
-        UC12[Manage Services]
-        UC13[Update Wash Status]
-        UC14[View Bookings]
-        UC15[Monitor Revenue]
-    end
-    
-    subgraph "Admin"
-        UC16[Login]
-        UC17[Manage Users]
-        UC18[Manage Bookings]
-        UC19[Assign Drivers]
-        UC20[View Reports]
-        UC21[Payment Tracking]
-    end
-    
-    Client --> UC1
-    Client --> UC2
-    Client --> UC3
-    Client --> UC4
-    Client --> UC5
-    
-    Driver --> UC6
-    Driver --> UC7
-    Driver --> UC8
-    Driver --> UC9
-    Driver --> UC10
-    
-    CarWash --> UC11
-    CarWash --> UC12
-    CarWash --> UC13
-    CarWash --> UC14
-    CarWash --> UC15
-    
-    Admin --> UC16
-    Admin --> UC17
-    Admin --> UC18
-    Admin --> UC19
-    Admin --> UC20
-    Admin --> UC21
-```
+1. **User Selection**: Client selects desired service (car wash type, pricing) and vehicle from their registered inventory.
 
-### Component Diagram - Frontend Architecture
+2. **API Request**: Frontend sends POST to `/api/bookings` with service ID, vehicle ID, booking type (pickup_delivery or drive_in), and pickup location/time.
+
+3. **Request Validation**: BookingController validates all required fields, checks service availability, confirms vehicle ownership matches authenticated user.
+
+4. **Service Retrieval**: DBService queries Supabase for complete service data including pricing, car wash location, and availability.
+
+5. **Cost Calculation**: BookingController calculates total amount: base service price + any applicable fees or taxes.
+
+6. **Booking Creation**: DBService inserts new booking record into Supabase with:
+   - Status set to `pending`
+   - Queue position (for drive-in) or `null` (for pickup_delivery)
+   - Scheduled timestamps
+   - Payment status as `pending`
+
+7. **Payment Processing**: PaymentService creates corresponding payment record in the database with:
+   - Amount from booking calculation
+   - Payment method (to be filled by client)
+   - Status initially `pending`
+
+8. **Response Chain**: System returns newly created booking with all details and unique booking ID.
+
+9. **Frontend Confirmation**: Frontend displays booking confirmation with:
+   - Booking ID (for reference)
+   - Service details and cost breakdown
+   - Expected timeline for pickup/drive-in
+   - Next steps for payment and service
+
+10. **Driver Assignment**: Backend asynchronously searches for available drivers (for pickup_delivery type) or adds vehicle to queue (for drive_in type).
+
+This flow ensures data integrity, prevents double-booking, and establishes clear audit trail for bookings and payments.
+
+---
+
+### Entity Relationship Diagram
 
 ```mermaid
 graph TB
@@ -977,7 +1038,39 @@ graph TB
     API --> Backend[Backend API]
 ```
 
-## Security
+**Diagram Explanation:** The Frontend Component Architecture shows how React components organize around data flow and state management:
+
+- **Page Components (Top)**: 
+  - **Login/Register Pages**: Entry points for all users, authenticate via AuthContext
+  - **Role-Specific Dashboards**: Client Home (booking management), Driver Home (assignment tracking), Car Wash Dashboard (queue management), Admin Dashboard (system oversight)
+
+- **Component Layer (Middle)**:
+  - **Booking Components**: Unified BookingCard for displaying bookings across all roles with context-aware rendering (shows different actions for client vs driver vs car wash)
+  - **Vehicle Components**: Forms for adding/editing vehicles, vehicle selection in booking flow
+  - **Map Components**: Mapbox integration for pickup location selection and live driver tracking
+  - **Notification Components**: Toast alerts, modal confirmations, real-time status notifications
+
+- **State Management (Lower-Middle)**:
+  - **Auth Context**: Manages JWT tokens, current user data, role information, login/logout operations
+  - **React Query**: Handles async data fetching, caching, and background synchronization for bookings, users, payments
+  - **Local State**: Component-level state for UI interactions (form inputs, modal visibility, dropdowns)
+
+- **Service Layer (Bottom)**:
+  - **API Client**: Axios instance with automatic JWT header injection, centralized error handling, base URL configuration
+  - **Mapping Service**: Wraps Mapbox API calls for location search, geocoding, distance calculations
+  - **Notification Service**: Abstracts toast notifications and modal dialogs
+
+- **Backend Connection**: All services route through the API Client, which communicates with Express backend.
+
+This architecture ensures:
+- **Separation of Concerns**: Each layer handles specific responsibilities
+- **Code Reusability**: Shared components reduce duplication across dashboards
+- **Maintainability**: Single source of truth for each feature
+- **Performance**: React Query optimizes data fetching and caching
+
+---
+
+### Component Diagram - Frontend Architecture
 
 - JWT-based authentication
 - Password hashing with bcrypt
