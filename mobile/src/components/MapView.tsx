@@ -8,9 +8,7 @@ import {
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Coordinates } from '../services/locationService';
-
-// Use environment variable for Mapbox token
-const MAPBOX_TOKEN = process.env.MAPBOX_ACCESS_TOKEN || '';
+import { getMapboxAccessToken } from '../config/mapbox';
 
 interface MapViewProps {
   pickupLocation?: Coordinates;
@@ -43,6 +41,7 @@ const CustomMapView: React.FC<MapViewProps> = ({
   }, [pickupLocation, destinationLocation, height]);
 
   const generateMapHTML = () => {
+    const mapboxToken = getMapboxAccessToken();
     const locations: Coordinates[] = [];
     if (pickupLocation) locations.push(pickupLocation);
     if (destinationLocation) locations.push(destinationLocation);
@@ -117,7 +116,7 @@ const CustomMapView: React.FC<MapViewProps> = ({
 <body>
   <div id="map"></div>
   <script>
-    mapboxgl.accessToken = '${MAPBOX_TOKEN}';
+    mapboxgl.accessToken = ${JSON.stringify(mapboxToken)};
     
     const map = new mapboxgl.Map({
       container: 'map',

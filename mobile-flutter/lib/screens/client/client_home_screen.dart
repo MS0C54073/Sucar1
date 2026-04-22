@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
-import '../booking_screen.dart';
-import '../my_bookings_screen.dart';
-import '../vehicle_list_screen.dart';
+// Route targets are defined in `app_router.dart`; no direct imports required here.
 
 class ClientHomeScreen extends StatelessWidget {
   const ClientHomeScreen({super.key});

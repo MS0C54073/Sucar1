@@ -18,6 +18,8 @@ const darkBlue = {
     primaryDark: '#0b3b66',
     gradientStart: '#07203a',
     gradientEnd: '#0f4c81',
+    headerGradientStart: '#07203a',
+    headerGradientEnd: '#0f4c81',
     background: '#071127',
     surface: '#0b1a2b',
     textPrimary: '#e6eef9',

@@ -116,7 +116,7 @@ const MainDrawer = () => {
                 component={MainTabs}
                 options={{
                     title: 'SuCAR',
-                    drawerIcon: ({ color, size }) => (
+                    drawerIcon: ({ color, size }: { color: string; size: number }) => (
                         <Ionicons name="home-outline" size={size} color={color} />
                     ),
                 }}
@@ -126,7 +126,7 @@ const MainDrawer = () => {
                 component={HelpScreen}
                 options={{
                     title: 'Help & Support',
-                    drawerIcon: ({ color, size }) => (
+                    drawerIcon: ({ color, size }: { color: string; size: number }) => (
                         <Ionicons name="help-circle-outline" size={size} color={color} />
                     ),
                 }}
@@ -136,7 +136,7 @@ const MainDrawer = () => {
                 component={AboutScreen}
                 options={{
                     title: 'About SuCAR',
-                    drawerIcon: ({ color, size }) => (
+                    drawerIcon: ({ color, size }: { color: string; size: number }) => (
                         <Ionicons name="information-circle-outline" size={size} color={color} />
                     ),
                 }}

@@ -16,8 +16,8 @@ const GradientBackground: React.FC<GradientBackgroundProps> = ({
   style,
 }) => {
     const { theme } = useTheme();
-    const gStart = theme.colors.gradientStart || theme.colors.headerGradientStart || Colors.gradientStart;
-    const gEnd = theme.colors.gradientEnd || theme.colors.headerGradientEnd || Colors.gradientEnd;
+    const gStart = theme.colors.gradientStart ?? Colors.gradientStart;
+    const gEnd = theme.colors.gradientEnd ?? Colors.gradientEnd;
 
     return (
       <LinearGradient

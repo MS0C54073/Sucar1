@@ -9,6 +9,8 @@ import EmptyState from '../components/EmptyState';
 import MapView from '../components/MapView';
 import EnhancedNearbyCarWashes from '../components/mapping/EnhancedNearbyCarWashes';
 import LiveTracking from '../components/LiveTracking';
+import NearbyCarWashes from '../components/map/NearbyCarWashes';
+import LiveTrackingMap from '../components/map/LiveTrackingMap';
 import NotificationCenter from '../components/notifications/NotificationCenter';
 import BookingCard from '../components/booking/BookingCard';
 import BookingCardSkeleton from '../components/skeletons/BookingCardSkeleton';
@@ -21,7 +23,7 @@ const ClientHome = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<'bookings' | 'vehicles' | 'book' | 'map'>('bookings');
+  const [activeTab, setActiveTab] = useState<'bookings' | 'vehicles' | 'book' | 'map' | 'nearby' | 'track-driver'>('bookings');
   const [trackingBookingId, setTrackingBookingId] = useState<string | null>(null);
   const [mapRoute, setMapRoute] = useState<any[]>([]);
 
@@ -159,11 +161,19 @@ const ClientHome = () => {
           Book Service
         </button>
         <button
-          className={activeTab === 'map' ? 'active' : ''}
-          onClick={() => setActiveTab('map')}
+          className={activeTab === 'nearby' ? 'active' : ''}
+          onClick={() => setActiveTab('nearby')}
         >
-          Map View
+          Nearby Washes
         </button>
+        {bookings?.some((b: any) => ['assigned_driver', 'driver_arrived', 'in_service', 'ready_for_delivery', 'out_for_delivery'].includes(b.status)) && (
+          <button
+            className={activeTab === 'track-driver' ? 'active' : ''}
+            onClick={() => setActiveTab('track-driver')}
+          >
+            Track Driver 📍
+          </button>
+        )}
       </nav>
 
       <main className="client-content">
@@ -297,6 +307,39 @@ const ClientHome = () => {
                 />
               </div>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'nearby' && (
+          <div className="nearby-section">
+            <h2>Find Nearby Car Washes</h2>
+            <div style={{ height: '600px' }}>
+              <NearbyCarWashes
+                onCarWashSelect={() => {}}
+                showBookButton={true}
+              />
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'track-driver' && (
+          <div className="tracking-section">
+            {bookings?.find((b: any) => ['assigned_driver', 'driver_arrived', 'in_service', 'ready_for_delivery', 'out_for_delivery'].includes(b.status)) ? (
+              <LiveTrackingMap
+                bookingId={bookings.find((b: any) => ['assigned_driver', 'driver_arrived', 'in_service', 'ready_for_delivery', 'out_for_delivery'].includes(b.status))?.id}
+                userRole="client"
+              />
+            ) : (
+              <EmptyState
+                icon="📍"
+                title="No active booking"
+                description="You don't have an active booking with a driver assigned yet"
+                action={{
+                  label: "Book Service",
+                  onClick: () => setActiveTab('book')
+                }}
+              />
+            )}
           </div>
         )}
       </main>

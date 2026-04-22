@@ -831,4 +831,120 @@ export class DBService {
     if (error) throw error;
     return true;
   }
+
+  // Location operations
+  static async createOrUpdateLocation(userId: string, latitude: number, longitude: number, accuracyMeters?: number) {
+    const { data, error } = await supabase
+      .from('user_locations')
+      .upsert(
+        {
+          user_id: userId,
+          latitude,
+          longitude,
+          accuracy_meters: accuracyMeters || null,
+          last_updated: new Date().toISOString(),
+        },
+        { onConflict: 'user_id' }
+      )
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating user location:', error);
+      throw error;
+    }
+    return toCamelCase(data);
+  }
+
+  static async getUserLocation(userId: string) {
+    const { data, error } = await supabase
+      .from('user_locations')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error fetching user location:', error);
+      throw error;
+    }
+
+    return data ? toCamelCase(data) : null;
+  }
+
+  static async getNearbyCarWashes(latitude: number, longitude: number, radiusKm: number = 10) {
+    const { data, error } = await supabase.rpc('nearby_car_washes', {
+      user_lat: latitude,
+      user_lng: longitude,
+      radius_km: radiusKm,
+    });
+
+    if (error) {
+      console.error('Error fetching nearby car washes:', error);
+      throw error;
+    }
+
+    return toCamelCase(data || []);
+  }
+
+  static async getBookingCounterpartyLocation(bookingId: string, userId: string) {
+    // First, fetch the booking to get counterparty ID
+    const booking = await this.getBookingById(bookingId);
+    
+    if (!booking) {
+      throw new Error('Booking not found');
+    }
+
+    // Determine counterparty based on user role
+    let counterpartyId: string | null = null;
+
+    if (booking.clientId === userId) {
+      counterpartyId = booking.driverId;
+    } else if (booking.driverId === userId) {
+      counterpartyId = booking.clientId;
+    } else if (booking.carWashId === userId) {
+      // Car wash can see both client and driver locations
+      // Return both locations
+      const clientLocation = await this.getUserLocation(booking.clientId);
+      const driverLocation = await this.getUserLocation(booking.driverId);
+      return {
+        client: clientLocation,
+        driver: driverLocation,
+      };
+    } else {
+      throw new Error('Unauthorized: User is not part of this booking');
+    }
+
+    if (!counterpartyId) {
+      return null;
+    }
+
+    return await this.getUserLocation(counterpartyId);
+  }
+
+  static async updateCarWashLocation(carWashId: string, latitude: number, longitude: number) {
+    // Check if location already set (enforce set-once policy)
+    const { data: existing } = await supabase
+      .from('car_washes')
+      .select('latitude, longitude, id')
+      .eq('id', carWashId)
+      .single();
+
+    if (existing?.latitude && existing?.longitude) {
+      throw new Error('Location already set. Contact admin to update.');
+    }
+
+    const { data, error } = await supabase
+      .from('car_washes')
+      .update({ latitude, longitude })
+      .eq('id', carWashId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating car wash location:', error);
+      throw error;
+    }
+
+    return toCamelCase(data);
+  }
 }

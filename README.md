@@ -365,7 +365,296 @@ erDiagram
     }
 ```
 
+## How the System Works - Detailed Workflow
+
+### System Overview and Booking Flow
+
+SuCAR operates as a real-time coordination platform connecting four main stakeholders: **Clients**, **Drivers**, **Car Washes**, and **Admins**. The system supports two primary booking workflows:
+
+#### 1. Pickup & Delivery Workflow
+This workflow is designed for clients who want the car picked up from their location, washed, and delivered back.
+
+**Flow:**
+1. **Client Books Service**
+   - Client selects a car, service type, and preferred pickup time
+   - Client provides pickup location (address or GPS coordinates)
+   - System calculates total cost and creates a booking in `pending` status
+   - Client pays upfront (or on pickup, depending on configuration)
+
+2. **System Assigns Driver**
+   - Backend automatically finds available drivers near the pickup location
+   - Sends booking notification to eligible drivers
+   - Admin can manually assign if automatic assignment fails
+
+3. **Driver Accepts and Picks Up**
+   - Driver receives notification, views booking details (client info, vehicle, location)
+   - Driver navigates to pickup location using integrated Mapbox
+   - Booking status changes to `accepted` → `picked_up`
+   - Driver confirms pickup through app (with optional photo)
+
+4. **Driver Takes Vehicle to Car Wash**
+   - Driver drives to selected car wash location
+   - Booking status changes to `at_wash`
+   - Driver informs car wash about arrival
+
+5. **Car Wash Processes Vehicle**
+   - Car wash staff receives vehicle with booking details
+   - Vehicle moves through queue: `waiting_bay` → `washing_bay` → `drying_bay`
+   - Car wash updates status in real-time through dashboard
+   - System notifies driver of progress
+
+6. **Driver Delivers Vehicle**
+   - Once wash completes (`wash_completed`), driver receives notification
+   - Driver picks up vehicle and navigates back to client's location
+   - Status updates to `delivered` as driver returns vehicle
+   - Client receives notification that vehicle is en route
+
+7. **Completion**
+   - Driver confirms delivery at client location
+   - Status changes to `completed`
+   - Payment processing completes
+   - Both driver and car wash receive payment confirmation
+
+#### 2. Drive-In Workflow
+This workflow is for clients who drive their own car to the car wash facility and wait for service.
+
+**Flow:**
+1. **Client Books Service**
+   - Client selects car, service, and preferred time window
+   - Booking created in `pending` status
+   - No driver required for this type
+
+2. **Client Arrives at Car Wash**
+   - Client drives to car wash location
+   - Client confirms arrival through app
+   - Status changes to `at_wash`
+   - System adds vehicle to visible queue
+
+3. **Queue Management**
+   - Vehicle assigned a `queue_position`
+   - System calculates `estimated_wait_time` based on:
+     - Current queue length
+     - Average service duration
+     - Number of available bays
+   - Client can see real-time queue position and estimated wait
+
+4. **Service Execution**
+   - Vehicle moves through stations: `waiting_bay` → `washing_bay` → `drying_bay`
+   - Car wash updates status for each transition
+   - Client sees real-time progress on dashboard
+   - Estimated wait time updates as vehicles ahead complete
+
+5. **Service Completion**
+   - Once `wash_completed`, car wash notifies client
+   - Client collects vehicle
+   - Status changes to `completed`
+   - Payment processed immediately
+
+### Key System Features and Interactions
+
+#### Queue Management
+- **Automatic Queue Assignment**: Drive-in bookings automatically join queue with position based on arrival time
+- **Queue Position Updates**: Real-time updates as vehicles move through wash process
+- **Estimated Wait Time Calculation**: Dynamic calculation based on vehicle count and bay availability
+- **Priority Handling**: Admin can adjust queue positions for VIP or delayed services
+
+#### Real-Time Status Updates
+- **Polling-Based Updates**: Frontend polls backend every 3 seconds for status changes
+- **Status Transitions**: Bookings follow strict workflow:
+  - `pending` → `accepted` (driver accepts or admin assigns)
+  - `accepted` → `picked_up` (for pickup_delivery only)
+  - `picked_up` → `at_wash`
+  - `at_wash` → `waiting_bay`
+  - `waiting_bay` → `washing_bay`
+  - `washing_bay` → `drying_bay`
+  - `drying_bay` → `wash_completed`
+  - `wash_completed` → `delivered` (pickup_delivery) or `completed` (drive_in)
+  - `delivered` → `completed`
+
+#### Role-Based Access Control (RBAC)
+- **JWT Authentication**: All API endpoints protected with JWT tokens
+- **Row Level Security (RLS)**: Supabase enforces database-level access policies
+- **Middleware Authorization**: Express middleware validates role permissions
+- **Database Policies**: Users only see data relevant to their role
+
+**Role Permissions:**
+- **Client**: Can only view/manage own bookings and vehicles
+- **Driver**: Can view assigned bookings, update own status, view earnings
+- **Car Wash**: Can view bookings at their location, update queue/wash status
+- **Admin**: Full system access to all bookings, users, payments, and reports
+
+#### Payment Processing
+- **Service Charge**: Total cost = service price + any applicable fees
+- **Payment Methods**: Cash, Card, Mobile Money, Bank Transfer (extensible)
+- **Refund Handling**: Automatic refunds for cancelled bookings
+- **Payment Status Tracking**: `pending` → `completed` or `failed` → `refunded`
+- **Audit Trail**: All transactions logged for reporting
+
+#### Location Services (Mapbox Integration)
+- **Driver Geolocation**: Continuously tracks driver location for ETA
+- **Pickup Point Mapping**: Displays client's exact pickup address
+- **Route Optimization**: Calculates optimal routes between pickup, car wash, and delivery
+- **Distance Calculation**: Estimates driver travel time for accurate ETAs
+
+#### Communication Features
+- **Booking Notifications**: SMS/Push for status changes
+- **Real-Time Chat**: Direct messaging between client, driver, and car wash
+- **Status Updates**: Automatic notifications at each workflow stage
+- **Emergency Contact**: Direct phone/messaging if issues arise
+
+---
+
 ## UML Diagrams
+
+### Use Case Diagram - Complete System Interactions
+
+```mermaid
+graph TB
+    subgraph Actors["Actors"]
+        C["👤 Client"]
+        D["👤 Driver"]
+        W["👤 Car Wash"]
+        A["👤 Admin"]
+        S["⚙️ System"]
+    end
+    
+    subgraph ClientUC["Client Use Cases"]
+        UC1["Register/Login"]
+        UC2["Manage Profile"]
+        UC3["Add Vehicles"]
+        UC4["Book Service<br/>Pickup & Delivery"]
+        UC5["Book Service<br/>Drive-In"]
+        UC6["View Booking<br/>Details"]
+        UC7["Track Real-Time<br/>Status"]
+        UC8["View Queue<br/>Position"]
+        UC9["Communicate<br/>via Chat"]
+        UC10["Make Payment"]
+        UC11["Rate Service"]
+        UC12["View Booking<br/>History"]
+    end
+    
+    subgraph DriverUC["Driver Use Cases"]
+        UC13["Register/Login"]
+        UC14["View Available<br/>Bookings"]
+        UC15["Accept/Decline<br/>Booking"]
+        UC16["Update Pickup<br/>Status"]
+        UC17["Update Delivery<br/>Status"]
+        UC18["Navigate to<br/>Locations"]
+        UC19["Communicate<br/>via Chat"]
+        UC20["View Earnings"]
+        UC21["Track<br/>Performance"]
+    end
+    
+    subgraph CarWashUC["Car Wash Use Cases"]
+        UC22["Register/Login"]
+        UC23["Manage Services<br/>& Pricing"]
+        UC24["View Incoming<br/>Bookings"]
+        UC25["Manage Queue<br/>Position"]
+        UC26["Update Wash<br/>Status"]
+        UC27["Track Vehicle<br/>Progress"]
+        UC28["Communicate<br/>via Chat"]
+        UC29["View Dashboard<br/>& Stats"]
+        UC30["Monitor<br/>Revenue"]
+        UC31["Export Reports"]
+    end
+    
+    subgraph AdminUC["Admin Use Cases"]
+        UC32["Login"]
+        UC33["Manage Users"]
+        UC34["View All<br/>Bookings"]
+        UC35["Assign Drivers<br/>Manually"]
+        UC36["Adjust Queue<br/>Positions"]
+        UC37["View System<br/>Analytics"]
+        UC38["Generate<br/>Reports"]
+        UC39["Handle<br/>Disputes"]
+        UC40["Manage<br/>Payments"]
+        UC41["Configure<br/>System Settings"]
+    end
+    
+    subgraph SystemUC["System Use Cases"]
+        UC42["Authenticate User"]
+        UC43["Validate Input"]
+        UC44["Calculate Costs"]
+        UC45["Auto-Assign<br/>Drivers"]
+        UC46["Generate<br/>Notifications"]
+        UC47["Update Queue"]
+        UC48["Process Payment"]
+        UC49["Log Events"]
+        UC50["Optimize Routes"]
+    end
+    
+    C -->|"interact with"| UC1
+    C -->|"manage"| UC2
+    C -->|"maintain"| UC3
+    C -->|"create"| UC4
+    C -->|"create"| UC5
+    C -->|"view"| UC6
+    C -->|"monitor"| UC7
+    C -->|"check"| UC8
+    C -->|"use"| UC9
+    C -->|"pay via"| UC10
+    C -->|"submit"| UC11
+    C -->|"review"| UC12
+    
+    D -->|"interact with"| UC13
+    D -->|"browse"| UC14
+    D -->|"action"| UC15
+    D -->|"update"| UC16
+    D -->|"update"| UC17
+    D -->|"use"| UC18
+    D -->|"use"| UC19
+    D -->|"review"| UC20
+    D -->|"monitor"| UC21
+    
+    W -->|"interact with"| UC22
+    W -->|"configure"| UC23
+    W -->|"view"| UC24
+    W -->|"manage"| UC25
+    W -->|"update"| UC26
+    W -->|"monitor"| UC27
+    W -->|"use"| UC28
+    W -->|"view"| UC29
+    W -->|"review"| UC30
+    W -->|"export"| UC31
+    
+    A -->|"interact with"| UC32
+    A -->|"administer"| UC33
+    A -->|"oversee"| UC34
+    A -->|"allocate"| UC35
+    A -->|"optimize"| UC36
+    A -->|"review"| UC37
+    A -->|"generate"| UC38
+    A -->|"resolve"| UC39
+    A -->|"oversee"| UC40
+    A -->|"configure"| UC41
+    
+    S -->|"supports"| UC42
+    S -->|"enforces"| UC43
+    S -->|"executes"| UC44
+    S -->|"performs"| UC45
+    S -->|"triggers"| UC46
+    S -->|"maintains"| UC47
+    S -->|"handles"| UC48
+    S -->|"tracks"| UC49
+    S -->|"calculates"| UC50
+    
+    UC4 -.->|"<<include>>"| UC42
+    UC5 -.->|"<<include>>"| UC42
+    UC4 -.->|"<<include>>"| UC45
+    UC5 -.->|"<<include>>"| UC47
+    UC10 -.->|"<<include>>"| UC48
+    UC1 -.->|"<<include>>"| UC42
+    UC13 -.->|"<<include>>"| UC42
+    UC22 -.->|"<<include>>"| UC42
+    UC32 -.->|"<<include>>"| UC42
+    
+    style Actors fill:#e1f5ff
+    style ClientUC fill:#c8e6c9
+    style DriverUC fill:#ffe0b2
+    style CarWashUC fill:#f8bbd0
+    style AdminUC fill:#e1bee7
+    style SystemUC fill:#d1c4e9
+```
 
 ### System Architecture Diagram
 

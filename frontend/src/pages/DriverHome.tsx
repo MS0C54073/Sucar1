@@ -16,6 +16,7 @@ import DriverEarnings from '../components/driver/DriverEarnings';
 import RouteOptimizer from '../components/driver/RouteOptimizer';
 import { useToast } from '../components/ToastContainer';
 import LiveTracking from '../components/LiveTracking';
+import LiveTrackingMap from '../components/map/LiveTrackingMap';
 import './DriverHome.css';
 import ThemeToggle from '../components/ThemeToggle';
 
@@ -25,7 +26,7 @@ const DriverHome = () => {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const [selectedStatus, setSelectedStatus] = useState<string>('');
-  const [viewMode, setViewMode] = useState<'list' | 'map' | 'earnings' | 'routes'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'map' | 'earnings' | 'routes' | 'track-client'>('list');
   const [trackingBookingId, setTrackingBookingId] = useState<string | null>(null);
 
   // Use centralized bookings hook
@@ -190,6 +191,14 @@ const DriverHome = () => {
           >
             💰 Earnings
           </button>
+          {bookings?.some((b: any) => ['assigned_driver', 'driver_arrived', 'in_service', 'ready_for_delivery', 'out_for_delivery'].includes(b.status)) && (
+            <button
+              className={viewMode === 'track-client' ? 'active' : ''}
+              onClick={() => setViewMode('track-client')}
+            >
+              📍 Track Client
+            </button>
+          )}
         </div>
       </div>
 
@@ -246,6 +255,44 @@ const DriverHome = () => {
                 icon="📋"
                 title="No bookings found"
                 description="You don't have any bookings yet. Available bookings will appear here when clients request pickup services."
+              />
+            )}
+          </div>
+        )}
+
+        {viewMode === 'map' && (
+          <div className="driver-map-view">
+            <h2>Map View</h2>
+            {bookings && bookings.length > 0 ? (
+              <div style={{ height: '600px' }}>
+                <NearbyBookings bookings={bookings} />
+              </div>
+            ) : (
+              <EmptyState
+                icon="🗺️"
+                title="No bookings to display on map"
+                description="Available bookings will appear here when clients request pickup services"
+              />
+            )}
+          </div>
+        )}
+
+        {viewMode === 'track-client' && (
+          <div className="driver-tracking-view">
+            {bookings?.find((b: any) => ['assigned_driver', 'driver_arrived', 'in_service', 'ready_for_delivery', 'out_for_delivery'].includes(b.status)) ? (
+              <LiveTrackingMap
+                bookingId={bookings.find((b: any) => ['assigned_driver', 'driver_arrived', 'in_service', 'ready_for_delivery', 'out_for_delivery'].includes(b.status))?.id}
+                userRole="driver"
+              />
+            ) : (
+              <EmptyState
+                icon="📍"
+                title="No active booking"
+                description="You don't have an active booking with a client assigned yet"
+                action={{
+                  label: "Accept a Booking",
+                  onClick: () => setViewMode('list')
+                }}
               />
             )}
           </div>

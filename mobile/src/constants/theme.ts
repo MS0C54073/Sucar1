@@ -12,6 +12,9 @@ export const Colors = {
   // Gradient colors
   gradientStart: '#667eea',
   gradientEnd: '#764ba2',
+  /** Aliases for auth/marketing headers (same as gradient by default) */
+  headerGradientStart: '#667eea',
+  headerGradientEnd: '#764ba2',
   gradientSecondary: ['#f093fb', '#f5576c'],
   
   // Status colors

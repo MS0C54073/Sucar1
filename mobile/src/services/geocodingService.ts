@@ -3,9 +3,7 @@
  * Uses Mapbox Geocoding API for location search and autocomplete
  */
 
-// Mapbox token (same as web version)
-
-const MAPBOX_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_TOKEN;
+import { getMapboxAccessToken } from '../config/mapbox';
 export interface GeocodingResult {
   id: string;
   placeName: string;
@@ -36,10 +34,20 @@ export async function searchLocations(
   const proximityParam = `&proximity=${useProximity.lng},${useProximity.lat}`;
   const countryParam = `&country=zm`;
 
+  const MAPBOX_TOKEN = getMapboxAccessToken();
+  if (!MAPBOX_TOKEN) {
+    if (__DEV__) {
+      console.warn(
+        'Geocoding: no Mapbox token. Set EXPO_PUBLIC_MAPBOX_TOKEN in .env'
+      );
+    }
+    return [];
+  }
+
   try {
     const response = await fetch(
       `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?` +
-      `access_token=${MAPBOX_TOKEN}&` +
+      `access_token=${encodeURIComponent(MAPBOX_TOKEN)}&` +
       `limit=5&` +
       `types=address,poi,place${proximityParam}${countryParam}`
     );
@@ -61,6 +69,7 @@ export async function searchLocations(
       context: feature.context?.map((ctx: any) => ctx.text) || [],
     }));
   } catch (error) {
+    // RN reports TypeError: Network request failed when offline, DNS fails, or TLS issues
     console.error('Geocoding error:', error);
     return [];
   }
@@ -72,10 +81,15 @@ export async function searchLocations(
 export async function reverseGeocode(
   coordinates: { lat: number; lng: number }
 ): Promise<string | null> {
+  const MAPBOX_TOKEN = getMapboxAccessToken();
+  if (!MAPBOX_TOKEN) {
+    return null;
+  }
+
   try {
     const response = await fetch(
       `https://api.mapbox.com/geocoding/v5/mapbox.places/${coordinates.lng},${coordinates.lat}.json?` +
-      `access_token=${MAPBOX_TOKEN}&limit=1`
+      `access_token=${encodeURIComponent(MAPBOX_TOKEN)}&limit=1`
     );
 
     if (!response.ok) {
