@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../services/api';
 import { useToast } from '../components/ToastContainer';
@@ -8,6 +9,7 @@ import './Profile.css';
 
 const Profile = () => {
     const { user, logout } = useAuth();
+    const navigate = useNavigate();
     const { showToast } = useToast();
     const queryClient = useQueryClient();
     const [formData, setFormData] = useState<any>({});
@@ -62,6 +64,15 @@ const Profile = () => {
             queryClient.invalidateQueries({ queryKey: ['user'] });
             showToast('Profile updated successfully', 'success');
             setIsEditing(false);
+            
+            // Redirect to home page after successful profile update
+            setTimeout(() => {
+                const homePath = user?.role === 'admin' ? '/admin' 
+                               : user?.role === 'carwash' ? '/carwash'
+                               : user?.role === 'driver' ? '/driver'
+                               : '/client';
+                navigate(homePath, { replace: true });
+            }, 1500);
         },
         onError: (error: any) => {
             showToast(error.response?.data?.message || 'Failed to update profile', 'error');
@@ -138,14 +149,23 @@ const Profile = () => {
         }
     };
 
+    const handleBackClick = () => {
+        // Try to go back using browser history, otherwise go to dashboard
+        if (window.history.length > 1) {
+            navigate(-1);
+        } else {
+            navigate(getDashboardPath());
+        }
+    };
+
     if (!user) return <LoadingSpinner />;
 
     return (
         <div className="profile-page">
             <header className="profile-header">
                 <div className="header-left">
-                    <button className="btn btn-secondary" onClick={() => window.location.href = getDashboardPath()}>
-                        ← Back to Dashboard
+                    <button className="btn btn-secondary" onClick={handleBackClick}>
+                        ← Back
                     </button>
                     <h1>My Profile</h1>
                 </div>

@@ -49,7 +49,7 @@ node scripts/seed-data.js
 ```
 
 This creates test users:
-- Admin: `admin@sucar.com` / `admin123`
+- Admin: `sucar.com` / `admin123`
 - Client: `john.mwansa@email.com` / `client123`
 - Car Wash: `sparkle@carwash.com` / `carwash123`
 - Driver: `james.mulenga@driver.com` / `driver123`
