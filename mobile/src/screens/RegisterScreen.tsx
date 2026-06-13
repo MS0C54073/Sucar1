@@ -158,7 +158,7 @@ const RegisterScreen = () => {
           </TouchableOpacity>
           <View style={styles.imageContainer}>
             <Image 
-              source={require('../../assets/Sucar.png')}
+              source={require('../../assets/Sucarcar.jpeg')}
               style={styles.logoImage}
               resizeMode="contain"
             />

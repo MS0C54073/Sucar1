@@ -104,7 +104,7 @@ const LoginScreen = () => {
           <View style={styles.logoFrame}>
             <View style={[styles.logoInner, { backgroundColor: C.logoInner }]}>
               <Image
-                source={require('../../assets/Sucar.png')}
+                source={require('../../assets/Sucarcar.jpeg')}
                 style={styles.logoImage}
                 resizeMode="contain"
               />

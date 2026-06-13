@@ -30,7 +30,7 @@ module.exports = {
     orientation: 'portrait',
     userInterfaceStyle: 'light',
     splash: {
-      image: './assets/Sucar.png',
+      image: './assets/Sucarcar.jpeg',
       resizeMode: 'contain',
       backgroundColor: v.splash,
     },
@@ -47,7 +47,7 @@ module.exports = {
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: './assets/Sucar.png',
+        foregroundImage: './assets/Sucarcar.jpeg',
         backgroundColor: v.splash,
       },
       package: v.package,
@@ -60,11 +60,17 @@ module.exports = {
       usesCleartextTraffic: true,
     },
     web: {
-      favicon: './assets/Sucar.png',
+      favicon: './assets/Sucarcar.jpeg',
     },
     plugins: ['expo-font'],
     extra: {
       appVariant: variant,
+      // Optional backend override. When unset, the app auto-detects the host
+      // from the Expo dev server (physical device) or falls back to the Android
+      // emulator address (10.0.2.2). Set this to point at a specific backend, e.g.:
+      //   API_URL=http://192.168.1.50:5000 npm run start:client
+      // (a trailing "/api" is added automatically if omitted).
+      apiUrl: process.env.API_URL || process.env.EXPO_PUBLIC_API_URL || undefined,
     },
   },
 };

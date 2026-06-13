@@ -23,6 +23,34 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Android's AsyncStorage (SQLite) caps a single row at ~2MB (CursorWindow).
+// Persisting a user object that carries a base64 image (e.g. a data-URL avatar)
+// blows past that limit and corrupts session restore
+// ("Row too big to fit into CursorWindow"). We keep the full user in memory but
+// persist a slim copy: large/base64 fields are dropped and can be refetched from
+// the API (GET /auth/me) when needed.
+const LARGE_FIELD_KEYS = [
+  'profilePictureUrl',
+  'carWashPictureUrl',
+  'avatar',
+  'avatarUrl',
+  'image',
+  'photo',
+  'bio',
+];
+const MAX_PERSISTED_FIELD_LENGTH = 20000;
+
+function toStoredUser(user: Record<string, any> | null | undefined): Record<string, any> {
+  const slim: Record<string, any> = {};
+  for (const key of Object.keys(user ?? {})) {
+    if (LARGE_FIELD_KEYS.includes(key)) continue;
+    const value = (user as Record<string, any>)[key];
+    if (typeof value === 'string' && value.length > MAX_PERSISTED_FIELD_LENGTH) continue;
+    slim[key] = value;
+  }
+  return slim;
+}
+
 // API_URL is now imported from utils/api.ts
 // For Android Emulator: uses 10.0.2.2 to access localhost
 // For iOS Simulator: uses localhost
@@ -60,7 +88,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
       }
     } catch (error) {
+      // A corrupted/oversized row (or bad JSON) must not wedge startup — clear it
+      // so the app falls back to the login screen and self-recovers next launch.
       console.error('Error loading stored auth:', error);
+      try {
+        await AsyncStorage.multiRemove(['token', 'user']);
+      } catch (clearError) {
+        console.error('Failed to clear corrupted auth storage:', clearError);
+      }
     } finally {
       setLoading(false);
     }
@@ -109,10 +144,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setToken(newToken);
       
       await AsyncStorage.setItem('token', newToken);
-      await AsyncStorage.setItem('user', JSON.stringify(userData));
+      await AsyncStorage.setItem('user', JSON.stringify(toStoredUser(userData)));
       apiClient.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
       axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
-      
+
       console.log(`👤 User state updated: ${userData.name} (${userData.role})`);
     } catch (error: any) {
       console.error('❌ Login error:', error);
@@ -170,7 +205,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setUser(user);
       
       await AsyncStorage.setItem('token', newToken);
-      await AsyncStorage.setItem('user', JSON.stringify(user));
+      await AsyncStorage.setItem('user', JSON.stringify(toStoredUser(user)));
       apiClient.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
       axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
     } catch (error: any) {

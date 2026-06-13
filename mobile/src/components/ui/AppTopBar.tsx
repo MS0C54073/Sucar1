@@ -42,7 +42,7 @@ const AppTopBar = ({
       )}
 
       <View style={styles.brand}>
-        <Image source={require('../../../assets/Sucar.png')} style={styles.logo} />
+        <Image source={require('../../../assets/Sucarcar.jpeg')} style={styles.logo} />
         <Text style={[styles.brandText, { color: textColor }]}>
           SuCAR{variant === 'driver' ? '' : ''}
         </Text>
