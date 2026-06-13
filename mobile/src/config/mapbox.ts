@@ -4,12 +4,9 @@
  * Set `EXPO_PUBLIC_MAPBOX_TOKEN` in `.env` (Expo inlines at build time).
  * `MAPBOX_ACCESS_TOKEN` is also read for tooling compatibility.
  *
- * In __DEV__, a fallback keeps maps/geocoding working when env is not set;
- * replace with your own token in production and restrict it in Mapbox dashboard.
+ * There is intentionally no hardcoded fallback — provide a token via env and
+ * restrict it in the Mapbox dashboard.
  */
-const DEV_PUBLIC_FALLBACK =
-  'pk.eyJ1IjoibXV6b3NhbGkiLCJhIjoiY21oc2J2d2tyMGg3ejJtc2N4dXg0NGo4eiJ9.p75SiHMh2nWAlbnFR8kyXQ';
-
 export function getMapboxAccessToken(): string {
   const fromEnv =
     (typeof process !== 'undefined' &&
@@ -19,8 +16,8 @@ export function getMapboxAccessToken(): string {
   if (trimmed.length > 0) {
     return trimmed;
   }
-  if (__DEV__) {
-    return DEV_PUBLIC_FALLBACK;
+  if (typeof __DEV__ !== 'undefined' && __DEV__) {
+    console.warn('Mapbox token missing. Set EXPO_PUBLIC_MAPBOX_TOKEN in mobile/.env.');
   }
   return '';
 }

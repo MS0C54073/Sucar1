@@ -888,7 +888,24 @@ export class DBService {
       throw error;
     }
 
-    return data ? toCamelCase(data) : null;
+    if (!data) return null;
+
+    const location = toCamelCase(data);
+
+    // Enrich with the user's display name + avatar so the map can show real faces
+    const { data: profile } = await supabase
+      .from('users')
+      .select('name, car_wash_name, profile_picture_url, role')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (profile) {
+      location.name = profile.car_wash_name || profile.name || null;
+      location.profilePictureUrl = profile.profile_picture_url || null;
+      location.role = profile.role || null;
+    }
+
+    return location;
   }
 
   static async getNearbyCarWashes(latitude: number, longitude: number, radiusKm: number = 10) {

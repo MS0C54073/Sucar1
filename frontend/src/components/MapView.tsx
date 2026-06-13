@@ -15,6 +15,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
+import { useMapbox } from '../context/MapboxContext';
 import { getCurrentPosition, Coordinates } from '../services/locationService';
 import { formatDistance } from '../services/mappingService';
 import { DEFAULT_CENTER, DEFAULT_ZOOM, getMapboxToken } from '../config/mapbox';
@@ -59,6 +60,12 @@ interface Booking {
   driverId?: {
     name?: string;
   };
+  /** Optional real face avatar shown as the marker (live tracking participants) */
+  avatar?: {
+    name?: string;
+    photoUrl?: string | null;
+    variant?: 'you' | 'counterparty';
+  };
 }
 
 interface CarWash {
@@ -72,6 +79,7 @@ interface CarWash {
 interface Driver {
   id: string;
   name: string;
+  profilePictureUrl?: string | null;
   locationCoordinates?: Coordinates | string;
 }
 
@@ -126,9 +134,10 @@ const MapView = ({
   height = '100%',
   backgroundMode = false,
 }: MapViewProps) => {
-  const mapboxToken = getMapboxToken();
-  const tokenLoading = false;
-  const tokenError = mapboxToken ? null : 'Mapbox token not configured';
+  const { token: contextToken, loading: contextTokenLoading } = useMapbox();
+  const mapboxToken = contextToken || getMapboxToken();
+  const tokenLoading = contextTokenLoading && !mapboxToken;
+  const tokenError = mapboxToken || tokenLoading ? null : 'Mapbox token not configured';
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<Map<string, mapboxgl.Marker>>(new Map());
@@ -228,14 +237,48 @@ const MapView = ({
         interactive: !backgroundMode,
       });
 
+      let geolocate: mapboxgl.GeolocateControl | null = null;
+
       if (!backgroundMode) {
         map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
         map.current.addControl(new mapboxgl.FullscreenControl(), 'top-right');
+
+        // "My location" button: prompts for permission, shows a live GPS dot,
+        // and recenters the map on the user's real position once accepted.
+        geolocate = new mapboxgl.GeolocateControl({
+          positionOptions: { enableHighAccuracy: true, timeout: 10000 },
+          trackUserLocation: true,
+          showUserHeading: true,
+          showAccuracyCircle: true,
+        });
+        map.current.addControl(geolocate, 'top-right');
+
+        geolocate.on('geolocate', (pos: GeolocationPosition) => {
+          setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          setLocationError(null);
+        });
+        geolocate.on('error', (err: GeolocationPositionError) => {
+          if (err?.code === err?.PERMISSION_DENIED) {
+            setLocationError('Location permission denied. Enable it to see your position.');
+          }
+        });
       }
 
       map.current.on('load', () => {
         setMapLoaded(true);
         setMapError(null);
+
+        // Auto-prompt for the user's location on interactive maps. The browser
+        // only shows the permission dialog once; afterwards this is silent.
+        if (geolocate && !center && !pinLocation) {
+          setTimeout(() => {
+            try {
+              geolocate?.trigger();
+            } catch {
+              /* control not ready */
+            }
+          }, 400);
+        }
       });
 
       map.current.on('error', (e: { error?: { message?: string } }) => {
@@ -524,9 +567,18 @@ const MapView = ({
       if (!coords) return;
 
       const isActive = booking.id === activeBookingId;
-      const el = createMarkerElement('booking', booking.status, isActive);
-      
-      const marker = new mapboxgl.Marker(el)
+      const el = booking.avatar
+        ? createAvatarMarkerElement(
+            booking.avatar.name,
+            booking.avatar.photoUrl,
+            isActive,
+            booking.avatar.variant
+          )
+        : createMarkerElement('booking', booking.status, isActive);
+
+      const marker = new mapboxgl.Marker(
+        booking.avatar ? { element: el, anchor: 'bottom' } : el
+      )
         .setLngLat([coords.lng, coords.lat])
         .addTo(map.current!);
 
@@ -561,14 +613,14 @@ const MapView = ({
       });
     }
 
-    // Add driver markers
+    // Add driver markers (real face when available)
     if (drivers) {
       drivers.forEach((driver) => {
         const coords = getLocatableCoordinates(driver as Record<string, unknown>);
         if (!coords) return;
 
-        const el = createMarkerElement('driver');
-        const marker = new mapboxgl.Marker(el)
+        const el = createAvatarMarkerElement(driver.name, driver.profilePictureUrl, false, 'counterparty');
+        const marker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
           .setLngLat([coords.lng, coords.lat])
           .addTo(map.current!);
 
@@ -576,15 +628,8 @@ const MapView = ({
       });
     }
 
-    // Add user location marker
-    if (userLocation) {
-      const el = createMarkerElement('user');
-      const marker = new mapboxgl.Marker(el)
-        .setLngLat([userLocation.lng, userLocation.lat])
-        .addTo(map.current!);
-
-      markersRef.current.set('user-location', marker);
-    }
+    // User location is rendered by Mapbox's GeolocateControl (live GPS dot),
+    // so we intentionally don't add a separate custom "user" marker here.
 
     // Pinned location (location picker / booking)
     if (pinLocation) {
@@ -706,6 +751,65 @@ const MapView = ({
 
     el.appendChild(pin);
     el.appendChild(label);
+    return el;
+  }
+
+  // Build initials from a display name (fallback when there's no photo)
+  function getInitials(name?: string): string {
+    if (!name) return '?';
+    const parts = name.trim().split(/\s+/).slice(0, 2);
+    return parts.map((p) => p.charAt(0).toUpperCase()).join('') || '?';
+  }
+
+  // Circular "face" marker showing a user's photo (or initials) with a pin tail
+  function createAvatarMarkerElement(
+    name?: string,
+    photoUrl?: string | null,
+    isActive?: boolean,
+    variant: 'you' | 'counterparty' = 'counterparty'
+  ): HTMLElement {
+    const el = document.createElement('div');
+    el.className = `map-marker map-avatar-marker map-avatar-marker--${variant} ${isActive ? 'active' : ''}`;
+
+    const bubble = document.createElement('div');
+    bubble.className = 'map-avatar-marker__bubble';
+
+    const renderInitials = () => {
+      const initials = document.createElement('span');
+      initials.className = 'map-avatar-marker__initials';
+      initials.textContent = getInitials(name);
+      bubble.appendChild(initials);
+    };
+
+    if (photoUrl) {
+      const img = document.createElement('img');
+      img.className = 'map-avatar-marker__img';
+      img.src = photoUrl;
+      img.alt = name || 'User';
+      img.loading = 'eager';
+      img.decoding = 'async';
+      img.onerror = () => {
+        img.remove();
+        if (!bubble.querySelector('.map-avatar-marker__initials')) renderInitials();
+      };
+      bubble.appendChild(img);
+    } else {
+      renderInitials();
+    }
+
+    const tail = document.createElement('div');
+    tail.className = 'map-avatar-marker__tail';
+
+    el.appendChild(bubble);
+    el.appendChild(tail);
+
+    if (name) {
+      const label = document.createElement('span');
+      label.className = 'map-marker-hover-label';
+      label.textContent = name;
+      el.appendChild(label);
+    }
+
     return el;
   }
 

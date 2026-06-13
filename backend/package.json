@@ -19,7 +19,8 @@
     "test:logins": "node scripts/test-all-logins.js",
     "fix-approvals": "node scripts/fix-approval-status.js",
     "migrate:operator": "node scripts/apply-operator-schema.js",
-    "migrate:reviews": "node scripts/apply-reviews-schema.js"
+    "migrate:reviews": "node scripts/apply-reviews-schema.js",
+    "migrate:all": "node scripts/migrate-all.js"
   },
   "keywords": [
     "car-wash",

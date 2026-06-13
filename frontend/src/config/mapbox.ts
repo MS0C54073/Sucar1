@@ -5,14 +5,13 @@
  * 1. Runtime token set by MapboxProvider / useMapboxToken
  * 2. localStorage cache from edge function
  * 3. VITE_MAPBOX_TOKEN in .env
- * 4. Development fallback (replace for production)
+ *
+ * There is intentionally no hardcoded fallback — provide a token via env or the
+ * get-mapbox-token edge function.
  */
 
 export const MAPBOX_TOKEN_CACHE_KEY = 'mapbox_token';
 export const MAPBOX_TOKEN_EXPIRY_KEY = 'mapbox_token_expiry';
-
-const FALLBACK_TOKEN =
-  'pk.eyJ1IjoibXV6b3NhbGkiLCJhIjoiY21oc2J2d2tyMGg3ejJtc2N4dXg0NGo4eiJ9.p75SiHMh2nWAlbnFR8kyXQ';
 
 let runtimeToken: string | null = null;
 
@@ -51,15 +50,8 @@ export function getMapboxToken(): string {
     return envToken;
   }
 
-  if (validateMapboxToken(FALLBACK_TOKEN)) {
-    console.warn(
-      'Mapbox: using built-in dev token. Set VITE_MAPBOX_TOKEN in frontend/.env for production.'
-    );
-    return FALLBACK_TOKEN;
-  }
-
   console.error(
-    'Mapbox token missing. Add VITE_MAPBOX_TOKEN to frontend/.env or deploy get-mapbox-token edge function.'
+    'Mapbox token missing. Add VITE_MAPBOX_TOKEN to frontend/.env or deploy the get-mapbox-token edge function.'
   );
   return '';
 }

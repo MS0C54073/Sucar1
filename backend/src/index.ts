@@ -6,6 +6,10 @@ import express from 'express';
 import cors from 'cors';
 import connectDB from './config/database';
 import { errorHandler, notFoundHandler } from './shared/errors/errorHandler';
+import { assertAuthConfig } from './config/jwt';
+
+// Fail fast if auth-critical config is missing in production
+assertAuthConfig();
 
 // Routes
 import authRoutes from './routes/authRoutes';
@@ -22,6 +26,7 @@ import recommendationRoutes from './routes/recommendationRoutes';
 import locationRoutes from './routes/locationRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import reviewRoutes from './routes/reviewRoutes';
+import configRoutes from './routes/configRoutes';
 
 // Connect to database
 connectDB().then(async () => {
@@ -103,6 +108,7 @@ app.use('/api/recommendations', recommendationRoutes);
 app.use('/api/locations', locationRoutes);  // ✅ Phase 1: Location tracking
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/config', configRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => {

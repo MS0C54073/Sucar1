@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { lazy, Suspense } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { MapboxProvider } from './context/MapboxContext';
 import { ToastProvider } from './components/ToastContainer';
 import ErrorBoundary from './components/ErrorBoundary';
 import LandingPage from './pages/LandingPage';
@@ -46,6 +47,7 @@ function App() {
         <ThemeProvider>
           <ToastProvider>
             <AuthProvider>
+              <MapboxProvider>
               <Router>
                 <Routes>
                   <Route path="/login" element={<Login />} />
@@ -194,6 +196,7 @@ function App() {
                   />
                 </Routes>
               </Router>
+              </MapboxProvider>
             </AuthProvider>
           </ToastProvider>
         </ThemeProvider>

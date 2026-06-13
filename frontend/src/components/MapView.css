@@ -170,6 +170,100 @@
   opacity: 1;
 }
 
+/* ── Face / avatar markers (live tracking + drivers) ── */
+.map-avatar-marker {
+  position: relative;
+  width: auto;
+  height: auto;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Neutralize the generic .map-marker.active framing for avatars */
+.map-avatar-marker.active {
+  border: none;
+  box-shadow: none;
+  transform: none;
+}
+
+.map-avatar-marker__bubble {
+  position: relative;
+  z-index: 1;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0056d2;
+  border: 3px solid #fff;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.35);
+}
+
+.map-avatar-marker--you .map-avatar-marker__bubble {
+  background: #1d9e75;
+}
+
+.map-avatar-marker__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.map-avatar-marker__initials {
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.5px;
+  line-height: 1;
+}
+
+.map-avatar-marker__tail {
+  width: 0;
+  height: 0;
+  margin-top: -3px;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 10px solid #fff;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.25));
+}
+
+.map-avatar-marker:hover {
+  transform: scale(1.06);
+  z-index: 1000;
+}
+
+.map-avatar-marker:hover .map-marker-hover-label {
+  opacity: 1;
+}
+
+/* Live "active" participant gets a soft pulsing ring */
+.map-avatar-marker.active .map-avatar-marker__bubble {
+  box-shadow: 0 0 0 4px rgba(0, 86, 210, 0.35), 0 3px 12px rgba(0, 0, 0, 0.35);
+}
+
+.map-avatar-marker--you.active .map-avatar-marker__bubble {
+  box-shadow: 0 0 0 4px rgba(29, 158, 117, 0.4), 0 3px 12px rgba(0, 0, 0, 0.35);
+  animation: avatarPulse 2s infinite;
+}
+
+@keyframes avatarPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 4px rgba(29, 158, 117, 0.4), 0 3px 12px rgba(0, 0, 0, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(29, 158, 117, 0.15), 0 3px 12px rgba(0, 0, 0, 0.35);
+  }
+}
+
 .map-popup {
   font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   font-size: 13px;

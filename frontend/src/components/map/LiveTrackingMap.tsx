@@ -24,6 +24,8 @@ interface LocationData {
   longitude: number;
   accuracyMeters: number | null;
   lastUpdated: string;
+  name?: string | null;
+  profilePictureUrl?: string | null;
 }
 
 interface LiveTrackingMapProps {
@@ -41,7 +43,7 @@ const LiveTrackingMap: React.FC<LiveTrackingMapProps> = ({
   const [counterpartyLocation, setCounterpartyLocation] = useState<LocationData | null>(null);
   const [carWashLocations, setCarWashLocations] = useState<{ client?: LocationData; driver?: LocationData }>({});
   const [showDirections, setShowDirections] = useState(false);
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [currentStepIndex] = useState(0);
 
   // Directions API
   const { getDirections, loading: directionsLoading, route } = useMapboxDirections();
@@ -129,6 +131,11 @@ const LiveTrackingMap: React.FC<LiveTrackingMapProps> = ({
               lat: userLocation.latitude,
               lng: userLocation.longitude,
             },
+            avatar: {
+              name: user?.name || getUserLabel(),
+              photoUrl: user?.profilePictureUrl || null,
+              variant: 'you' as const,
+            },
           },
           ...(counterpartyLocation
             ? [
@@ -139,6 +146,29 @@ const LiveTrackingMap: React.FC<LiveTrackingMapProps> = ({
                   pickupCoordinates: {
                     lat: counterpartyLocation.latitude,
                     lng: counterpartyLocation.longitude,
+                  },
+                  avatar: {
+                    name: counterpartyLocation.name || getCounterpartyLabel(),
+                    photoUrl: counterpartyLocation.profilePictureUrl || null,
+                    variant: 'counterparty' as const,
+                  },
+                },
+              ]
+            : []),
+          ...(userRole === 'carwash' && carWashLocations.client
+            ? [
+                {
+                  id: 'client-tracking',
+                  status: 'active',
+                  pickupLocation: 'Client',
+                  pickupCoordinates: {
+                    lat: carWashLocations.client.latitude,
+                    lng: carWashLocations.client.longitude,
+                  },
+                  avatar: {
+                    name: carWashLocations.client.name || 'Client',
+                    photoUrl: carWashLocations.client.profilePictureUrl || null,
+                    variant: 'counterparty' as const,
                   },
                 },
               ]
@@ -152,6 +182,11 @@ const LiveTrackingMap: React.FC<LiveTrackingMapProps> = ({
                   pickupCoordinates: {
                     lat: carWashLocations.driver.latitude,
                     lng: carWashLocations.driver.longitude,
+                  },
+                  avatar: {
+                    name: carWashLocations.driver.name || 'Driver',
+                    photoUrl: carWashLocations.driver.profilePictureUrl || null,
+                    variant: 'counterparty' as const,
                   },
                 },
               ]
