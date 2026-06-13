@@ -7,6 +7,15 @@ node_modules/
 .env.local
 .env.*.local
 
+# Secrets / local credentials — never commit these.
+# (status.json holds local Supabase service-role + JWT keys; login.json holds
+#  admin credentials; ip_details.txt leaks local network config.)
+status.json
+*/status.json
+ip_details.txt
+login.json
+*/login.json
+
 # Build outputs
 dist/
 build/
