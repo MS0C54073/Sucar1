@@ -1,0 +1,174 @@
+/*
+ * SuCAR advanced design system — tokens + reusable components.
+ * Brand-true (blue/cyan), real-icon driven, motion is reduced-motion-safe.
+ * The SuCAR logo asset is NEVER changed by this file.
+ */
+:root {
+  --su-primary: #1e73d8;
+  --su-primary-press: #155cb0;
+  --su-cyan: #34c6f4;
+  --su-ink: #0f1b2d;
+  --su-muted: #4a5567;
+  --su-faint: #8a95a6;
+  --su-surface: #ffffff;
+  --su-bg: #f5f8fc;
+  --su-line: rgba(15, 27, 45, 0.06);
+
+  /* Category accent dots — for icon badges only */
+  --acc-wash: #1e73d8;
+  --acc-detail: #9000ff;
+  --acc-pickup: #12a70a;
+  --acc-queue: #ff7a00;
+  --acc-rate: #ffb100;
+
+  --glass-bg: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.22);
+  --shadow-card: 0 8px 20px rgba(15, 27, 45, 0.06);
+  --shadow-pop: 0 10px 35px rgba(15, 27, 45, 0.12);
+  --shadow-cta: 0 4px 10px rgba(30, 115, 216, 0.45), 0 10px 35px rgba(30, 115, 216, 0.35);
+
+  --r-pill: 100px;
+  --r-card: 20px;
+  --r-chip: 50px;
+
+  --ease-soft: cubic-bezier(0.44, 0, 0.56, 1);
+  --dur: 0.45s;
+}
+
+/* ---------- Glow icon badge (colored circle + matching soft shadow) ---------- */
+.su-badge {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 0; /* neutralizes any stray text/emoji */
+  background: var(--acc-wash);
+  box-shadow: 0 10px 18px color-mix(in srgb, var(--acc-wash) 45%, transparent);
+}
+.su-badge svg {
+  width: 26px;
+  height: 26px;
+}
+.su-badge--wash {
+  background: var(--acc-wash);
+  box-shadow: 0 10px 18px color-mix(in srgb, var(--acc-wash) 45%, transparent);
+}
+.su-badge--detail {
+  background: var(--acc-detail);
+  box-shadow: 0 10px 18px color-mix(in srgb, var(--acc-detail) 45%, transparent);
+}
+.su-badge--pickup {
+  background: var(--acc-pickup);
+  box-shadow: 0 10px 18px color-mix(in srgb, var(--acc-pickup) 45%, transparent);
+}
+.su-badge--queue {
+  background: var(--acc-queue);
+  box-shadow: 0 10px 18px color-mix(in srgb, var(--acc-queue) 45%, transparent);
+}
+.su-badge--rate {
+  background: var(--acc-rate);
+  box-shadow: 0 10px 18px color-mix(in srgb, var(--acc-rate) 45%, transparent);
+}
+.su-badge--cyan {
+  background: linear-gradient(140deg, var(--su-primary), var(--su-cyan));
+  box-shadow: 0 10px 18px rgba(30, 115, 216, 0.4);
+}
+
+/* ---------- Avatar mark (replaces emoji 👤) ---------- */
+.su-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--su-primary);
+  background: color-mix(in srgb, var(--su-primary) 12%, #fff);
+}
+
+/* ---------- Signature CTA: pill + hover label-swap ---------- */
+.su-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 15px 28px;
+  border: 0;
+  border-radius: var(--r-pill);
+  cursor: pointer;
+  text-decoration: none;
+  font: 600 16px/1 inherit;
+  transition: transform var(--dur) var(--ease-soft), box-shadow var(--dur) var(--ease-soft),
+    background-color var(--dur) var(--ease-soft);
+}
+.su-cta__icon {
+  display: inline-flex;
+}
+.su-cta__label {
+  position: relative;
+  display: grid;
+  height: 1.2em;
+  overflow: hidden;
+}
+.su-cta__label > span {
+  grid-area: 1 / 1;
+  transition: transform var(--dur) var(--ease-soft);
+}
+.su-cta__label > span:nth-child(2) {
+  transform: translateY(100%);
+}
+.su-cta:hover .su-cta__label > span:nth-child(1) {
+  transform: translateY(-100%);
+}
+.su-cta:hover .su-cta__label > span:nth-child(2) {
+  transform: translateY(0);
+}
+.su-cta:hover {
+  transform: translateY(-1px);
+}
+
+.su-cta--primary {
+  background: var(--su-ink);
+  color: #fff;
+  box-shadow: var(--shadow-cta);
+}
+.su-cta--primary:hover {
+  background: #050b14;
+}
+.su-cta--ghost {
+  background: var(--su-surface);
+  color: var(--su-ink);
+  border: 1px solid var(--su-line);
+}
+
+/* ---------- Glass card (for dark surfaces) ---------- */
+.su-glass {
+  background: linear-gradient(180deg, rgba(15, 27, 45, 0.3) 0%, rgba(15, 27, 45, 0.5) 100%);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border-radius: var(--r-card);
+  box-shadow: 0 10px 20px rgba(15, 27, 45, 0.3);
+}
+
+/* ---------- Tagline pill ---------- */
+.su-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: var(--r-chip);
+  background: var(--su-bg);
+  border: 1px solid var(--su-line);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--su-muted);
+}
+
+/* ---------- Accessibility: respect reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .su-cta,
+  .su-cta__label > span {
+    transition: none;
+  }
+}

@@ -3,12 +3,16 @@ import { useAuth } from '../context/AuthContext';
 import PageLayout from '../components/PageLayout';
 import DownloadAppSection from '../components/DownloadAppSection';
 import BackgroundCars from '../components/animations/BackgroundCars';
-import CarWashScene from '../components/animations/CarWashScene';
 import EnhancedCarWashScene from '../components/animations/EnhancedCarWashScene';
 import CarQueueSystem from '../components/animations/CarQueueSystem';
 import FloatingElements from '../components/animations/FloatingElements';
 import { AnimatedCard } from '../components/animations/CardAnimations';
+import Icon from '../components/icons/Icon';
+import CtaButton from '../components/CtaButton';
 import './LandingPage.css';
+// Loaded after the page CSS so the advanced design-system classes (su-badge,
+// su-avatar, su-cta) win over legacy .feature-icon/.author-avatar rules.
+import '../styles/sucar-tokens.css';
 
 function dashboardPath(role: string): string {
   if (role === 'admin' || role === 'subadmin') return '/admin';
@@ -40,26 +44,21 @@ const LandingPage = () => {
             />
           </div>
           <div className="hero-content">
+            <span className="su-pill">
+              <Icon name="sparkles" size={14} /> Drive-in &amp; doorstep pickup
+            </span>
             <h1 className="hero-headline">
               Professional Car Wash Services, Delivered to Your Doorstep
             </h1>
             <p className="hero-subheading">
-              Experience unmatched convenience. Book your car wash, track every step in real time, 
+              Experience unmatched convenience. Book your car wash, track every step in real time,
               and receive your freshly cleaned vehicle delivered right to your door. All from the comfort of your home or office.
             </p>
             <div className="hero-cta">
-              <button
-                className="btn btn-primary btn-large"
-                onClick={() => navigate('/book')}
-              >
-                Book Your First Wash
-              </button>
-              <button
-                className="btn btn-secondary btn-large"
-                onClick={() => navigate('/login')}
-              >
+              <CtaButton onClick={() => navigate('/book')}>Book Your First Wash</CtaButton>
+              <CtaButton variant="ghost" icon="user" iconRight={false} onClick={() => navigate('/login')}>
                 Sign In
-              </button>
+              </CtaButton>
             </div>
           </div>
         </section>
@@ -73,7 +72,7 @@ const LandingPage = () => {
           <div className="features-grid">
             <AnimatedCard variant="fade" delay={0.1}>
               <div className="feature-card">
-                <div className="feature-icon">📍</div>
+                <div className="feature-icon su-badge su-badge--cyan"><Icon name="mapPin" /></div>
                 <h3>Real-Time Tracking</h3>
                 <p>
                   Watch your vehicle's journey from pickup to delivery with live GPS tracking. 
@@ -83,7 +82,7 @@ const LandingPage = () => {
             </AnimatedCard>
             <AnimatedCard variant="fade" delay={0.2}>
               <div className="feature-card">
-                <div className="feature-icon">⏱️</div>
+                <div className="feature-icon su-badge su-badge--queue"><Icon name="timer" /></div>
                 <h3>On-Demand Service</h3>
                 <p>
                   Book a car wash whenever you need it. Schedule pickups at your convenience, 
@@ -93,7 +92,7 @@ const LandingPage = () => {
             </AnimatedCard>
             <AnimatedCard variant="fade" delay={0.3}>
               <div className="feature-card">
-                <div className="feature-icon">🏆</div>
+                <div className="feature-icon su-badge su-badge--detail"><Icon name="shieldCheck" /></div>
                 <h3>Professional Quality</h3>
                 <p>
                   Trusted car wash partners with proven track records. Your vehicle is in expert hands 
@@ -103,7 +102,7 @@ const LandingPage = () => {
             </AnimatedCard>
             <AnimatedCard variant="fade" delay={0.4}>
               <div className="feature-card">
-                <div className="feature-icon">💳</div>
+                <div className="feature-icon su-badge su-badge--pickup"><Icon name="creditCard" /></div>
                 <h3>Secure Payments</h3>
                 <p>
                   Pay securely after service completion. Multiple payment options available 
@@ -113,7 +112,7 @@ const LandingPage = () => {
             </AnimatedCard>
             <AnimatedCard variant="fade" delay={0.5}>
               <div className="feature-card">
-                <div className="feature-icon">🚗</div>
+                <div className="feature-icon su-badge su-badge--wash"><Icon name="car" /></div>
                 <h3>Multiple Vehicles</h3>
                 <p>
                   Manage all your vehicles in one place. Book services for your entire fleet 
@@ -123,7 +122,7 @@ const LandingPage = () => {
             </AnimatedCard>
             <AnimatedCard variant="fade" delay={0.6}>
               <div className="feature-card">
-                <div className="feature-icon">📱</div>
+                <div className="feature-icon su-badge su-badge--rate"><Icon name="smartphone" /></div>
                 <h3>Mobile-First</h3>
                 <p>
                   Access SuCAR from any device. Our responsive design works seamlessly 
@@ -203,7 +202,7 @@ const LandingPage = () => {
                 </p>
               </div>
               <div className="testimonial-author">
-                <div className="author-avatar">👤</div>
+                <div className="author-avatar su-avatar"><Icon name="user" size={22} /></div>
                 <div className="author-info">
                   <div className="author-name">John Mwansa</div>
                   <div className="author-role">Business Owner</div>
@@ -220,7 +219,7 @@ const LandingPage = () => {
                   </p>
                 </div>
                 <div className="testimonial-author">
-                  <div className="author-avatar">👤</div>
+                  <div className="author-avatar su-avatar"><Icon name="user" size={22} /></div>
                   <div className="author-info">
                     <div className="author-name">Sarah Banda</div>
                     <div className="author-role">Professional</div>
@@ -237,7 +236,7 @@ const LandingPage = () => {
                 </p>
               </div>
               <div className="testimonial-author">
-                <div className="author-avatar">👤</div>
+                <div className="author-avatar su-avatar"><Icon name="user" size={22} /></div>
                 <div className="author-info">
                   <div className="author-name">David Phiri</div>
                   <div className="author-role">Fleet Manager</div>
@@ -260,18 +259,10 @@ const LandingPage = () => {
             Join thousands of satisfied customers who trust SuCAR for their vehicle care needs.
           </p>
           <div className="cta-buttons">
-            <button
-              className="btn btn-primary btn-large"
-              onClick={() => navigate('/book')}
-            >
-              Get Started Today
-            </button>
-            <button
-              className="btn btn-secondary btn-large"
-              onClick={() => navigate('/login')}
-            >
+            <CtaButton onClick={() => navigate('/book')}>Get Started Today</CtaButton>
+            <CtaButton variant="ghost" icon="user" iconRight={false} onClick={() => navigate('/login')}>
               Sign In
-            </button>
+            </CtaButton>
           </div>
         </div>
       </section>
