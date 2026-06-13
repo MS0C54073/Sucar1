@@ -5,6 +5,7 @@ import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import LoadingSpinner from '../LoadingSpinner';
 import EmptyState from '../EmptyState';
+import { getChatPath } from '../../utils/chatPaths';
 import './NotificationCenter.css';
 
 interface Notification {
@@ -41,10 +42,24 @@ const NotificationCenter = () => {
         message: n.message,
         read: n.is_read || false,
         priority: n.priority || 'medium',
-        actionUrl: n.type === 'message' ? `/chat/${n.data?.bookingId}` :
-          (user?.role === 'admin' ? '/admin' :
-            user?.role === 'driver' ? '/driver' :
-              user?.role === 'carwash' ? '/carwash' : '/client'),
+        actionUrl:
+          n.type === 'message' && n.data?.bookingId
+            ? getChatPath(user?.role, n.data.bookingId)
+            : n.type === 'payment' && n.data?.bookingId
+              ? user?.role === 'client'
+                ? `/client/payment/${n.data.bookingId}`
+                : user?.role === 'driver'
+                  ? '/driver'
+                  : user?.role === 'carwash'
+                    ? '/carwash'
+                    : '/client'
+              : user?.role === 'admin'
+                ? '/admin'
+                : user?.role === 'driver'
+                  ? '/driver'
+                  : user?.role === 'carwash'
+                    ? '/carwash'
+                    : '/client',
         createdAt: n.created_at,
         metadata: n.data,
       })).sort((a: any, b: any) =>
@@ -106,6 +121,8 @@ const NotificationCenter = () => {
         return '⚙️';
       case 'promotion':
         return '🎉';
+      case 'message':
+        return '💬';
       default:
         return '🔔';
     }

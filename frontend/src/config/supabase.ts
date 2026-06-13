@@ -1,40 +1,38 @@
 /**
- * Supabase Client Configuration
- * Frontend instance for accessing Supabase services
+ * Supabase client — only created when VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set.
+ * The app runs without Supabase (REST API + polling); realtime is optional.
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL?.trim();
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
 
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  console.warn('⚠️ Supabase environment variables not configured');
-  console.warn('   VITE_SUPABASE_URL:', SUPABASE_URL ? '✓ set' : '✗ missing');
-  console.warn('   VITE_SUPABASE_ANON_KEY:', SUPABASE_ANON_KEY ? '✓ set' : '✗ missing');
+export const isSupabaseConfigured = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+
+if (!isSupabaseConfigured) {
+  console.warn('⚠️ Supabase not configured — realtime disabled; using API polling only.');
+  console.warn('   Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in frontend/.env to enable.');
 }
 
-/**
- * Supabase client instance
- * Uses anonymous key for public operations (auth flows, edge functions)
- * JWT token from auth context automatically included in headers
- */
-export const supabase = createClient(
-  SUPABASE_URL || '',
-  SUPABASE_ANON_KEY || '',
-  {
+function createSupabaseClient(): SupabaseClient | null {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
+
+  return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
       storage: localStorage,
       autoRefreshToken: true,
       persistSession: true,
     },
-    // Optimize for frontend (disable auto-reconnect spam)
     realtime: {
       params: {
         eventsPerSecond: 10,
       },
     },
-  }
-);
+  });
+}
+
+/** Null when env vars are missing — always check before use. */
+export const supabase = createSupabaseClient();
 
 export default supabase;

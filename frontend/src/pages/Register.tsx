@@ -54,7 +54,7 @@ const RegisterContent = memo(({
       <div className="register-page">
       <aside className="register-brand">
         <div className="register-brand-inner">
-          <img src="/images/Sucar.png" alt="" className="register-brand-logo" />
+          <img src="/images/Sucarcar.jpeg" alt="" className="register-brand-logo" />
           <h1 className="register-brand-title">SuCAR</h1>
           <p className="register-brand-tagline">Join thousands getting their cars washed on demand.</p>
         </div>

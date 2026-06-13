@@ -1,0 +1,31 @@
+.booking-chat-page {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary, #f0f2f5);
+}
+
+.booking-chat-page--loading {
+  align-items: center;
+  justify-content: center;
+}
+
+.booking-chat-page .chat-window {
+  flex: 1;
+  min-height: 0;
+  max-height: 100dvh;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.booking-chat-page__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+}
+
+.booking-chat-page__error {
+  padding: 24px;
+  color: var(--text-secondary);
+}

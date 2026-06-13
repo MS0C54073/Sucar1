@@ -1,40 +1,29 @@
-.add-vehicle {
+.add-vehicle.sucar-page {
   min-height: 100vh;
-  background: var(--bg-secondary, #f5f5f5);
+  background: var(--sucar-surface, #f4f6fb);
 }
 
-.add-vehicle-header {
-  background: var(--bg-primary, white);
-  color: var(--text-primary, #333);
-  padding: var(--space-4, 1rem);
-  display: flex;
-  align-items: center;
-  gap: var(--space-3, 0.75rem);
-  border-bottom: 1px solid var(--border-primary, #e5e7eb);
-  box-shadow: var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
+.add-vehicle.sucar-page .add-vehicle-header {
+  margin: 0;
+  padding: var(--space-5) var(--space-4);
+  border-radius: 0 0 var(--sucar-radius-xl) var(--sucar-radius-xl);
+  background: var(--sucar-header-gradient);
+  color: #fff;
+  border: none;
+  box-shadow: none;
 }
 
-.add-vehicle-header button {
-  background: var(--bg-secondary, #f3f4f6);
-  color: var(--text-primary, #333);
-  border: 1px solid var(--border-primary, #d1d5db);
-  padding: var(--space-2, 0.5rem) var(--space-4, 1rem);
-  border-radius: var(--radius-md, 0.375rem);
-  cursor: pointer;
-  font-size: var(--text-sm, 0.875rem);
-  font-weight: var(--font-medium, 500);
-  transition: all var(--transition-base, 0.2s);
-}
-
-.add-vehicle-header button:hover {
-  background: var(--bg-tertiary, #e5e7eb);
-  border-color: var(--border-secondary, #9ca3af);
+.add-vehicle.sucar-page .add-vehicle-header h1 {
+  color: #fff;
+  margin: 0;
+  font-size: var(--text-xl);
 }
 
 .add-vehicle-content {
-  padding: 1rem;
-  max-width: 600px;
-  margin: 0 auto;
+  padding: var(--space-4);
+  max-width: 100%;
+  margin: 0;
+  box-sizing: border-box;
 }
 
 .vehicle-form {

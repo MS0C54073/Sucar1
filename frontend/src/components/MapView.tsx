@@ -10,6 +10,7 @@
  */
 
 import { useEffect, useRef, useState, useMemo } from 'react';
+import type { Feature, LineString } from 'geojson';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useQuery } from '@tanstack/react-query';
@@ -17,11 +18,24 @@ import { useAuth } from '../context/AuthContext';
 import { getCurrentPosition, Coordinates } from '../services/locationService';
 import { formatDistance } from '../services/mappingService';
 import { DEFAULT_CENTER, DEFAULT_ZOOM, getMapboxToken } from '../config/mapbox';
-import { parseCoordinates, calculateDistance } from '../services/mappingService';
+import { parseCoordinates, calculateDistance, getLocatableCoordinates } from '../services/mappingService';
+import { filterLusakaCarWashes } from '../utils/lusakaCoordinates';
 import RouteVisualization from './mapping/RouteVisualization';
+import { setMapRouteLine, clearMapRouteLine } from '../utils/mapRouteLayer';
+import {
+  isMapStyleReady,
+  runWhenMapStyleReady,
+  safeGetLayer,
+  safeGetSource,
+  safeRemoveLayer,
+  safeRemoveSource,
+} from '../utils/mapLayerSafety';
 import api from '../services/api';
 import LoadingSpinner from './LoadingSpinner';
 import './MapView.css';
+
+const CARWASH_SOURCE_ID = 'sucar-carwashes-source';
+const CARWASH_HIT_LAYER_ID = 'sucar-carwashes-hit';
 
 interface Booking {
   id: string;
@@ -70,14 +84,21 @@ interface RouteSegment {
 
 interface MapViewProps {
   bookings?: Booking[];
+  /** Pre-loaded car washes (optional; otherwise fetched when showCarWashes) */
+  carWashes?: CarWash[];
   activeBookingId?: string;
   onBookingClick?: (booking: Booking) => void;
+  onCarWashClick?: (carWash: CarWash) => void;
   showNearbyServices?: boolean;
   showCarWashes?: boolean;
   showDrivers?: boolean;
   showRoute?: boolean;
   routeSegments?: RouteSegment[];
+  /** Full driving path from Mapbox Directions (preferred over straight segment lines) */
+  routeGeoJson?: Feature<LineString> | null;
   center?: Coordinates;
+  /** When false, map won't auto fitBounds on every marker update */
+  autoFitMarkers?: boolean;
   /** Single highlighted pin (e.g. pickup location picker) */
   pinLocation?: Coordinates;
   zoom?: number;
@@ -88,14 +109,18 @@ interface MapViewProps {
 
 const MapView = ({
   bookings = [],
+  carWashes: carWashesProp,
   activeBookingId,
   onBookingClick,
+  onCarWashClick,
   showNearbyServices = false,
   showCarWashes = false,
   showDrivers = false,
   showRoute = false,
   routeSegments = [],
+  routeGeoJson = null,
   center,
+  autoFitMarkers = true,
   pinLocation,
   zoom = DEFAULT_ZOOM,
   height = '100%',
@@ -107,14 +132,15 @@ const MapView = ({
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<Map<string, mapboxgl.Marker>>(new Map());
+  const onCarWashClickRef = useRef(onCarWashClick);
+  const carWashesRef = useRef<CarWash[]>([]);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const { user } = useAuth();
 
-  // Fetch car washes if needed
-  const { data: carWashes } = useQuery<CarWash[]>({
+  const { data: fetchedCarWashes } = useQuery<CarWash[]>({
     queryKey: ['carwashes-map'],
     queryFn: async () => {
       try {
@@ -125,9 +151,33 @@ const MapView = ({
         return [];
       }
     },
-    enabled: showNearbyServices || showCarWashes,
-    staleTime: 30000, // Cache for 30 seconds
+    enabled: (showNearbyServices || showCarWashes) && !carWashesProp,
+    staleTime: 30000,
   });
+
+  const carWashes = useMemo(() => {
+    const list = carWashesProp ?? fetchedCarWashes ?? [];
+    return filterLusakaCarWashes(list as Record<string, unknown>[]) as CarWash[];
+  }, [carWashesProp, fetchedCarWashes]);
+
+  const carWashesWithCoords = useMemo(() => {
+    if (!carWashes?.length) return [];
+    return carWashes
+      .map((cw) => {
+        const coords = getLocatableCoordinates(cw as Record<string, unknown>);
+        if (!coords) return null;
+        return { carWash: cw, coords };
+      })
+      .filter((x): x is { carWash: CarWash; coords: Coordinates } => x !== null);
+  }, [carWashes]);
+
+  useEffect(() => {
+    onCarWashClickRef.current = onCarWashClick;
+  }, [onCarWashClick]);
+
+  useEffect(() => {
+    carWashesRef.current = carWashes;
+  }, [carWashes]);
 
   // Fetch drivers if needed
   const { data: drivers } = useQuery<Driver[]>({
@@ -212,8 +262,16 @@ const MapView = ({
 
     return () => {
       if (loadTimeout) clearTimeout(loadTimeout);
-      if (map.current) {
-        map.current.remove();
+      const instance = map.current;
+      if (instance) {
+        clearMapRouteLine(instance);
+        safeRemoveLayer(instance, CARWASH_HIT_LAYER_ID);
+        safeRemoveSource(instance, CARWASH_SOURCE_ID);
+        try {
+          instance.remove();
+        } catch {
+          /* already removed */
+        }
         map.current = null;
       }
       setMapLoaded(false);
@@ -325,6 +383,133 @@ const MapView = ({
     }
   }, [mapLoaded, showRoute, routeSegments]);
 
+  // Driving route line (Mapbox Directions geometry)
+  useEffect(() => {
+    if (!map.current || !mapLoaded) return;
+    const mapInstance = map.current;
+
+    if (routeGeoJson) {
+      setMapRouteLine(mapInstance, routeGeoJson);
+    } else if (!showRoute || !routeSegments.length) {
+      clearMapRouteLine(mapInstance);
+    }
+
+    return () => {
+      clearMapRouteLine(mapInstance);
+    };
+  }, [mapLoaded, routeGeoJson, showRoute, routeSegments.length]);
+
+  // Clickable car wash hit targets (reliable on top of Mapbox canvas)
+  useEffect(() => {
+    if (!map.current || !mapLoaded) return;
+
+    const mapInstance = map.current;
+    let cancelled = false;
+
+    const teardownHitLayer = () => {
+      safeRemoveLayer(mapInstance, CARWASH_HIT_LAYER_ID);
+      safeRemoveSource(mapInstance, CARWASH_SOURCE_ID);
+    };
+
+    if (!showCarWashes) {
+      teardownHitLayer();
+      return teardownHitLayer;
+    }
+
+    const syncCarWashLayer = () => {
+      if (cancelled || !isMapStyleReady(mapInstance)) return;
+
+      if (!carWashesWithCoords.length) {
+        teardownHitLayer();
+        return;
+      }
+
+      const collection = {
+        type: 'FeatureCollection' as const,
+        features: carWashesWithCoords.map(({ carWash, coords }) => ({
+          type: 'Feature' as const,
+          properties: {
+            id: String(carWash.id),
+            name: carWash.carWashName || carWash.name || 'Car wash',
+          },
+          geometry: {
+            type: 'Point' as const,
+            coordinates: [coords.lng, coords.lat],
+          },
+        })),
+      };
+
+      const existing = safeGetSource(mapInstance, CARWASH_SOURCE_ID) as mapboxgl.GeoJSONSource | undefined;
+      if (existing) {
+        existing.setData(collection);
+        return;
+      }
+
+      try {
+        mapInstance.addSource(CARWASH_SOURCE_ID, { type: 'geojson', data: collection });
+        mapInstance.addLayer({
+          id: CARWASH_HIT_LAYER_ID,
+          type: 'circle',
+          source: CARWASH_SOURCE_ID,
+          paint: {
+            'circle-radius': 22,
+            'circle-color': '#00c896',
+            'circle-opacity': 0.01,
+            'circle-stroke-width': 0,
+          },
+        });
+      } catch {
+        teardownHitLayer();
+      }
+    };
+
+    const handleCarWashLayerClick = (e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] }) => {
+      const featureId = e.features?.[0]?.properties?.id;
+      if (!featureId) return;
+      const cw = carWashesRef.current.find((c) => String(c.id) === String(featureId));
+      if (cw) onCarWashClickRef.current?.(cw);
+    };
+
+    const handleEnter = () => {
+      if (isMapStyleReady(mapInstance)) mapInstance.getCanvas().style.cursor = 'pointer';
+    };
+    const handleLeave = () => {
+      if (isMapStyleReady(mapInstance)) mapInstance.getCanvas().style.cursor = '';
+    };
+
+    const detachHitHandlers = () => {
+      try {
+        mapInstance.off('click', CARWASH_HIT_LAYER_ID, handleCarWashLayerClick);
+        mapInstance.off('mouseenter', CARWASH_HIT_LAYER_ID, handleEnter);
+        mapInstance.off('mouseleave', CARWASH_HIT_LAYER_ID, handleLeave);
+      } catch {
+        /* layer or map gone */
+      }
+    };
+
+    const attachHitHandlers = () => {
+      if (!safeGetLayer(mapInstance, CARWASH_HIT_LAYER_ID)) return;
+      detachHitHandlers();
+      mapInstance.on('click', CARWASH_HIT_LAYER_ID, handleCarWashLayerClick);
+      mapInstance.on('mouseenter', CARWASH_HIT_LAYER_ID, handleEnter);
+      mapInstance.on('mouseleave', CARWASH_HIT_LAYER_ID, handleLeave);
+    };
+
+    const syncWithHandlers = () => {
+      syncCarWashLayer();
+      attachHitHandlers();
+    };
+
+    const cancelStyleWait = runWhenMapStyleReady(mapInstance, syncWithHandlers);
+
+    return () => {
+      cancelled = true;
+      cancelStyleWait();
+      detachHitHandlers();
+      teardownHitLayer();
+    };
+  }, [mapLoaded, showCarWashes, carWashesWithCoords]);
+
   // Update markers when data changes
   useEffect(() => {
     if (!map.current || !mapLoaded) return;
@@ -353,16 +538,24 @@ const MapView = ({
       markersRef.current.set(`booking-${booking.id}`, marker);
     });
 
-    // Add car wash markers
-    if (carWashes) {
-      carWashes.forEach((carWash) => {
-        const coords = parseCoordinates(carWash.locationCoordinates);
-        if (!coords) return;
+    // Car wash markers (Lusaka only)
+    if (showCarWashes) {
+      carWashesWithCoords.forEach(({ carWash, coords }) => {
+        const name = carWash.carWashName || carWash.name || 'Car wash';
+        const isActive = carWash.id === activeBookingId;
+        const el = createCarWashMarkerElement(name, isActive);
 
-        const el = createMarkerElement('carwash');
-        const marker = new mapboxgl.Marker(el)
+        const marker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
           .setLngLat([coords.lng, coords.lat])
           .addTo(map.current!);
+
+        const openWash = (e: Event) => {
+          e.stopPropagation();
+          e.preventDefault();
+          onCarWashClickRef.current?.(carWash);
+        };
+        el.addEventListener('click', openWash);
+        el.addEventListener('touchend', openWash);
 
         markersRef.current.set(`carwash-${carWash.id}`, marker);
       });
@@ -371,7 +564,7 @@ const MapView = ({
     // Add driver markers
     if (drivers) {
       drivers.forEach((driver) => {
-        const coords = parseCoordinates(driver.locationCoordinates);
+        const coords = getLocatableCoordinates(driver as Record<string, unknown>);
         if (!coords) return;
 
         const el = createMarkerElement('driver');
@@ -455,34 +648,66 @@ const MapView = ({
       }
     }
 
-    // Fit bounds to show all markers (skip on auth background — keep city-wide view)
-    if (!backgroundMode && markersRef.current.size > 0) {
+    // Fit map to car wash markers in Lusaka (skip when parent controls camera)
+    if (
+      autoFitMarkers &&
+      !backgroundMode &&
+      !activeBookingId &&
+      !center &&
+      showCarWashes &&
+      carWashesWithCoords.length > 0 &&
+      map.current
+    ) {
+      const bounds = new mapboxgl.LngLatBounds();
+      carWashesWithCoords.forEach(({ coords }) => {
+        bounds.extend([coords.lng, coords.lat]);
+      });
+      map.current.fitBounds(bounds, { padding: 60, maxZoom: 14, duration: 800 });
+    } else if (!backgroundMode && !showCarWashes && markersRef.current.size > 0 && map.current) {
       const bounds = new mapboxgl.LngLatBounds();
       markersRef.current.forEach((marker) => {
         const lngLat = marker.getLngLat();
         bounds.extend([lngLat.lng, lngLat.lat]);
       });
-
-      if (map.current) {
-        map.current.fitBounds(bounds, {
-          padding: 50,
-          maxZoom: 15,
-        });
-      }
+      map.current.fitBounds(bounds, { padding: 50, maxZoom: 15 });
     }
   }, [
     bookings,
-    carWashes,
+    carWashesWithCoords,
     drivers,
     userLocation,
     pinLocation,
     activeBookingId,
     mapLoaded,
     onBookingClick,
+    onCarWashClick,
+    showCarWashes,
     showRoute,
     routeSegments,
     backgroundMode,
+    autoFitMarkers,
+    center,
   ]);
+
+  function createCarWashMarkerElement(name: string, isActive?: boolean): HTMLElement {
+    const el = document.createElement('div');
+    el.className = `map-marker map-marker-carwash ${isActive ? 'active' : ''}`;
+    el.style.cursor = 'pointer';
+    el.style.pointerEvents = 'auto';
+    el.style.touchAction = 'manipulation';
+
+    const pin = document.createElement('div');
+    pin.className = 'map-marker-carwash-pin';
+    pin.innerHTML = '<span class="marker-icon">🧼</span>';
+
+    const label = document.createElement('span');
+    label.className = 'map-marker-hover-label';
+    label.textContent = name;
+
+    el.appendChild(pin);
+    el.appendChild(label);
+    return el;
+  }
 
   // Helper to create marker elements
   const createMarkerElement = (
@@ -527,7 +752,7 @@ const MapView = ({
           display: 'block',
         }}
       />
-      {mapLoaded && showRoute && routeSegments.length > 0 && map.current && (
+      {mapLoaded && showRoute && routeSegments.length > 0 && !routeGeoJson && map.current && (
         <RouteVisualization
           map={map.current}
           route={routeSegments}

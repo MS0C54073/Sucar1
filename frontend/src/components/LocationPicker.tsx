@@ -166,7 +166,9 @@ const LocationPicker = ({
           <MapView center={coordinates} pinLocation={coordinates} zoom={15} height="180px" />
         </div>
       )}
-      {coordinates && (
+      {coordinates &&
+        Number.isFinite(coordinates.lat) &&
+        Number.isFinite(coordinates.lng) && (
         <div className="location-picker-coordinates">
           <small>
             Coordinates: {coordinates.lat.toFixed(6)}, {coordinates.lng.toFixed(6)}

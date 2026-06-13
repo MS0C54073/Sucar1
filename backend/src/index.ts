@@ -17,9 +17,11 @@ import vehicleRoutes from './routes/vehicleRoutes';
 import paymentRoutes from './routes/paymentRoutes';
 import chatRoutes from './routes/chatRoutes';
 import queueRoutes from './routes/queueRoutes';
+import operationsRoutes from './routes/operationsRoutes';
 import recommendationRoutes from './routes/recommendationRoutes';
 import locationRoutes from './routes/locationRoutes';
 import notificationRoutes from './routes/notificationRoutes';
+import reviewRoutes from './routes/reviewRoutes';
 
 // Connect to database
 connectDB().then(async () => {
@@ -30,6 +32,10 @@ connectDB().then(async () => {
   await ensureDefaultAdmin();
   const { ensureSeedUsers } = await import('./services/ensure-seed-users');
   await ensureSeedUsers();
+  const { ensureOperatorSchema } = await import('./services/operatorSchemaService');
+  await ensureOperatorSchema();
+  const { ensureReviewsSchema } = await import('./services/reviewService');
+  await ensureReviewsSchema();
 }).catch((error) => {
   console.error('Database setup error:', error);
 });
@@ -92,9 +98,11 @@ app.use('/api/vehicles', vehicleRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/queue', queueRoutes);
+app.use('/api/operations', operationsRoutes);
 app.use('/api/recommendations', recommendationRoutes);
 app.use('/api/locations', locationRoutes);  // ✅ Phase 1: Location tracking
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/reviews', reviewRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => {

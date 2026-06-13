@@ -6,6 +6,7 @@ type ViewMode = 'mobile' | 'desktop';
 interface ThemeContextType {
   theme: Theme;
   viewMode: ViewMode;
+  setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
   toggleViewMode: () => void;
 }
@@ -42,7 +43,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, viewMode, toggleTheme, toggleViewMode }}>
+    <ThemeContext.Provider value={{ theme, viewMode, setTheme, toggleTheme, toggleViewMode }}>
       {children}
     </ThemeContext.Provider>
   );

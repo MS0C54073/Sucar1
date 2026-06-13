@@ -1,0 +1,251 @@
+/**
+ * Client app — readable colors for light & dark mode.
+ * Fixes clash where global dark theme used light text on white cards.
+ */
+
+[data-app-skin='light'] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f4f6fb;
+  --bg-tertiary: #eef2ff;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-tertiary: #64748b;
+  --border-primary: #e2e8f0;
+  --border-secondary: #cbd5e1;
+  --sucar-card: #ffffff;
+  --sucar-surface: #f4f6fb;
+  --sucar-shadow-card: 0 4px 24px rgba(0, 86, 210, 0.1);
+  --hover-bg: rgba(0, 86, 210, 0.06);
+  color: var(--text-primary);
+}
+
+[data-app-skin='light'][data-theme='dark'] {
+  --bg-primary: #1e293b;
+  --bg-secondary: #0f172a;
+  --bg-tertiary: #334155;
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-tertiary: #94a3b8;
+  --border-primary: #334155;
+  --border-secondary: #475569;
+  --sucar-card: #1e293b;
+  --sucar-surface: #0f172a;
+  --sucar-shadow-card: 0 8px 28px rgba(0, 0, 0, 0.4);
+  --color-primary-50: #1e3a8a;
+  --color-primary-100: #1e40af;
+  --color-primary-300: #93c5fd;
+  --color-primary-600: #60a5fa;
+  --color-primary-700: #93c5fd;
+  --gradient-surface: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+  --hover-bg: rgba(255, 255, 255, 0.06);
+}
+
+/* Softer watermark behind client column only */
+html[data-app-skin='light'] body::before {
+  opacity: 0.03;
+}
+
+[data-app-skin='light'] .sucar-app {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+[data-app-skin='light'] .sucar-main,
+[data-app-skin='light'] .sucar-content {
+  color: var(--text-primary);
+}
+
+[data-app-skin='light'] .sucar-section-head h2,
+[data-app-skin='light'] .sucar-tab-header h2,
+[data-app-skin='light'] .sucar-card-panel h2,
+[data-app-skin='light'] .sucar-subheader h1 {
+  color: var(--text-primary);
+}
+
+/* Floating search (hero + map) */
+[data-app-skin='light'] .sucar-floating-search__input {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  caret-color: #0f172a !important;
+}
+
+[data-app-skin='light'] .sucar-floating-search__input::placeholder {
+  color: #64748b !important;
+  opacity: 1;
+}
+
+[data-app-skin='light'] .sucar-link {
+  color: var(--color-primary-600);
+  font-weight: var(--font-semibold);
+}
+
+[data-app-skin='light'][data-theme='dark'] .sucar-link {
+  color: var(--color-primary-300);
+}
+
+[data-app-skin='light'] .sucar-nav-item {
+  color: var(--text-tertiary);
+}
+
+[data-app-skin='light'] .sucar-nav-item.active {
+  color: var(--color-primary-600);
+  font-weight: var(--font-semibold);
+}
+
+[data-app-skin='light'][data-theme='dark'] .sucar-nav-item.active {
+  color: var(--color-primary-300);
+}
+
+[data-app-skin='light'] .sucar-bottom-nav {
+  background: var(--bg-primary);
+  border-top-color: var(--border-primary);
+}
+
+/* Service cards */
+[data-app-skin='light'] .sucar-service-card {
+  background: var(--sucar-card);
+  border-color: var(--border-primary);
+  color: var(--text-primary);
+}
+
+[data-app-skin='light'] .sucar-service-card h3 {
+  color: var(--text-primary);
+}
+
+[data-app-skin='light'] .sucar-service-card p {
+  color: var(--text-secondary);
+}
+
+[data-app-skin='light'] .sucar-service-card-top > span:last-child {
+  color: var(--text-tertiary);
+}
+
+[data-app-skin='light'][data-theme='dark'] .sucar-service-icon {
+  background: rgba(59, 130, 246, 0.2);
+  color: var(--color-primary-300);
+}
+
+/* Quick book block */
+[data-app-skin='light'] .sucar-map-block {
+  background: var(--sucar-card);
+  border-color: var(--border-primary);
+}
+
+[data-app-skin='light'] .sucar-location-card {
+  background: var(--sucar-card);
+  border-color: var(--border-primary);
+}
+
+[data-app-skin='light'] .sucar-location-info h3 {
+  color: var(--text-primary);
+}
+
+[data-app-skin='light'] .sucar-location-meta {
+  color: var(--text-secondary);
+}
+
+[data-app-skin='light'] .sucar-track-banner {
+  background: var(--color-primary-50);
+  color: var(--color-primary-700);
+  border: 1px solid var(--border-primary);
+}
+
+[data-app-skin='light'][data-theme='dark'] .sucar-track-banner {
+  background: rgba(59, 130, 246, 0.18);
+  color: #dbeafe;
+  border-color: var(--border-primary);
+}
+
+[data-app-skin='light'] .sucar-vehicle-row {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+}
+
+[data-app-skin='light'] .sucar-vehicle-row strong {
+  color: var(--text-primary);
+}
+
+[data-app-skin='light'] .sucar-vehicle-row p {
+  color: var(--text-secondary);
+}
+
+[data-app-skin='light'] .sucar-card-panel {
+  background: var(--sucar-card);
+  border-color: var(--border-primary);
+  color: var(--text-primary);
+}
+
+[data-app-skin='light'] .sucar-subheader {
+  background: var(--bg-primary);
+  border-bottom-color: var(--border-primary);
+}
+
+[data-app-skin='light'] .text-muted {
+  color: var(--text-secondary);
+}
+
+/* Map / explore */
+[data-app-skin='light'] .map-float-search {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: var(--border-primary);
+}
+
+/* Search bar colors live on .map-float-search--client in CarWashMapExplorer.css */
+
+[data-app-skin='light'][data-theme='dark'] .map-float-badge,
+[data-app-skin='light'][data-theme='dark'] .map-float-hint {
+  background: rgba(30, 41, 59, 0.95);
+  color: var(--text-secondary);
+  border-color: var(--border-primary);
+}
+
+[data-app-skin='light'][data-theme='dark'] .car-wash-map-explorer__map-wrap {
+  background: var(--bg-tertiary);
+  border-color: var(--border-primary);
+}
+
+[data-app-skin='light'] .carwash-detail-panel {
+  background: var(--sucar-card);
+  color: var(--text-primary);
+}
+
+/* Booking cards inherit from BookingCard.css but ensure base contrast */
+[data-app-skin='light'] .booking-card {
+  background: var(--sucar-card);
+  color: var(--text-primary);
+  border-color: var(--border-primary);
+}
+
+[data-app-skin='light'] .alert-error {
+  color: #991b1b;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}
+
+/* Live tracking modal — always use theme tokens (fixes dark text on dark bg) */
+[data-app-skin='light'] .live-tracking-container,
+[data-app-skin='light'] .live-tracking-overlay > div {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+[data-app-skin='light'] .live-tracking-container .live-tracking-title h2,
+[data-app-skin='light'] .live-tracking-container .info-value,
+[data-app-skin='light'] .live-tracking-container .tracker-status-hint,
+[data-app-skin='light'] .live-tracking-container .tracker-manual-status__hint strong {
+  color: var(--text-primary);
+}
+
+[data-app-skin='light'] .live-tracking-container .info-label,
+[data-app-skin='light'] .live-tracking-container .tracker-client-wait,
+[data-app-skin='light'] .live-tracking-container .tracker-manual-status__label,
+[data-app-skin='light'] .live-tracking-container .tracker-manual-status__hint,
+[data-app-skin='light'] .live-tracking-container .live-tracking-error p {
+  color: var(--text-secondary);
+}
+
+[data-app-skin='light'][data-theme='dark'] .alert-error {
+  color: #fecaca;
+  background: rgba(127, 29, 29, 0.35);
+  border-color: #991b1b;
+}

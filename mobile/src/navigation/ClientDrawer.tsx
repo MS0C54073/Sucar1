@@ -8,12 +8,14 @@ import {
 } from '@react-navigation/drawer';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
-import { Colors, Typography, Spacing, BorderRadius } from '../constants/theme';
+import { Typography, Spacing, BorderRadius } from '../constants/theme';
+import { ClientColors } from '../constants/sucarTheme';
 import ClientTabs from './ClientTabs';
 import HelpScreen from '../screens/HelpScreen';
 import AboutScreen from '../screens/AboutScreen';
 
 const Drawer = createDrawerNavigator();
+const C = ClientColors;
 
 const CustomDrawerContent = (props: DrawerContentComponentProps) => {
   const { user, logout } = useAuth();
@@ -30,12 +32,12 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
       <DrawerContentScrollView {...props} contentContainerStyle={styles.drawerScroll}>
         <View style={styles.profileSection}>
           <View style={styles.avatarCircle}>
-            <Ionicons name="person" size={32} color={Colors.white} />
+            <Ionicons name="person" size={32} color="#FFF" />
           </View>
           <Text style={styles.profileName}>{user?.name || 'Client'}</Text>
           <Text style={styles.profileEmail}>{user?.email}</Text>
-          <View style={[styles.roleBadge, { backgroundColor: `${Colors.primary}20` }]}>
-            <Text style={[styles.roleText, { color: Colors.primary }]}>Client</Text>
+          <View style={styles.roleBadge}>
+            <Text style={styles.roleText}>Client</Text>
           </View>
         </View>
         <View style={styles.navItems}>
@@ -44,7 +46,7 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
       </DrawerContentScrollView>
       <View style={styles.bottomSection}>
         <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.7}>
-          <Ionicons name="log-out-outline" size={20} color={Colors.error} />
+          <Ionicons name="log-out-outline" size={20} color={C.error} />
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
       </View>
@@ -56,11 +58,10 @@ const ClientDrawer = () => (
   <Drawer.Navigator
     drawerContent={(props) => <CustomDrawerContent {...props} />}
     screenOptions={{
-      headerStyle: { backgroundColor: Colors.primary },
-      headerTintColor: Colors.white,
-      headerTitleStyle: { fontWeight: Typography.bold, fontSize: Typography.lg },
-      drawerActiveTintColor: Colors.primary,
-      drawerInactiveTintColor: Colors.textSecondary,
+      headerShown: false,
+      drawerActiveTintColor: C.primary,
+      drawerInactiveTintColor: C.textSecondary,
+      drawerStyle: { backgroundColor: C.surface },
     }}
   >
     <Drawer.Screen
@@ -76,6 +77,9 @@ const ClientDrawer = () => (
       component={HelpScreen}
       options={{
         title: 'Help & Support',
+        headerShown: true,
+        headerStyle: { backgroundColor: C.primary },
+        headerTintColor: '#FFF',
         drawerIcon: ({ color, size }) => <Ionicons name="help-circle-outline" size={size} color={color} />,
       }}
     />
@@ -84,6 +88,9 @@ const ClientDrawer = () => (
       component={AboutScreen}
       options={{
         title: 'About SuCAR',
+        headerShown: true,
+        headerStyle: { backgroundColor: C.primary },
+        headerTintColor: '#FFF',
         drawerIcon: ({ color, size }) => (
           <Ionicons name="information-circle-outline" size={size} color={color} />
         ),
@@ -93,33 +100,38 @@ const ClientDrawer = () => (
 );
 
 const styles = StyleSheet.create({
-  drawerSafe: { flex: 1 },
+  drawerSafe: { flex: 1, backgroundColor: C.surface },
   drawerScroll: { flex: 1 },
   profileSection: {
     alignItems: 'center',
     paddingVertical: Spacing.xl,
     paddingHorizontal: Spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.borderLight,
+    borderBottomColor: C.border,
     marginBottom: Spacing.sm,
   },
   avatarCircle: {
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.md,
   },
-  profileName: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.textPrimary },
-  profileEmail: { fontSize: Typography.sm, color: Colors.textSecondary, marginBottom: Spacing.sm },
-  roleBadge: { paddingHorizontal: Spacing.md, paddingVertical: 4, borderRadius: BorderRadius.full },
-  roleText: { fontSize: Typography.sm, fontWeight: Typography.semibold },
+  profileName: { fontSize: Typography.lg, fontWeight: Typography.bold, color: C.text },
+  profileEmail: { fontSize: Typography.sm, color: C.textSecondary, marginBottom: Spacing.sm },
+  roleBadge: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.full,
+    backgroundColor: `${C.primary}18`,
+  },
+  roleText: { fontSize: Typography.sm, fontWeight: Typography.semibold, color: C.primary },
   navItems: { flex: 1, paddingTop: Spacing.xs },
-  bottomSection: { borderTopWidth: 1, borderTopColor: Colors.borderLight, padding: Spacing.md },
+  bottomSection: { borderTopWidth: 1, borderTopColor: C.border, padding: Spacing.md },
   logoutBtn: { flexDirection: 'row', alignItems: 'center', padding: Spacing.md, gap: Spacing.md },
-  logoutText: { fontSize: Typography.base, fontWeight: Typography.medium, color: Colors.error },
+  logoutText: { fontSize: Typography.base, fontWeight: Typography.medium, color: C.error },
 });
 
 export default ClientDrawer;

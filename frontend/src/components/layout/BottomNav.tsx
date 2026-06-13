@@ -1,7 +1,9 @@
+import { NavIcon, type NavIconName } from '../icons/NavIcon';
+
 export interface NavItem {
   id: string;
   label: string;
-  icon: string;
+  icon: NavIconName;
 }
 
 interface BottomNavProps {
@@ -20,8 +22,8 @@ const BottomNav = ({ items, activeId, onSelect }: BottomNavProps) => (
         onClick={() => onSelect(item.id)}
         aria-current={activeId === item.id ? 'page' : undefined}
       >
-        <span className="nav-icon" aria-hidden>
-          {item.icon}
+        <span className="nav-icon">
+          <NavIcon name={item.icon} />
         </span>
         {item.label}
       </button>

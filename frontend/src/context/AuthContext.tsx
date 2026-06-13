@@ -76,31 +76,35 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const [user, setUser] = useState<User | null>(getStoredUser());
-  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
-  const [loading, setLoading] = useState(true);
+  const storedTokenOnBoot = localStorage.getItem('token');
+  const storedUserOnBoot = getStoredUser();
+  const [user, setUser] = useState<User | null>(storedUserOnBoot);
+  const [token, setToken] = useState<string | null>(storedTokenOnBoot);
+  // Only block protected routes when we have a token but no cached profile yet
+  const [loading, setLoading] = useState(!!storedTokenOnBoot && !storedUserOnBoot);
 
   useEffect(() => {
-    if (!token) {
+    const storedToken = localStorage.getItem('token');
+    if (!storedToken) {
       setLoading(false);
       return;
     }
 
-    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    setToken(storedToken);
+    axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+
     const cachedUser = getStoredUser();
     if (cachedUser) {
       setUser(cachedUser);
       setLoading(false);
-      fetchUser();
+      void fetchUser();
       return;
     }
 
-    fetchUser();
-
-    // Never block the login screen for more than a few seconds
+    void fetchUser();
     const safetyTimer = window.setTimeout(() => setLoading(false), 4000);
     return () => clearTimeout(safetyTimer);
-  }, [token]);
+  }, []);
 
   const fetchUser = async () => {
     try {

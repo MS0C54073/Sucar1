@@ -18,10 +18,244 @@
   gap: var(--space-3);
 }
 
+/* Legacy fullscreen wrap — keep within 480px column if used */
+.driver-map-fullscreen-wrap {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  background: var(--bg-secondary);
+  overflow: hidden;
+}
+
+.driver-map-fullscreen-wrap .map-container,
+.driver-map-fullscreen-wrap > .map-container {
+  flex: 1;
+  min-height: 0;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.driver-map-fullscreen-wrap .map-view {
+  min-height: 100% !important;
+}
+
+.driver-map-float-search {
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top));
+  left: 12px;
+  right: 12px;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.97);
+  border-radius: 14px;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.14);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  pointer-events: none;
+}
+
+[data-app-skin='driver'] .driver-map-float-search {
+  background: rgba(21, 27, 38, 0.95);
+  border-color: var(--border-secondary);
+}
+
+.driver-map-float-search input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  color: var(--text-primary);
+  outline: none;
+  pointer-events: auto;
+  min-width: 0;
+}
+
+.driver-map-top-bar {
+  position: absolute;
+  top: max(68px, calc(12px + env(safe-area-inset-top) + 48px));
+  right: 12px;
+  z-index: 24;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.driver-map-nearby-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(72px + env(safe-area-inset-bottom));
+  z-index: 18;
+  max-height: min(38vh, 280px);
+  overflow-y: auto;
+  background: var(--bg-primary);
+  border-top: 1px solid var(--border-primary);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.2);
+  pointer-events: auto;
+}
+
+.driver-map-fullscreen-wrap .sucar-bottom-nav {
+  flex-shrink: 0;
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+}
+
 .driver-map-tab {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  width: 100%;
+}
+
+/* Full viewport map (map tab) */
+.driver-map-tab--fullscreen {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  margin: 0;
+  gap: 0;
+}
+
+.driver-map-tab--fullscreen .driver-map-tab-map {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  border-radius: 0;
+  overflow: hidden;
+  border: none;
+  box-shadow: none;
+}
+
+.driver-map-tab--fullscreen .driver-map-tab-map .map-container {
+  height: 100% !important;
+  min-height: 100% !important;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.driver-map-tab--fullscreen .driver-map-tab-map .map-view {
+  min-height: 100% !important;
+}
+
+.driver-map-tab__search {
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top));
+  left: 12px;
+  right: 12px;
+  z-index: 120;
+  pointer-events: auto;
+}
+
+.driver-map-tab__search .sucar-search-ac--map {
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
+}
+
+/* Collapsible jobs list over map */
+.driver-map-jobs-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 18;
+  display: flex;
+  flex-direction: column;
+  pointer-events: none;
+}
+
+.driver-map-jobs-sheet > * {
+  pointer-events: auto;
+}
+
+.driver-map-jobs-toggle {
+  align-self: center;
+  margin-bottom: var(--space-2);
+  padding: 8px 16px;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.97);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12);
+  backdrop-filter: blur(8px);
+}
+
+[data-app-skin='driver'][data-theme='dark'] .driver-map-jobs-toggle,
+[data-app-skin='driver'] .driver-map-jobs-toggle {
+  background: rgba(21, 27, 38, 0.95);
+  color: var(--text-primary);
+  border-color: var(--border-secondary);
+}
+
+.driver-map-jobs-panel {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.25s ease;
+  background: var(--bg-primary);
+  border-top: 1px solid var(--border-primary);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.driver-map-jobs-panel.open {
+  max-height: min(42vh, 320px);
+  overflow-y: auto;
+}
+
+.driver-map-jobs-panel .nearby-bookings {
+  border-radius: 0;
+  max-height: min(42vh, 320px);
+}
+
+.driver-map-empty-overlay {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 12;
+  padding: var(--space-4);
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: var(--sucar-radius-lg);
+  text-align: center;
+  pointer-events: none;
+  max-width: 280px;
+}
+
+[data-app-skin='driver'] .driver-map-empty-overlay {
+  background: rgba(21, 27, 38, 0.92);
+  color: var(--text-secondary);
+}
+
+/* Legacy non-fullscreen map (if reused elsewhere) */
+.driver-map-tab--large {
+  position: relative;
+  margin: 0 calc(-1 * var(--space-4));
+  width: calc(100% + 2 * var(--space-4));
+}
+
+.driver-map-tab--large .driver-map-tab-map {
+  position: relative;
+  height: min(calc(100dvh - 280px), 520px);
+  min-height: 400px;
+  border-radius: var(--sucar-radius-xl);
+  overflow: hidden;
+  border: 1px solid var(--border-primary);
 }
 
 .driver-map-tab-map {
@@ -50,3 +284,4 @@
   background: var(--bg-primary);
   border-radius: var(--sucar-radius-xl);
 }
+

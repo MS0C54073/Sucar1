@@ -226,7 +226,7 @@ const ManageServices = () => {
                     <option value="">Choose a package...</option>
                     {servicePackages.map((pkg) => (
                       <option key={pkg.id} value={pkg.id}>
-                        {pkg.icon} {pkg.name} - K{pkg.price}
+                        {pkg.name} — K{pkg.price}
                       </option>
                     ))}
                   </select>
@@ -376,7 +376,7 @@ const ManageServices = () => {
             </div>
           ) : (
             <div className="empty-state">
-              <div className="empty-icon">🚗</div>
+              <div className="empty-icon" aria-hidden />
               <h3>No services yet</h3>
               <p>Create your first service to start accepting bookings</p>
               <button className="btn btn-primary" onClick={handleAddNew}>

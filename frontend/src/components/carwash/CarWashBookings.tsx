@@ -3,15 +3,15 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import { useBookings } from '../../hooks/useBookings';
 import LoadingSpinner from '../LoadingSpinner';
-import QueueManagement from './QueueManagement';
+import OperatorOperationsHub from './OperatorOperationsHub';
 import BookingCard from '../booking/BookingCard';
 import LiveTracking from '../LiveTracking';
-
+import './CarWashBookings.css';
 
 const CarWashBookings = () => {
   const queryClient = useQueryClient();
 
-  const [viewMode, setViewMode] = useState<'bookings' | 'queue'>('bookings');
+  const [viewMode, setViewMode] = useState<'bookings' | 'operations'>('operations');
   const [trackingBookingId, setTrackingBookingId] = useState<string | null>(null);
 
   // Use centralized bookings hook
@@ -39,27 +39,34 @@ const CarWashBookings = () => {
   }
 
   return (
-    <div className="carwash-bookings">
+    <div className="carwash-bookings operator-bookings-page">
       <div className="bookings-header">
-        <h1>Bookings & Queue</h1>
-        <div className="view-toggle">
+        <div>
+          <h1>Operator dashboard</h1>
+          <p className="bookings-header__sub">
+            Live bays, queue, and payment verification — or manage individual bookings.
+          </p>
+        </div>
+        <div className="view-toggle operator-view-toggle">
           <button
+            type="button"
+            className={viewMode === 'operations' ? 'active' : ''}
+            onClick={() => setViewMode('operations')}
+          >
+            Live ops
+          </button>
+          <button
+            type="button"
             className={viewMode === 'bookings' ? 'active' : ''}
             onClick={() => setViewMode('bookings')}
           >
-            📋 Bookings
-          </button>
-          <button
-            className={viewMode === 'queue' ? 'active' : ''}
-            onClick={() => setViewMode('queue')}
-          >
-            🚗 Queue
+            Bookings
           </button>
         </div>
       </div>
 
-      {viewMode === 'queue' ? (
-        <QueueManagement />
+      {viewMode === 'operations' ? (
+        <OperatorOperationsHub />
       ) : (
         <div className="bookings-view">
           {isLoading ? (

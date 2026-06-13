@@ -10,7 +10,7 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const credentials = {
   admin: [
-    { email: 'admin@sucar.com', password: 'password123', role: 'admin', label: 'Admin User' }
+    { email: 'admin@sucar.com', password: 'admin123', role: 'admin', label: 'Admin User' }
   ],
   clients: [
     { email: 'john.mwansa@email.com', password: 'client123', role: 'client', label: 'John Mwansa' },
@@ -42,7 +42,7 @@ async function testLogin(email, password, label) {
       password
     });
 
-    if (response.status === 200 && response.data.token) {
+    if (response.status === 200 && response.data?.data?.token) {
       console.log(`✓ ${label} - Login successful`);
       return true;
     } else {

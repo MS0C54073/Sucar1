@@ -10,12 +10,15 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { apiClient } from '../../utils/api';
 import JobRequestCard, { JobRequestData } from '../../components/ui/JobRequestCard';
-import { DriverColors } from '../../constants/sucarTheme';
+import EarningsRow from '../../components/ui/EarningsRow';
+import ScreenTopBar from '../../components/layout/ScreenTopBar';
+import { DriverColors, AppLayout } from '../../constants/sucarTheme';
 
 const DriverHomeScreen = () => {
   const navigation = useNavigation<any>();
@@ -24,17 +27,16 @@ const DriverHomeScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [accepting, setAccepting] = useState(false);
   const [pendingJob, setPendingJob] = useState<JobRequestData | null>(null);
-  const [activeJobs, setActiveJobs] = useState<any[]>([]);
-  const [stats, setStats] = useState({ today: 'K0', jobs: '0', rating: '4.8' });
+  const [stats, setStats] = useState({ total: 'K0', jobs: '0', time: '0h 0m' });
+
+  const firstName = user?.name?.split(' ')[0] || 'Driver';
+  const C = DriverColors;
 
   const fetchData = useCallback(async () => {
     try {
       const res = await apiClient.get('/drivers/bookings');
       const bookings = res.data.data || [];
       const pending = bookings.find((b: any) => b.status === 'pending');
-      const active = bookings.filter((b: any) =>
-        ['accepted', 'picked_up', 'at_wash', 'washing_bay', 'drying_bay', 'wash_completed'].includes(b.status),
-      );
 
       if (pending) {
         const created = new Date(pending.createdAt || pending.created_at || Date.now());
@@ -42,18 +44,17 @@ const DriverHomeScreen = () => {
         setPendingJob({
           id: pending.id || pending._id,
           clientName: pending.clientId?.name || 'Customer',
-          serviceName: pending.serviceId?.name || 'Car wash',
+          serviceName: pending.serviceId?.name || 'Exterior Wash',
           vehicleInfo: pending.vehicleId
             ? `${pending.vehicleId.make || ''} ${pending.vehicleId.model || ''}`.trim()
             : undefined,
-          distanceKm: 0.8,
-          earnings: parseFloat(pending.totalAmount) * 0.8 || parseFloat(pending.totalAmount) || 68,
+          distanceKm: 3.2,
+          earnings: (parseFloat(pending.totalAmount) || 0) * 0.8 || 28.5,
           minutesAgo: mins,
         });
       } else {
         setPendingJob(null);
       }
-      setActiveJobs(active.slice(0, 3));
 
       const today = new Date().toDateString();
       const doneToday = bookings.filter((b: any) => {
@@ -63,9 +64,9 @@ const DriverHomeScreen = () => {
       });
       const earn = doneToday.reduce((s: number, b: any) => s + (parseFloat(b.totalAmount) || 0) * 0.8, 0);
       setStats({
-        today: `K${Math.round(earn)}`,
+        total: `K${earn.toFixed(2)}`,
         jobs: String(doneToday.length),
-        rating: '4.8',
+        time: '5h 45m',
       });
     } catch (e) {
       console.error('Driver home:', e);
@@ -86,6 +87,7 @@ const DriverHomeScreen = () => {
       if (res.data.success) {
         Alert.alert('Accepted', 'Job added to your queue.');
         fetchData();
+        navigation.navigate('JobsTab');
       } else {
         Alert.alert('Error', res.data.message || 'Could not accept');
       }
@@ -98,67 +100,84 @@ const DriverHomeScreen = () => {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <ScreenTopBar variant="driver" notificationCount={3} />
+
       <ScrollView
+        showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchData(); }} tintColor={DriverColors.primary} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              fetchData();
+            }}
+            tintColor={C.primary}
+          />
         }
       >
-        <View style={styles.onlineRow}>
-          <View style={styles.dot} />
-          <Text style={styles.onlineText}>{online ? 'Online — accepting jobs' : 'Offline'}</Text>
-          <Switch
-            value={online}
-            onValueChange={setOnline}
-            trackColor={{ false: '#334155', true: DriverColors.primaryDark }}
-            thumbColor="#FFF"
-          />
-        </View>
-
-        <View style={styles.earnBar}>
-          <View style={styles.earnStat}>
-            <Text style={styles.earnLbl}>Today</Text>
-            <Text style={styles.earnVal}>{stats.today} <Text style={styles.earnSub}>earned</Text></Text>
+        <LinearGradient colors={[C.primary, C.primaryDark]} style={styles.hero}>
+          <View style={styles.profileRow}>
+            <View style={styles.avatar}>
+              <Ionicons name="car" size={22} color={C.primary} />
+            </View>
+            <View style={styles.profileText}>
+              <Text style={styles.hello}>Hello, {firstName}! 👋</Text>
+              <Text style={styles.tagline}>Driver · Ready for jobs in Lusaka</Text>
+            </View>
+            <View style={styles.onlineWrap}>
+              <Text style={[styles.onlineLbl, online && styles.onlineOn]}>Online</Text>
+              <Switch
+                value={online}
+                onValueChange={setOnline}
+                trackColor={{ false: '#CBD5E1', true: '#86EFAC' }}
+                thumbColor={online ? C.success : '#F1F5F9'}
+              />
+            </View>
           </View>
-          <View style={styles.earnStat}>
-            <Text style={styles.earnLbl}>Jobs done</Text>
-            <Text style={styles.earnVal}>{stats.jobs} <Text style={styles.earnSub}>washes</Text></Text>
-          </View>
-          <View style={styles.earnStat}>
-            <Text style={styles.earnLbl}>Rating</Text>
-            <Text style={styles.earnVal}>{stats.rating} <Text style={styles.earnSub}>★</Text></Text>
-          </View>
-        </View>
+          {online && (
+            <Text style={styles.avail}>You're available for new job requests</Text>
+          )}
+        </LinearGradient>
 
         {pendingJob && online && (
-          <>
-            <Text style={styles.sec}>New job alert</Text>
-            <JobRequestCard job={pendingJob} loading={accepting} onAccept={handleAccept} onDecline={() => setPendingJob(null)} />
-          </>
+          <View style={styles.jobSection}>
+            <View style={styles.secHead}>
+              <Text style={styles.secTitle}>New request</Text>
+            </View>
+            <JobRequestCard
+              job={pendingJob}
+              loading={accepting}
+              onAccept={handleAccept}
+              onDecline={() => setPendingJob(null)}
+            />
+          </View>
         )}
 
-        {activeJobs.length > 0 && (
-          <>
-            <Text style={styles.sec}>In progress</Text>
-            {activeJobs.map((j) => (
-              <TouchableOpacity
-                key={j.id || j._id}
-                style={styles.activeCard}
-                onPress={() => navigation.navigate('BookingDetail', { bookingId: j.id || j._id })}
-              >
-                <Text style={styles.activeTitle}>{j.serviceId?.name || 'Active job'}</Text>
-                <Text style={styles.activeMeta}>{j.carWashId?.carWashName || j.pickupLocation || ''}</Text>
-                <View style={styles.navBtn}>
-                  <Ionicons name="navigate" size={14} color={DriverColors.blue} />
-                  <Text style={styles.navTxt}>View job</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </>
-        )}
+        <View style={styles.secHead}>
+          <Text style={styles.secTitle}>Today's earnings</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('EarningsTab')}>
+            <Text style={styles.secLink}>View summary</Text>
+          </TouchableOpacity>
+        </View>
+        <EarningsRow
+          variant="driver"
+          stats={[
+            { icon: 'wallet-outline', iconColor: C.primary, label: 'Total', value: stats.total },
+            { icon: 'briefcase-outline', iconColor: C.success, label: 'Jobs', value: stats.jobs },
+            { icon: 'time-outline', iconColor: C.accent, label: 'Online', value: stats.time },
+          ]}
+        />
 
-        {!pendingJob && activeJobs.length === 0 && online && (
-          <Text style={styles.empty}>No jobs right now. Pull to refresh.</Text>
-        )}
+        <TouchableOpacity style={styles.achievement} activeOpacity={0.85}>
+          <View style={[styles.starCircle, { backgroundColor: C.primary }]}>
+            <Ionicons name="star" size={16} color="#FFF" />
+          </View>
+          <Text style={styles.achieveText}>
+            Keep up the great work! You're in the top 20% of detailers today.
+          </Text>
+          <Ionicons name="chevron-forward" size={18} color={C.textMuted} />
+        </TouchableOpacity>
+
         <View style={{ height: 24 }} />
       </ScrollView>
     </SafeAreaView>
@@ -167,46 +186,63 @@ const DriverHomeScreen = () => {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: DriverColors.background },
-  onlineRow: {
+  hero: {
+    paddingHorizontal: AppLayout.screenPadding,
+    paddingTop: 16,
+    paddingBottom: 18,
+  },
+  profileRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  avatar: {
+    width: AppLayout.heroAvatarSize,
+    height: AppLayout.heroAvatarSize,
+    borderRadius: AppLayout.heroAvatarSize / 2,
+    backgroundColor: '#FFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileText: { flex: 1 },
+  hello: { fontSize: 18, fontWeight: '700', color: '#FFF' },
+  tagline: { fontSize: 12, color: DriverColors.primaryLight, marginTop: 2 },
+  onlineWrap: { alignItems: 'flex-end' },
+  onlineLbl: { fontSize: 11, color: 'rgba(255,255,255,0.7)', marginBottom: 4, fontWeight: '600' },
+  onlineOn: { color: '#BBF7D0' },
+  avail: {
+    fontSize: 12,
+    color: '#E0F2FE',
+    marginTop: 12,
+    fontWeight: '500',
+  },
+  jobSection: { marginTop: 8 },
+  secHead: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: AppLayout.screenPadding,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  secTitle: { fontSize: AppLayout.sectionTitleSize, fontWeight: '700', color: DriverColors.text },
+  secLink: { fontSize: 13, fontWeight: '600', color: DriverColors.primary },
+  achievement: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginHorizontal: AppLayout.screenPadding,
+    marginTop: 14,
     padding: 14,
-    backgroundColor: 'rgba(61,214,140,0.08)',
-    borderBottomWidth: 1,
-    borderBottomColor: DriverColors.border,
-    gap: 8,
-  },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: DriverColors.primary },
-  onlineText: { flex: 1, fontSize: 12, fontWeight: '600', color: DriverColors.primary },
-  earnBar: { flexDirection: 'row', padding: 14, borderBottomWidth: 1, borderBottomColor: DriverColors.border, gap: 12 },
-  earnStat: { flex: 1 },
-  earnLbl: { fontSize: 9, color: DriverColors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 },
-  earnVal: { fontSize: 18, fontWeight: '700', color: DriverColors.text, marginTop: 3 },
-  earnSub: { fontSize: 11, fontWeight: '400', color: DriverColors.textSecondary },
-  sec: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 6,
-    fontSize: 10,
-    fontWeight: '600',
-    color: DriverColors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
-  activeCard: {
-    marginHorizontal: 12,
-    marginBottom: 10,
-    backgroundColor: DriverColors.surfaceElevated,
-    borderRadius: 14,
+    backgroundColor: DriverColors.surface,
+    borderRadius: AppLayout.cardRadius,
     borderWidth: 1,
     borderColor: DriverColors.border,
-    padding: 12,
+    gap: 10,
   },
-  activeTitle: { fontSize: 12, fontWeight: '600', color: DriverColors.text },
-  activeMeta: { fontSize: 10, color: DriverColors.textSecondary, marginTop: 4 },
-  navBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
-  navTxt: { fontSize: 11, fontWeight: '600', color: DriverColors.blue },
-  empty: { textAlign: 'center', color: DriverColors.textMuted, margin: 24, fontSize: 13 },
+  starCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  achieveText: { flex: 1, fontSize: 12, color: DriverColors.textSecondary, lineHeight: 17 },
 });
 
 export default DriverHomeScreen;

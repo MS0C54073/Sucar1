@@ -1,7 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { DriverColors } from '../../constants/sucarTheme';
+import { DriverColors, AppLayout } from '../../constants/sucarTheme';
+
+const C = DriverColors;
 
 const DriverRatingsScreen = () => (
   <SafeAreaView style={styles.safe}>
@@ -25,26 +27,26 @@ const DriverRatingsScreen = () => (
 );
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: DriverColors.background },
+  safe: { flex: 1, backgroundColor: C.background },
   content: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   scoreCircle: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: DriverColors.surface,
+    backgroundColor: C.surface,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
     borderWidth: 2,
     borderColor: '#FBBF24',
   },
-  score: { fontSize: 36, fontWeight: '800', color: '#FFF' },
+  score: { fontSize: 36, fontWeight: '800', color: C.text },
   stars: { flexDirection: 'row', marginTop: 4 },
-  title: { fontSize: 22, fontWeight: '700', color: '#FFF' },
-  sub: { fontSize: 14, color: DriverColors.textSecondary, textAlign: 'center', marginTop: 8 },
+  title: { fontSize: 22, fontWeight: '700', color: C.text },
+  sub: { fontSize: 14, color: C.textSecondary, textAlign: 'center', marginTop: 8 },
   stat: { marginTop: 32, alignItems: 'center' },
-  statVal: { fontSize: 28, fontWeight: '800', color: '#3B82F6' },
-  statLabel: { fontSize: 13, color: DriverColors.textMuted, marginTop: 4 },
+  statVal: { fontSize: 28, fontWeight: '800', color: C.primary },
+  statLabel: { fontSize: 13, color: C.textMuted, marginTop: 4 },
 });
 
 export default DriverRatingsScreen;

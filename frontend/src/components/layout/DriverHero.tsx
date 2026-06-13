@@ -1,4 +1,6 @@
 import NotificationCenter from '../notifications/NotificationCenter';
+import ThemeToggle from './ThemeToggle';
+import BrandLogo from '../BrandLogo';
 
 interface DriverHeroProps {
   userName: string;
@@ -18,13 +20,11 @@ const DriverHero = ({
   return (
     <header className="sucar-hero sucar-hero--driver">
       <div className="sucar-hero-top">
-        <button type="button" className="sucar-icon-btn" aria-label="Menu">
-          ☰
-        </button>
-        <div className="sucar-logo">
-          SuCAR <span className="sucar-logo-sparkle">✦</span>
+        <BrandLogo className="sucar-logo" size={30} textClassName="sucar-logo__text" />
+        <div className="sucar-hero-actions">
+          <ThemeToggle />
+          <NotificationCenter />
         </div>
-        <NotificationCenter />
       </div>
       <div className="sucar-profile-row">
         {profilePictureUrl ? (
@@ -33,8 +33,8 @@ const DriverHero = ({
           <div className="sucar-avatar-fallback">{firstName.charAt(0)}</div>
         )}
         <div className="sucar-hero-greeting">
-          <h1>Hello, {firstName}</h1>
-          <p>Driver / Detailer</p>
+          <h1>Hi, {firstName}</h1>
+          <p>Jobs and pickups in your area</p>
         </div>
         <div className="sucar-online-toggle">
           <label>{online ? 'Online' : 'Offline'}</label>
@@ -45,11 +45,7 @@ const DriverHero = ({
             aria-pressed={online}
             aria-label="Toggle availability"
           />
-          {online && (
-            <p style={{ fontSize: '0.65rem', color: 'var(--color-success)', marginTop: 4 }}>
-              ● You&apos;re available for jobs
-            </p>
-          )}
+          {online && <p className="sucar-online-hint">You&apos;re available for jobs</p>}
         </div>
       </div>
     </header>

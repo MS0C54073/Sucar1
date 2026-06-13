@@ -1,0 +1,176 @@
+/**
+ * Client app — 480px mobile column (not full desktop width)
+ */
+
+[data-app-skin='light'] .sucar-app {
+  width: 100%;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+[data-app-skin='light'] .sucar-content {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+@media (min-width: 768px) {
+  [data-app-skin='light'] .sucar-app {
+    max-width: 480px;
+    box-shadow: 0 8px 40px rgba(0, 86, 210, 0.1);
+  }
+
+  [data-app-skin='light'] .sucar-bottom-nav {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    max-width: 480px;
+    width: 100%;
+  }
+
+  [data-app-skin='light'] .sucar-main {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+  }
+}
+
+[data-app-skin='light'] .sucar-services-scroll {
+  margin: 0;
+  padding-left: 0;
+  padding-right: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+[data-app-skin='light'] .sucar-service-card {
+  flex: 0 0 min(200px, 85vw);
+}
+
+[data-app-skin='light'] .sucar-location-card {
+  margin: var(--space-3) var(--space-4) var(--space-4);
+  margin-top: calc(-1 * var(--space-4));
+  align-items: center;
+  gap: var(--space-3);
+}
+
+@media (max-width: 420px) {
+  [data-app-skin='light'] .sucar-location-card {
+    flex-wrap: wrap;
+  }
+
+  [data-app-skin='light'] .sucar-location-thumb {
+    width: 56px;
+    height: 56px;
+  }
+
+  [data-app-skin='light'] .sucar-location-info {
+    flex: 1 1 calc(100% - 72px);
+    min-width: 0;
+  }
+
+  [data-app-skin='light'] .sucar-btn-book {
+    width: 100%;
+    text-align: center;
+    margin-top: var(--space-1);
+  }
+}
+
+[data-app-skin='light'] .sucar-map-inner {
+  width: 100%;
+}
+
+[data-app-skin='light'] .sucar-map-inner .map-container {
+  width: 100% !important;
+  border-radius: 0;
+}
+
+[data-app-skin='light'] .sucar-tab-header {
+  margin: 0 0 var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-primary);
+}
+
+[data-app-skin='light'] .sucar-tab-header.sucar-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+[data-app-skin='light'] .sucar-main {
+  padding-bottom: calc(72px + env(safe-area-inset-bottom));
+}
+
+/* Explore tab — full height inside the 480px column */
+[data-app-skin='light'] .sucar-app--map-focus {
+  height: 100dvh;
+  max-height: 100dvh;
+  max-width: 480px;
+  overflow: hidden;
+}
+
+[data-app-skin='light'] .sucar-app--map-focus .sucar-main {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding-bottom: 0;
+}
+
+[data-app-skin='light'] .sucar-app--map-focus .sucar-content--map {
+  flex: 1;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+[data-app-skin='light'] .sucar-app--map-focus .sucar-explore-layout--map {
+  flex: 1;
+  min-height: calc(100dvh - 72px - env(safe-area-inset-bottom, 0px));
+  height: 100%;
+  margin: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+[data-app-skin='light'] .sucar-app--map-focus .sucar-content--map {
+  background: var(--bg-secondary);
+}
+
+[data-app-skin='light'] .sucar-app--map-focus .car-wash-map-explorer--in-shell {
+  --map-explorer-height: calc(100dvh - 72px - env(safe-area-inset-bottom, 0px));
+  flex: 1;
+  min-height: calc(100dvh - 72px - env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+}
+
+[data-app-skin='light'] .sucar-app--map-focus .car-wash-map-explorer--in-shell .car-wash-map-explorer__map-wrap {
+  flex: 1;
+  min-height: 360px;
+  height: 100% !important;
+  max-height: none;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  background: #e2e8f0;
+}
+
+[data-app-skin='light'] .sucar-app--map-focus .sucar-bottom-nav {
+  flex-shrink: 0;
+  position: relative;
+  left: auto;
+  transform: none;
+  max-width: 100%;
+  z-index: 30;
+}
+
+[data-app-skin='light'] .bookings-list .booking-card {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+[data-app-skin='light'] .sucar-card-panel {
+  width: 100%;
+  box-sizing: border-box;
+}

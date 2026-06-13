@@ -4,13 +4,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
     "@react-oauth/google": "^0.13.4",
-    "@supabase/supabase-js": "^2.106.1",
+    "@supabase/supabase-js": "^2.108.1",
     "@tanstack/react-query": "^5.8.4",
     "@types/mapbox-gl": "^3.4.1",
     "axios": "^1.6.2",

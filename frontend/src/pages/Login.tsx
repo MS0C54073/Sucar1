@@ -66,7 +66,7 @@ const LoginContent = memo(({
       <div className="login-page">
       <aside className="login-brand">
         <div className="login-brand-inner">
-          <img src="/images/Sucar.png" alt="" className="login-brand-logo" />
+          <img src="/images/Sucarcar.jpeg" alt="" className="login-brand-logo" />
           <h1 className="login-brand-title">SuCAR</h1>
           <p className="login-brand-tagline">
             Book pickup, drive-in, or delivery car wash — all in one place.
@@ -89,7 +89,7 @@ const LoginContent = memo(({
 
         <div className="login-card">
           <div className="login-card-header">
-            <img src="/images/Sucar.png" alt="SuCAR" className="login-card-logo" />
+            <img src="/images/Sucarcar.jpeg" alt="SuCar" className="login-card-logo" />
             <h2>Sign in</h2>
             <p>Welcome back — choose how you&apos;d like to continue</p>
           </div>

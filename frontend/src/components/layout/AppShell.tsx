@@ -6,11 +6,16 @@ import SidebarNav from './SidebarNav';
 import './AppShell.css';
 
 export type AppSkin = 'light' | 'driver';
+export type AppContentVariant = 'default' | 'map';
 
 interface AppShellProps {
   children: ReactNode;
   skin?: AppSkin;
   hero?: ReactNode;
+  /** Compact bar when there is no hero (e.g. map tab) */
+  subHeader?: ReactNode;
+  /** Full-viewport map layout */
+  contentVariant?: AppContentVariant;
   navItems: NavItem[];
   activeNav: string;
   onNavChange: (id: string) => void;
@@ -22,6 +27,8 @@ const AppShell = ({
   children,
   skin = 'light',
   hero,
+  subHeader,
+  contentVariant = 'default',
   navItems,
   activeNav,
   onNavChange,
@@ -30,12 +37,11 @@ const AppShell = ({
 }: AppShellProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const mapFocus = contentVariant === 'map';
 
   useEffect(() => {
     document.documentElement.setAttribute('data-app-skin', skin);
-    if (skin === 'driver') {
-      document.documentElement.setAttribute('data-theme', 'dark');
-    }
+    // Note: driver theme is managed by DriverHome so ThemeToggle can override it
     return () => {
       document.documentElement.removeAttribute('data-app-skin');
     };
@@ -51,7 +57,13 @@ const AppShell = ({
 
   return (
     <div
-      className={`sucar-app ${showSidebar ? 'sucar-app--with-sidebar' : ''}`}
+      className={[
+        'sucar-app',
+        showSidebar ? 'sucar-app--with-sidebar' : '',
+        mapFocus ? 'sucar-app--map-focus' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
       data-role={user?.role}
     >
       {showSidebar && sidebarItems && (
@@ -59,7 +71,10 @@ const AppShell = ({
       )}
       <div className="sucar-main">
         {hero}
-        <div className="sucar-content">{children}</div>
+        {subHeader}
+        <div className={mapFocus ? 'sucar-content sucar-content--map' : 'sucar-content'}>
+          {children}
+        </div>
       </div>
       <BottomNav items={navItems} activeId={activeNav} onSelect={handleNav} />
     </div>

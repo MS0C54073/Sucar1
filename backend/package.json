@@ -17,7 +17,9 @@
     "create-admin": "node scripts/create-admin.js",
     "seed": "node scripts/seed-data.js",
     "test:logins": "node scripts/test-all-logins.js",
-    "fix-approvals": "node scripts/fix-approval-status.js"
+    "fix-approvals": "node scripts/fix-approval-status.js",
+    "migrate:operator": "node scripts/apply-operator-schema.js",
+    "migrate:reviews": "node scripts/apply-reviews-schema.js"
   },
   "keywords": [
     "car-wash",
@@ -27,7 +29,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@supabase/supabase-js": "^2.90.1",
+    "@supabase/supabase-js": "^2.108.1",
     "@types/pg": "^8.16.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",

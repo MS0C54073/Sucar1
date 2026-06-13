@@ -4,9 +4,14 @@ import { useAuth } from '../../context/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../services/api';
 import ChatWindow from '../chat/ChatWindow';
+import PaymentReviewModal from '../payment/PaymentReviewModal';
+import { getChatPath } from '../../utils/chatPaths';
 import QueueDisplay from '../queue/QueueDisplay';
+import OperatorQueueStrip from '../carwash/OperatorQueueStrip';
 import QueueEstimate from './QueueEstimate';
 import { useToast } from '../ToastContainer';
+import ReviewModal from '../reviews/ReviewModal';
+import StarRating from '../reviews/StarRating';
 import './BookingCard.css';
 
 interface BookingCardProps {
@@ -20,7 +25,9 @@ const BookingCard = ({ booking, onStatusUpdate }: BookingCardProps) => {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const [showChat, setShowChat] = useState(false);
+  const [showPaymentReview, setShowPaymentReview] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const [showReview, setShowReview] = useState(false);
   // Temporary safeguard: if backend DB hasn't applied the status migration,
   // attempting to set 'picked_up' (mapped server-side to 'picked_up_pending_confirmation')
   // will fail with bookings_status_check. When detected, we block further pickup attempts
@@ -51,6 +58,36 @@ const BookingCard = ({ booking, onStatusUpdate }: BookingCardProps) => {
   const receiverId = getChatReceiver();
   const receiverName = getChatReceiverName();
   const bookingId = booking.id || booking._id;
+  const resolvedCarWashId =
+    typeof booking.carWashId === 'object'
+      ? booking.carWashId?.id
+      : booking.carWashId || booking.car_wash_id;
+
+  // Reviews — a client can rate a finished booking once payment is settled.
+  const REVIEWABLE_STATUSES = ['wash_completed', 'delivered_to_client', 'delivered', 'completed'];
+  const canReview =
+    user?.role === 'client' &&
+    REVIEWABLE_STATUSES.includes(booking.status) &&
+    booking.paymentStatus !== 'pending';
+  const reviewHasDriver = booking.bookingType === 'pickup_delivery' && !!booking.driverId;
+  const reviewDriverName =
+    typeof booking.driverId === 'object' ? booking.driverId?.name : undefined;
+  const carWashDisplayName =
+    booking.carWashId?.carWashName || booking.carWashId?.name || undefined;
+  const carWashAvgRating = Number(booking.carWashId?.rating) || 0;
+
+  const { data: existingReview } = useQuery({
+    queryKey: ['booking-review', bookingId],
+    queryFn: async () => {
+      try {
+        const res = await api.get(`/reviews/booking/${bookingId}`);
+        return res.data?.data ?? null;
+      } catch {
+        return null;
+      }
+    },
+    enabled: !!bookingId && canReview,
+  });
 
   // Mutation for updating booking status
   const updateStatusMutation = useMutation({
@@ -75,14 +112,31 @@ const BookingCard = ({ booking, onStatusUpdate }: BookingCardProps) => {
 
       return response.data;
     },
-    onSuccess: (_data, variables) => {
-      // Invalidate all booking-related queries
+    onSuccess: async (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
       queryClient.invalidateQueries({ queryKey: ['driver-bookings'] });
       queryClient.invalidateQueries({ queryKey: ['carwash-bookings'] });
       queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
       queryClient.invalidateQueries({ queryKey: ['carwash-dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['queue-position', variables.bookingId] });
+
+      if (
+        user?.role === 'carwash' &&
+        variables.status === 'at_wash' &&
+        booking.bookingType === 'drive_in'
+      ) {
+        try {
+          await api.post('/queue/add', {
+            bookingId: variables.bookingId,
+            serviceDurationMinutes: 30,
+          });
+          queryClient.invalidateQueries({ queryKey: ['queue', resolvedCarWashId] });
+        } catch {
+          /* may already be in queue */
+        }
+      }
+
       onStatusUpdate?.();
       showToast(`Status updated to ${variables.status.replace(/_/g, ' ')}`, 'success');
     },
@@ -195,7 +249,7 @@ const BookingCard = ({ booking, onStatusUpdate }: BookingCardProps) => {
               {booking.status.replace(/_/g, ' ')}
             </span>
             <span className="booking-type-badge">
-              {booking.bookingType === 'drive_in' ? '🚗 Drive-In' : '🚚 Pickup & Delivery'}
+              {booking.bookingType === 'drive_in' ? 'Drive-in' : 'Pickup & delivery'}
             </span>
           </div>
           <div className="booking-header-right">
@@ -215,6 +269,14 @@ const BookingCard = ({ booking, onStatusUpdate }: BookingCardProps) => {
               <span className="info-label">Car Wash</span>
               <span className="info-value">
                 {booking.carWashId?.carWashName || booking.carWashId?.name || 'N/A'}
+                {carWashAvgRating > 0 && (
+                  <StarRating
+                    value={carWashAvgRating}
+                    size={13}
+                    showValue
+                    className="info-value__rating"
+                  />
+                )}
               </span>
             </div>
             <div className="info-item">
@@ -245,14 +307,28 @@ const BookingCard = ({ booking, onStatusUpdate }: BookingCardProps) => {
             </div>
           </div>
 
-          {/* Queue Display for Drive-In Bookings */}
-          {booking.bookingType === 'drive_in' && booking.carWashId && (
+          {/* Queue — operator: compact strip; client: full display */}
+          {booking.bookingType === 'drive_in' && resolvedCarWashId && (
             <div className="booking-queue-section">
-              <QueueDisplay bookingId={bookingId} carWashId={booking.carWashId} />
-              <QueueEstimate
-                queuePosition={booking.queuePosition}
-                estimatedWaitTime={booking.estimatedWaitTime}
-              />
+              {user?.role === 'carwash' ? (
+                <OperatorQueueStrip
+                  bookingId={bookingId}
+                  carWashId={String(resolvedCarWashId)}
+                  bookingStatus={booking.status}
+                />
+              ) : (
+                !['wash_completed', 'completed', 'cancelled', 'delivered_to_client'].includes(
+                  booking.status
+                ) && (
+                  <>
+                    <QueueDisplay bookingId={bookingId} carWashId={String(resolvedCarWashId)} />
+                    <QueueEstimate
+                      queuePosition={booking.queuePosition}
+                      estimatedWaitTime={booking.estimatedWaitTime}
+                    />
+                  </>
+                )
+              )}
             </div>
           )}
 
@@ -266,19 +342,28 @@ const BookingCard = ({ booking, onStatusUpdate }: BookingCardProps) => {
         </div>
 
         <div className="booking-card-actions">
-          {user?.role === 'client' && booking.status === 'pending' && (
-            <button
-              className="action-btn cancel-btn"
-              onClick={async () => {
-                if (confirm('Cancel this booking?')) {
-                  await api.put(`/bookings/${bookingId}/cancel`);
-                  onStatusUpdate?.();
-                }
-              }}
-            >
-              Cancel
-            </button>
-          )}
+          {user?.role === 'client' &&
+            !['completed', 'cancelled', 'wash_completed', 'delivered_to_client', 'delivered'].includes(
+              booking.status
+            ) && (
+              <button
+                className="action-btn cancel-btn"
+                onClick={async () => {
+                  if (confirm('Cancel this booking?')) {
+                    try {
+                      await api.put(`/bookings/${bookingId}/cancel`);
+                      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+                      onStatusUpdate?.();
+                      showToast('Booking cancelled', 'success');
+                    } catch (err: any) {
+                      showToast(err.response?.data?.message || 'Failed to cancel', 'error');
+                    }
+                  }
+                }}
+              >
+                Cancel booking
+              </button>
+            )}
 
           {user?.role === 'client' && booking.status === 'wash_completed' && booking.paymentStatus === 'pending' && (
             <button
@@ -288,6 +373,22 @@ const BookingCard = ({ booking, onStatusUpdate }: BookingCardProps) => {
               Make Payment
             </button>
           )}
+
+          {canReview &&
+            (existingReview ? (
+              <button
+                className="action-btn secondary-btn booking-review-pill"
+                onClick={() => setShowReview(true)}
+                title="Edit your review"
+              >
+                <StarRating value={Number(existingReview.carWashRating) || 0} size={14} />
+                <span>Edit review</span>
+              </button>
+            ) : (
+              <button className="action-btn primary-btn" onClick={() => setShowReview(true)}>
+                Rate service
+              </button>
+            ))}
 
           {user?.role === 'client' && booking.status === 'picked_up_pending_confirmation' && (
             <button
@@ -522,27 +623,36 @@ const BookingCard = ({ booking, onStatusUpdate }: BookingCardProps) => {
           )}
 
           {/* Payment Confirmation (Driver or Car Wash) */}
-          {(user?.role === 'driver' || user?.role === 'carwash') && ['wash_completed','delivered_to_client','delivered'].includes(booking.status) && booking.paymentStatus === 'pending' && (
-            <button
-              className="action-btn primary-btn"
-              onClick={() => {
-                if (confirm('Confirm that payment proof has been reviewed and accepted?')) {
-                  confirmPaymentMutation.mutate({ bookingId });
-                }
-              }}
-              disabled={confirmPaymentMutation.isPending}
-            >
-              {confirmPaymentMutation.isPending ? 'Confirming...' : 'Confirm Payment'}
-            </button>
-          )}
+          {(user?.role === 'driver' || user?.role === 'carwash') &&
+            ['wash_completed', 'delivered_to_client', 'delivered'].includes(booking.status) &&
+            booking.paymentStatus === 'pending' && (
+              <button
+                className="action-btn primary-btn"
+                onClick={() => setShowPaymentReview(true)}
+                disabled={confirmPaymentMutation.isPending}
+              >
+                Review & Confirm Payment
+              </button>
+            )}
 
           {receiverId && (
-            <button
-              className="action-btn chat-btn"
-              onClick={() => setShowChat(true)}
-            >
-              💬 Chat {unreadCount > 0 && <span className="unread-badge">{unreadCount}</span>}
-            </button>
+            <>
+              <button
+                className="action-btn chat-btn"
+                onClick={() => setShowChat(true)}
+              >
+                💬 Chat {unreadCount > 0 && <span className="unread-badge">{unreadCount}</span>}
+              </button>
+              {user?.role === 'client' && (
+                <button
+                  type="button"
+                  className="action-btn secondary-btn"
+                  onClick={() => navigate(getChatPath('client', bookingId))}
+                >
+                  Open messages
+                </button>
+              )}
+            </>
           )}
 
           <button
@@ -586,6 +696,26 @@ const BookingCard = ({ booking, onStatusUpdate }: BookingCardProps) => {
             />
           </div>
         </div>
+      )}
+
+      {showPaymentReview && (
+        <PaymentReviewModal
+          bookingId={bookingId}
+          onClose={() => setShowPaymentReview(false)}
+          onConfirm={() => confirmPaymentMutation.mutate({ bookingId })}
+          isConfirming={confirmPaymentMutation.isPending}
+        />
+      )}
+
+      {showReview && (
+        <ReviewModal
+          bookingId={bookingId}
+          carWashName={carWashDisplayName}
+          driverName={reviewDriverName}
+          hasDriver={reviewHasDriver}
+          existingReview={existingReview}
+          onClose={() => setShowReview(false)}
+        />
       )}
     </>
   );

@@ -14,6 +14,28 @@
   color: var(--text-secondary);
 }
 
+.operator-queue-empty {
+  flex-direction: column;
+  text-align: center;
+  max-width: 360px;
+  margin: 0 auto;
+  gap: 8px;
+}
+
+.operator-queue-empty__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--op-text, var(--text-primary));
+}
+
+.operator-queue-empty__hint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--op-text2, var(--text-secondary));
+}
+
 .queue-header {
   display: flex;
   justify-content: space-between;

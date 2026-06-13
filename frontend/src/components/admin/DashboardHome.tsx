@@ -1,23 +1,98 @@
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Area,
+  AreaChart,
+} from 'recharts';
 import api from '../../services/api';
 import AlertsPanel from './AlertsPanel';
-import ContextualHelp from './ContextualHelp';
 import './DashboardHome.css';
 
+const ACCENT = '#00C896';
+const CHART_MUTED = 'rgba(236, 236, 244, 0.55)';
+const TOOLTIP_STYLE = {
+  background: '#1a1a2e',
+  border: '1px solid rgba(255,255,255,0.1)',
+  borderRadius: 10,
+  fontSize: 13,
+  color: '#ececf4',
+};
+
+const paymentBadge = (status: string) => {
+  const s = (status || 'pending').toLowerCase();
+  if (s === 'paid' || s === 'completed') return 'tx-paid';
+  if (s === 'failed') return 'tx-failed';
+  return 'tx-pending';
+};
+
+type KpiKey = 'bookings' | 'pending' | 'completed' | 'revenue' | 'partners';
+
+const KpiIcon = ({ type }: { type: KpiKey }) => {
+  const p = {
+    width: 18,
+    height: 18,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 2,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+  };
+  switch (type) {
+    case 'bookings':
+      return (
+        <svg {...p}>
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+        </svg>
+      );
+    case 'pending':
+      return (
+        <svg {...p}>
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
+        </svg>
+      );
+    case 'completed':
+      return (
+        <svg {...p}>
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+          <polyline points="22 4 12 14.01 9 11.01" />
+        </svg>
+      );
+    case 'revenue':
+      return (
+        <svg {...p}>
+          <line x1="12" y1="1" x2="12" y2="23" />
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+        </svg>
+      );
+    case 'partners':
+      return (
+        <svg {...p}>
+          <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.32 0z" />
+        </svg>
+      );
+    default:
+      return null;
+  }
+};
+
 const DashboardHome = () => {
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['admin-dashboard'],
     queryFn: async () => {
       try {
-        console.log('📡 Fetching admin dashboard data');
         const response = await api.get('/admin/dashboard');
-        const dashboardData = response.data?.data || response.data || {};
-        console.log('✅ Received admin dashboard data:', dashboardData);
-        return dashboardData;
-      } catch (error: any) {
-        console.error('❌ Error fetching admin dashboard:', error);
-        console.error('   Response:', error.response?.data);
-        // Return default empty structure instead of throwing
+        return response.data?.data || response.data || {};
+      } catch {
         return {
           totalBookings: 0,
           pendingPickups: 0,
@@ -26,152 +101,222 @@ const DashboardHome = () => {
           totalClients: 0,
           totalDrivers: 0,
           totalCarWashes: 0,
+          monthlyTrend: [],
+          recentTransactions: [],
         };
       }
     },
-    refetchInterval: 30000, // Refresh every 30 seconds
-    staleTime: 15000, // Consider data fresh for 15 seconds
+    refetchInterval: 30000,
+    staleTime: 15000,
     retry: 1,
   });
 
-  // Don't block - show skeleton stats while loading
   const isInitialLoad = isLoading && !data;
+  const trend = data?.monthlyTrend || [];
+  const transactions = data?.recentTransactions || [];
 
-  const stats = [
+  const kpis: { key: KpiKey; label: string; value: string | number; sub: string }[] = [
+    { key: 'bookings', label: 'Total bookings', value: data?.totalBookings ?? 0, sub: 'All time' },
+    { key: 'pending', label: 'Pending pickups', value: data?.pendingPickups ?? 0, sub: 'Awaiting driver' },
+    { key: 'completed', label: 'Completed washes', value: data?.completedWashes ?? 0, sub: 'Delivered' },
     {
-      label: 'Total Bookings',
-      value: data?.totalBookings || 0,
-      icon: '📋',
-      color: 'blue',
+      key: 'revenue',
+      label: 'Revenue',
+      value: `K${(data?.totalRevenue ?? 0).toLocaleString()}`,
+      sub: 'Platform total',
     },
     {
-      label: 'Pending Pickups',
-      value: data?.pendingPickups || 0,
-      icon: '⏳',
-      color: 'amber',
-    },
-    {
-      label: 'Completed Washes',
-      value: data?.completedWashes || 0,
-      icon: '✅',
-      color: 'green',
-    },
-    {
-      label: 'Total Revenue',
-      value: `K${(data?.totalRevenue || 0).toLocaleString()}`,
-      icon: '💰',
-      color: 'emerald',
-    },
-    {
-      label: 'Total Clients',
-      value: data?.totalClients || 0,
-      icon: '👥',
-      color: 'blue',
-    },
-    {
-      label: 'Total Drivers',
-      value: data?.totalDrivers || 0,
-      icon: '🚗',
-      color: 'green',
-    },
-    {
-      label: 'Car Wash Providers',
-      value: data?.totalCarWashes || 0,
-      icon: '🧼',
-      color: 'purple',
+      key: 'partners',
+      label: 'Car wash partners',
+      value: data?.totalCarWashes ?? 0,
+      sub: 'Active locations',
     },
   ];
 
   return (
     <div className="dashboard-home">
-      <div className="dashboard-header">
-        <div>
-          <h1>Dashboard Overview</h1>
-          <p className="dashboard-subtitle">System health and key metrics</p>
-        </div>
-        <ContextualHelp sectionId="dashboard-overview" />
+      <div className="admin-dash-head">
+        <p>Bookings, revenue, and platform health at a glance</p>
+        <span className="admin-dash-live">Live</span>
       </div>
 
       <div className="kpi-grid-mockup">
-        {isInitialLoad ? (
-          Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="kpi-card-mockup skeleton-stat-card" style={{ minHeight: 80 }} />
-          ))
-        ) : (
-          [
-            { label: 'Total bookings', value: data?.totalBookings ?? 0, cls: '' },
-            { label: 'Pending pickups', value: data?.pendingPickups ?? 0, cls: 'kpi-amber' },
-            { label: 'Completed washes', value: data?.completedWashes ?? 0, cls: 'kpi-blue' },
-            { label: 'Revenue', value: `K${(data?.totalRevenue ?? 0).toLocaleString()}`, cls: 'kpi-green' },
-            { label: 'Active partners', value: data?.totalCarWashes ?? 0, cls: 'kpi-purple' },
-          ].map((k, i) => (
-            <div key={i} className={`kpi-card-mockup ${k.cls}`}>
-              <div className="kpi-lbl">{k.label}</div>
-              <div className="kpi-val">{k.value}</div>
-            </div>
-          ))
-        )}
+        {isInitialLoad
+          ? Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="kpi-card-mockup skeleton-stat-card" style={{ minHeight: 108 }} />
+            ))
+          : kpis.map((k) => (
+              <div key={k.key} className="kpi-card-mockup">
+                <div className="kpi-top">
+                  <span className="kpi-lbl">{k.label}</span>
+                  <span className="kpi-icon" aria-hidden>
+                    <KpiIcon type={k.key} />
+                  </span>
+                </div>
+                <div className="kpi-val">{k.value}</div>
+                <p className="kpi-sub">{k.sub}</p>
+              </div>
+            ))}
       </div>
 
-      <div className="stats-grid">
-        {isInitialLoad ? (
-          // Show skeleton cards while loading
-          Array.from({ length: 7 }).map((_, index) => (
-            <div key={index} className="stat-card skeleton-stat-card">
-              <div className="skeleton-stat-icon"></div>
-              <div className="skeleton-stat-content">
-                <div className="skeleton-stat-label"></div>
-                <div className="skeleton-stat-value"></div>
-              </div>
-            </div>
-          ))
-        ) : (
-          stats.map((stat, index) => (
-            <div key={index} className={`stat-card stat-${stat.color}`}>
-              <div className="stat-icon">{stat.icon}</div>
-              <div className="stat-content">
-                <div className="stat-label">{stat.label}</div>
-                <div className="stat-value">{stat.value}</div>
-              </div>
-              {/* Highlight critical metrics */}
-              {stat.label === 'Pending Pickups' && stat.value > 10 && (
-                <div className="stat-alert">⚠️ High</div>
+      <div className="admin-dash-body">
+        <div className="admin-dash-main-col">
+          <div className="admin-charts-row">
+            <div className="admin-chart-card">
+              <h3>Bookings</h3>
+              {trend.length > 0 ? (
+                <ResponsiveContainer width="100%" height={240}>
+                  <AreaChart data={trend}>
+                    <defs>
+                      <linearGradient id="admBookingsFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={ACCENT} stopOpacity={0.35} />
+                        <stop offset="100%" stopColor={ACCENT} stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+                    <XAxis dataKey="month" stroke="#65657a" fontSize={11} tickLine={false} axisLine={false} />
+                    <YAxis stroke="#65657a" fontSize={11} tickLine={false} axisLine={false} width={36} />
+                    <Tooltip contentStyle={TOOLTIP_STYLE} />
+                    <Area
+                      type="monotone"
+                      dataKey="bookings"
+                      stroke={ACCENT}
+                      strokeWidth={2}
+                      fill="url(#admBookingsFill)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="admin-chart-empty">Chart fills in after your first bookings</p>
               )}
-              {stat.label === 'Total Revenue' && parseFloat(stat.value.toString().replace('K', '').replace(',', '')) > 100000 && (
-                <div className="stat-success">✓ Good</div>
+            </div>
+            <div className="admin-chart-card">
+              <h3>Revenue</h3>
+              {trend.length > 0 ? (
+                <ResponsiveContainer width="100%" height={240}>
+                  <LineChart data={trend}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+                    <XAxis dataKey="month" stroke="#65657a" fontSize={11} tickLine={false} axisLine={false} />
+                    <YAxis stroke="#65657a" fontSize={11} tickLine={false} axisLine={false} width={48} />
+                    <Tooltip
+                      contentStyle={TOOLTIP_STYLE}
+                      formatter={(v: number) => [`K${Number(v).toLocaleString()}`, 'Revenue']}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="revenue"
+                      stroke={CHART_MUTED}
+                      strokeWidth={2}
+                      dot={{ r: 3, fill: CHART_MUTED, strokeWidth: 0 }}
+                      activeDot={{ r: 5, fill: '#ececf4' }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="admin-chart-empty">Revenue trend updates monthly</p>
               )}
             </div>
-          ))
-        )}
-      </div>
-
-      {/* Alerts Panel */}
-      <AlertsPanel />
-
-      <div className="dashboard-sections">
-        <div className="admin-card">
-          <div className="admin-card-header">
-            <h2 className="admin-card-title">Quick Actions</h2>
           </div>
-          <div className="quick-actions">
-            <a href="/admin/users" className="quick-action-card">
-              <span className="quick-action-icon">👥</span>
-              <span className="quick-action-label">Manage Users</span>
-            </a>
-            <a href="/admin/bookings" className="quick-action-card">
-              <span className="quick-action-icon">📋</span>
-              <span className="quick-action-label">View Bookings</span>
-            </a>
-            <a href="/admin/drivers" className="quick-action-card">
-              <span className="quick-action-icon">🚗</span>
-              <span className="quick-action-label">Manage Drivers</span>
-            </a>
-            <a href="/admin/reports" className="quick-action-card">
-              <span className="quick-action-icon">📈</span>
-              <span className="quick-action-label">View Reports</span>
-            </a>
+
+          <div className="admin-tx-card">
+            <div className="admin-tx-head">
+              <h3>Recent transactions</h3>
+              <Link to="/admin/financial">View all</Link>
+            </div>
+            {transactions.length === 0 ? (
+              <p className="admin-chart-empty" style={{ padding: '28px 20px' }}>
+                No transactions yet
+              </p>
+            ) : (
+              <div className="admin-tx-scroll">
+                <table className="admin-tx-table">
+                  <thead>
+                    <tr>
+                      <th>User</th>
+                      <th>ID</th>
+                      <th>Amount</th>
+                      <th>Date</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {transactions.map((tx: {
+                      id: string;
+                      userName?: string;
+                      userEmail?: string;
+                      transactionId?: string;
+                      amount?: number;
+                      date?: string;
+                      paymentStatus?: string;
+                    }) => (
+                      <tr key={tx.id}>
+                        <td>
+                          <div className="tx-user">{tx.userName || '—'}</div>
+                          <div className="tx-email">{tx.userEmail || ''}</div>
+                        </td>
+                        <td className="tx-mono">{tx.transactionId || tx.id?.slice(0, 8)}</td>
+                        <td>K{Number(tx.amount || 0).toLocaleString()}</td>
+                        <td>
+                          {tx.date
+                            ? new Date(tx.date).toLocaleDateString('en-GB', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric',
+                              })
+                            : '—'}
+                        </td>
+                        <td>
+                          <span className={`tx-badge ${paymentBadge(tx.paymentStatus || '')}`}>
+                            {tx.paymentStatus || 'pending'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          <div className="admin-quick-row">
+            <Link to="/admin/users" className="admin-quick-btn">
+              Users
+            </Link>
+            <Link to="/admin/bookings" className="admin-quick-btn">
+              Bookings
+            </Link>
+            <Link to="/admin/drivers" className="admin-quick-btn">
+              Drivers
+            </Link>
+            <Link to="/admin/financial" className="admin-quick-btn">
+              Financial
+            </Link>
           </div>
         </div>
+
+        <aside className="admin-dash-side">
+          <div className="admin-health-card">
+            <h3>System health</h3>
+            <AlertsPanel />
+          </div>
+          <div className="admin-health-card">
+            <h3>Platform</h3>
+            <div className="admin-mini-stats">
+              <div className="admin-mini-stat">
+                <span>Clients</span>
+                <strong>{isInitialLoad ? '—' : (data?.totalClients ?? 0)}</strong>
+              </div>
+              <div className="admin-mini-stat">
+                <span>Drivers</span>
+                <strong>{isInitialLoad ? '—' : (data?.totalDrivers ?? 0)}</strong>
+              </div>
+              <div className="admin-mini-stat">
+                <span>Car washes</span>
+                <strong>{isInitialLoad ? '—' : (data?.totalCarWashes ?? 0)}</strong>
+              </div>
+            </div>
+          </div>
+        </aside>
       </div>
     </div>
   );

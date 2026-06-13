@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import PageLayout from '../components/PageLayout';
 import DownloadAppSection from '../components/DownloadAppSection';
@@ -18,15 +18,8 @@ function dashboardPath(role: string): string {
 }
 
 const LandingPage = () => {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="app-boot-screen">
-        <p>Loading SuCAR…</p>
-      </div>
-    );
-  }
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
   if (user) {
     return <Navigate to={dashboardPath(user.role)} replace />;
@@ -41,8 +34,8 @@ const LandingPage = () => {
           <FloatingElements type="cars" count={4} intensity="low" />
           <div className="hero-image-container">
             <img 
-              src="/images/Sucar.png" 
-              alt="SuCAR - Professional Car Wash Services" 
+              src="/images/Sucarcar.jpeg"
+              alt="SuCar - Professional Car Wash Services"
               className="hero-image"
             />
           </div>
@@ -57,7 +50,7 @@ const LandingPage = () => {
             <div className="hero-cta">
               <button
                 className="btn btn-primary btn-large"
-                onClick={() => navigate('/register')}
+                onClick={() => navigate('/book')}
               >
                 Book Your First Wash
               </button>
@@ -269,7 +262,7 @@ const LandingPage = () => {
           <div className="cta-buttons">
             <button
               className="btn btn-primary btn-large"
-              onClick={() => navigate('/register')}
+              onClick={() => navigate('/book')}
             >
               Get Started Today
             </button>

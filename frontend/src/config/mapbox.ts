@@ -71,9 +71,11 @@ export const MAPBOX_STYLES = {
   dark: 'mapbox://styles/mapbox/dark-v11',
 } as const;
 
-// Default map center (Lusaka, Zambia)
-export const DEFAULT_CENTER: [number, number] = [-15.3875, 28.3228];
-export const DEFAULT_ZOOM = 13;
+// Default map center (Lusaka, Zambia) — Mapbox order: [lng, lat]
+export const LUSAKA_LAT = -15.3875;
+export const LUSAKA_LNG = 28.3228;
+export const DEFAULT_CENTER: [number, number] = [LUSAKA_LNG, LUSAKA_LAT];
+export const DEFAULT_ZOOM = 12;
 
 export default {
   getToken: getMapboxToken,

@@ -262,7 +262,11 @@ export class DBService {
   }
 
   static async comparePassword(plainPassword: string, hashedPassword: string): Promise<boolean> {
-    return await bcrypt.compare(plainPassword, hashedPassword);
+    if (!hashedPassword) return false;
+    if (hashedPassword.startsWith('$2a$') || hashedPassword.startsWith('$2b$')) {
+      return bcrypt.compare(plainPassword, hashedPassword);
+    }
+    return plainPassword === hashedPassword;
   }
 
   // Vehicle operations
@@ -632,10 +636,26 @@ export class DBService {
         booking_id:bookings(*)
       `)
       .eq('booking_id', bookingId)
-      .single();
+      .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') throw error;
+    if (error) throw error;
     return data ? toCamelCase(data) : null;
+  }
+
+  /** Create a pending payment row if missing (fixes legacy bookings without payments). */
+  static async ensurePaymentForBooking(bookingId: string) {
+    const existing = await this.getPaymentByBookingId(bookingId);
+    if (existing) return existing;
+
+    const booking = await this.getBookingById(bookingId);
+    if (!booking) return null;
+
+    return this.createPayment({
+      bookingId,
+      amount: booking.totalAmount ?? 0,
+      method: 'cash',
+      status: 'pending',
+    });
   }
 
   static async updatePayment(id: string, paymentData: any) {

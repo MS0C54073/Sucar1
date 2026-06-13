@@ -26,7 +26,7 @@
 /* === Typography Scale === */
 :root {
   /* Font Families */
-  --font-primary: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-primary: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
 
   /* Font Sizes - Type Scale */
@@ -95,11 +95,11 @@
   --color-primary-100: #dbeafe;
   --color-primary-300: #60a5fa;
   --color-primary-500: #3b82f6;
-  --color-primary-600: #0056d2;
-  --color-primary-700: #0047b3;
+  --color-primary-600: #2c4a63;
+  --color-primary-700: #243d52;
   --color-primary-900: #1e3a8a;
-  --gradient-brand: linear-gradient(160deg, #0056d2 0%, #0077e6 45%, #00a3ff 100%);
-  --gradient-surface: linear-gradient(180deg, #f4f6fb 0%, #eef2ff 100%);
+  --gradient-brand: #2c4a63;
+  --gradient-surface: #f5f4f1;
 
   /* Neutral Palette */
   --color-gray-50: #f9fafb;
@@ -157,8 +157,8 @@
   --color-primary-500: #2dd4bf;
   --color-primary-600: #14b8a6;
   --color-primary-700: #5eead4;
-  --gradient-brand: linear-gradient(135deg, #0f766e 0%, #0e7490 50%, #0369a1 100%);
-  --gradient-surface: linear-gradient(180deg, #0f172a 0%, #134e4a 100%);
+  --gradient-brand: #3d6278;
+  --gradient-surface: #14181c;
 
   /* Semantic Colors - Dark Theme WCAG AA Compliant */
   --color-success: #34d399;

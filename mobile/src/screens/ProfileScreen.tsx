@@ -21,7 +21,7 @@ import { Typography, Spacing, BorderRadius, Shadows } from '../constants/theme';
 const ProfileScreen = () => {
   const navigation = useNavigation();
   const { user, logout } = useAuth();
-  const { theme } = useTheme();
+  const { theme, appearance, setAppearance } = useTheme();
   const C = theme.colors;
   const styles = createStyles(C);
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -86,6 +86,21 @@ const ProfileScreen = () => {
       value: user?.phone,
       onPress: () => openEditModal('phone', user?.phone || ''),
       showArrow: true,
+    },
+    {
+      icon: 'moon-outline' as const,
+      label: 'Appearance',
+      value: appearance === 'dark' ? 'Dark' : 'Light',
+      onPress: () => {},
+      showArrow: false,
+      rightComponent: (
+        <Switch
+          value={appearance === 'dark'}
+          onValueChange={(dark) => setAppearance(dark ? 'dark' : 'light')}
+          trackColor={{ false: C.gray300, true: C.primary }}
+          thumbColor={C.white}
+        />
+      ),
     },
     {
       icon: 'notifications-outline' as const,

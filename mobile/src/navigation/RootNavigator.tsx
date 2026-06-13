@@ -9,10 +9,12 @@ import RegisterScreen from '../screens/RegisterScreen';
 import ClientDrawer from './ClientDrawer';
 import DriverDrawer from './DriverDrawer';
 import BookingScreen from '../screens/client/BookingScreen';
+import ConfirmBookingScreen from '../screens/client/ConfirmBookingScreen';
 import MyBookingsScreen from '../screens/client/MyBookingsScreen';
 import VehicleListScreen from '../screens/client/VehicleListScreen';
 import BookingDetailScreen from '../screens/BookingDetailScreen';
 import { Colors, Typography } from '../constants/theme';
+import { ClientColors, DriverColors } from '../constants/sucarTheme';
 
 const Stack = createNativeStackNavigator();
 
@@ -25,7 +27,7 @@ const RootNavigator = () => {
     return <BootSplash />;
   }
 
-  const headerBg = driverApp ? '#1a2332' : Colors.primary;
+  const headerBg = driverApp ? DriverColors.primary : ClientColors.primary;
 
   return (
     <Stack.Navigator
@@ -62,6 +64,15 @@ const RootNavigator = () => {
             options={{ title: 'New Booking', headerBackTitle: 'Back' }}
           />
           <Stack.Screen
+            name="ConfirmBooking"
+            component={ConfirmBookingScreen}
+            options={{
+              title: 'Confirm Booking',
+              headerBackTitle: 'Back',
+              headerStyle: { backgroundColor: ClientColors.primary },
+            }}
+          />
+          <Stack.Screen
             name="MyBookings"
             component={MyBookingsScreen}
             options={{ title: 'My Bookings', headerBackTitle: 'Home' }}
@@ -74,7 +85,13 @@ const RootNavigator = () => {
           <Stack.Screen
             name="BookingDetail"
             component={BookingDetailScreen}
-            options={{ title: 'Booking Details', headerBackTitle: 'Back' }}
+            options={({ route }: any) => ({
+              title: route.params?.tracking ? 'Track Your Service' : 'Booking Details',
+              headerBackTitle: 'Back',
+              headerStyle: {
+                backgroundColor: route.params?.tracking ? ClientColors.primary : ClientColors.primary,
+              },
+            })}
           />
         </>
       )}

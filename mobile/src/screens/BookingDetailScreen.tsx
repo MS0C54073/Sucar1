@@ -17,7 +17,10 @@ import CustomMapView from '../components/MapView';
 import { Coordinates } from '../services/locationService';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, BorderRadius, Shadows, StatusColors } from '../constants/theme';
+import { ClientColors } from '../constants/sucarTheme';
 import { useTheme } from '../context/ThemeContext';
+import TrackingDriverCard, { isActiveBooking } from '../components/ui/TrackingDriverCard';
+import { isDriverApp } from '../config/appVariant';
 
 /**
  * Detailed view for a single booking.
@@ -173,17 +176,73 @@ const BookingDetailScreen = () => {
   }
 
   const canCancel = ['pending', 'accepted'].includes(booking.status);
+  const clientView = user?.role === 'client' && !isDriverApp();
+  const tracking = clientView && isActiveBooking(booking.status);
+  const needsPickupConfirm = clientView && booking.status === 'picked_up_pending_confirmation';
+
+  const confirmPickup = async () => {
+    try {
+      const response = await apiClient.put(`/bookings/${bookingId}/status`, { status: 'picked_up' });
+      if (response.data.success) {
+        Alert.alert('Confirmed', 'Vehicle pickup confirmed.');
+        fetchBooking();
+      } else {
+        Alert.alert('Error', response.data.message || 'Could not confirm pickup');
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error?.message || 'Could not confirm pickup');
+    }
+  };
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]} edges={['top']}>
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-        {/* Status Header */}
-        <Animatable.View style={[styles.statusHeader, { backgroundColor: getStatusColor(booking.status) }]} animation="fadeIn" duration={500} useNativeDriver>
-          <View style={styles.statusContent}>
-            <Ionicons name="checkmark-circle" size={32} color={theme.colors.white} />
-            <Text style={[styles.statusText, { color: theme.colors.white }]}>{getStatusLabel(booking.status)}</Text>
-          </View>
-        </Animatable.View>
+        {tracking ? (
+          <>
+            <View style={styles.trackHeader}>
+              <Text style={styles.trackTitle}>Track Your Service</Text>
+              <View style={styles.etaPill}>
+                <Ionicons name="car-sport" size={16} color={ClientColors.primary} />
+                <Text style={styles.etaText}>Driver is on the way</Text>
+              </View>
+            </View>
+            {(pickupCoordinates || destinationCoordinates) && (
+              <View style={styles.trackMap}>
+                <CustomMapView
+                  pickupLocation={pickupCoordinates}
+                  destinationLocation={destinationCoordinates}
+                  height={280}
+                  showRoute={!!(pickupCoordinates && destinationCoordinates)}
+                />
+              </View>
+            )}
+            <TrackingDriverCard
+              driverName={booking.driverId?.name}
+              vehicle={
+                booking.driverId?.vehicleMake
+                  ? `${booking.driverId.vehicleMake} ${booking.driverId.vehicleModel || ''}`.trim()
+                  : undefined
+              }
+              plate={booking.driverId?.vehiclePlate}
+              status={booking.status}
+              onChat={() => Alert.alert('Chat', 'Messaging coming soon.')}
+            />
+          </>
+        ) : (
+          <Animatable.View
+            style={[styles.statusHeader, { backgroundColor: getStatusColor(booking.status) }]}
+            animation="fadeIn"
+            duration={500}
+            useNativeDriver
+          >
+            <View style={styles.statusContent}>
+              <Ionicons name="checkmark-circle" size={32} color={theme.colors.white} />
+              <Text style={[styles.statusText, { color: theme.colors.white }]}>
+                {getStatusLabel(booking.status)}
+              </Text>
+            </View>
+          </Animatable.View>
+        )}
 
         {/* Main Card */}
         <Animatable.View animation="fadeInUp" duration={600} useNativeDriver style={[styles.card, { backgroundColor: theme.colors.surface }]}>
@@ -268,6 +327,14 @@ const BookingDetailScreen = () => {
         </Animatable.View>
 
         {/* Action Buttons */}
+        {needsPickupConfirm && (
+          <Animatable.View animation="fadeInUp" duration={500} useNativeDriver style={styles.actions}>
+            <TouchableOpacity style={styles.confirmPickupBtn} onPress={confirmPickup} activeOpacity={0.85}>
+              <Ionicons name="checkmark-circle" size={20} color={Colors.white} />
+              <Text style={styles.cancelButtonText}>Confirm Vehicle Pickup</Text>
+            </TouchableOpacity>
+          </Animatable.View>
+        )}
         {canCancel && (
           <Animatable.View animation="fadeInUp" duration={500} useNativeDriver style={styles.actions}>
             <TouchableOpacity
@@ -397,6 +464,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     marginTop: Spacing.md,
   },
+  confirmPickupBtn: {
+    flexDirection: 'row',
+    backgroundColor: ClientColors.accent,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    marginBottom: Spacing.sm,
+  },
   cancelButton: {
     flexDirection: 'row',
     backgroundColor: Colors.error,
@@ -416,6 +493,29 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginTop: Spacing.md,
   },
+  trackHeader: {
+    backgroundColor: ClientColors.primary,
+    padding: Spacing.lg,
+    paddingTop: Spacing.md,
+  },
+  trackTitle: {
+    color: '#FFF',
+    fontSize: Typography.xl,
+    fontWeight: Typography.bold,
+  },
+  etaPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: Spacing.sm,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  etaText: { color: '#FFF', fontSize: Typography.sm, fontWeight: Typography.semibold },
+  trackMap: { height: 280, backgroundColor: ClientColors.border },
 });
 
 export default BookingDetailScreen;

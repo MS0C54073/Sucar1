@@ -15,6 +15,7 @@ SuCAR (SuKA) is a full-stack application designed to automate car wash bookings 
 - Track booking status in real-time
 - Manage vehicles
 - View booking history
+- Rate and review completed washes (car wash + driver)
 
 ### Driver Features
 - Register/Login
@@ -26,9 +27,11 @@ SuCAR (SuKA) is a full-stack application designed to automate car wash bookings 
 ### Car Wash Features
 - Register/Login
 - Manage services and pricing
+- Real-time intelligent queue & washing-bay allocation (auto-assign, FIFO + priority)
 - Update vehicle status (Waiting Bay → Washing Bay → Drying Bay → Done)
+- Review and approve/reject customer payment proofs
 - View incoming bookings
-- Monitor revenue
+- Monitor revenue and customer ratings
 
 ### Admin Features
 - Dashboard with statistics
@@ -253,6 +256,12 @@ npm run android
 - `POST /api/payments/initiate` - Initiate payment
 - `GET /api/payments/booking/:bookingId` - Get payment by booking
 
+### Reviews & Ratings
+- `POST /api/reviews` - Submit a review for a completed booking (client only)
+- `GET /api/reviews/booking/:bookingId` - Get the current client's review for a booking
+- `GET /api/reviews/carwash/:carWashId` - Get a car wash's rating summary + recent reviews
+- `GET /api/reviews/driver/:driverId` - Get a driver's rating summary + recent reviews
+
 ## User Roles
 
 1. **Client**: Can book car washes, manage vehicles, track bookings
@@ -262,11 +271,13 @@ npm run android
 
 ## Database Schema
 
-- **Users**: Clients, Drivers, Car Washes, Admins
+- **Users**: Clients, Drivers, Car Washes, Admins (with aggregate `rating` / `driver_rating`)
 - **Vehicles**: Client vehicle information
 - **Bookings**: Booking records with status tracking
 - **Services**: Car wash services and pricing
 - **Payments**: Payment records
+- **Reviews**: Client ratings (1–5) and comments for the car wash and/or driver, one per booking
+- **Washing Bays / Wash Sessions / Queue**: Operator real-time queue and bay allocation
 
 ## Entity Relationship (ER) Diagram
 
@@ -277,9 +288,11 @@ erDiagram
     USERS ||--o{ BOOKINGS : "assigned_to"
     USERS ||--o{ BOOKINGS : "washes_at"
     USERS ||--o{ SERVICES : "offers"
+    USERS ||--o{ REVIEWS : "writes"
     BOOKINGS ||--|| VEHICLES : "for"
     BOOKINGS ||--|| SERVICES : "includes"
     BOOKINGS ||--|| PAYMENTS : "has"
+    BOOKINGS ||--o| REVIEWS : "reviewed by"
     
     USERS {
         uuid id PK
@@ -360,6 +373,19 @@ erDiagram
         enum status "pending|completed|failed|refunded"
         string transaction_id
         timestamp payment_date
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    REVIEWS {
+        uuid id PK
+        uuid booking_id FK
+        uuid client_id FK
+        uuid car_wash_id FK
+        uuid driver_id FK
+        integer car_wash_rating "1-5"
+        integer driver_rating "1-5"
+        text comment
         timestamp created_at
         timestamp updated_at
     }
@@ -489,6 +515,14 @@ This workflow is for clients who drive their own car to the car wash facility an
 - **Refund Handling**: Automatic refunds for cancelled bookings
 - **Payment Status Tracking**: `pending` → `completed` or `failed` → `refunded`
 - **Audit Trail**: All transactions logged for reporting
+
+#### Ratings & Reviews
+- **When**: A client can review a booking once the wash is finished and payment is settled (status `wash_completed` / `delivered` / `completed`, payment no longer `pending`).
+- **What**: A 1–5 star rating for the car wash and, for pickup & delivery jobs, a separate rating for the driver, plus an optional comment. One review per booking (editable).
+- **Aggregation**: On every submission the backend recomputes the target's average rating and review count and stores them on the `users` row (`rating` / `rating_count` for car washes, `driver_rating` / `driver_rating_count` for drivers).
+- **Where it surfaces**: Aggregate stars appear on the booking card's car wash, and the **recommendation engine weights car washes by their customer rating** (falling back to completion history when no ratings exist yet).
+- **Endpoints**: `POST /api/reviews`, `GET /api/reviews/booking/:bookingId`, `GET /api/reviews/carwash/:carWashId`, `GET /api/reviews/driver/:driverId`.
+- **Schema**: `backend/migrations/add-reviews.sql` (applied automatically on API startup when `DATABASE_URL` is set, or manually via `npm run migrate:reviews`). The API degrades gracefully and returns empty summaries if the table is not yet present.
 
 #### Location Services (Mapbox Integration)
 - **Driver Geolocation**: Continuously tracks driver location for ETA
@@ -1078,12 +1112,18 @@ This architecture ensures:
 - Input validation
 - Protected API routes
 
+## Recently Added
+
+- ⭐ Ratings & reviews for car washes and drivers, feeding the recommendation engine
+- 🚿 Real-time intelligent queue & washing-bay allocation for operators
+- 🧾 Payment-proof upload with operator approve/reject workflow
+
 ## Future Enhancements
 
 - GPS-based live vehicle tracking
 - Push notifications
 - Payment gateway integration
-- Real-time updates with WebSockets
+- Full real-time updates with WebSockets (currently Supabase Realtime + polling)
 - AI-driven route optimization
 - Business intelligence dashboards
 

@@ -82,10 +82,16 @@ const QueueManagement = () => {
     );
   }
 
-  if (!queue || queue.length === 0) {
+  const activeQueue = (queue || []).filter((q: { status: string }) => q.status !== 'completed');
+
+  if (!activeQueue.length) {
     return (
-      <div className="queue-empty">
-        <p>No vehicles in queue</p>
+      <div className="queue-empty operator-queue-empty">
+        <p className="operator-queue-empty__title">No vehicles in the service queue</p>
+        <p className="operator-queue-empty__hint">
+          Open the <strong>Bookings</strong> tab, confirm arrival for drive-in customers, or tap{' '}
+          <strong>Add to queue</strong> on a booking card.
+        </p>
       </div>
     );
   }
@@ -96,19 +102,20 @@ const QueueManagement = () => {
         <h3>Service Queue</h3>
         <div className="queue-stats">
           <span className="stat-item">
-            Total: <strong>{queue.length}</strong>
+            Total: <strong>{activeQueue.length}</strong>
           </span>
           <span className="stat-item">
-            Waiting: <strong>{queue.filter((q: any) => q.status === 'waiting').length}</strong>
+            Waiting: <strong>{activeQueue.filter((q: any) => q.status === 'waiting').length}</strong>
           </span>
           <span className="stat-item">
-            In Progress: <strong>{queue.filter((q: any) => q.status === 'in_progress').length}</strong>
+            In Progress:{' '}
+            <strong>{activeQueue.filter((q: any) => q.status === 'in_progress').length}</strong>
           </span>
         </div>
       </div>
 
       <div className="queue-list">
-        {queue.map((queueEntry: any) => {
+        {activeQueue.map((queueEntry: any) => {
           const booking = queueEntry.booking;
           const estimatedStart = queueEntry.estimated_start_time
             ? new Date(queueEntry.estimated_start_time)

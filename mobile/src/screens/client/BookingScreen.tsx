@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-  ActivityIndicator,
   ScrollView,
   SafeAreaView,
 } from 'react-native';
@@ -29,18 +28,17 @@ import { useTheme } from '../../context/ThemeContext';
  * and lets the client choose a pickup location using the LocationPicker.
  */
 const BookingScreen = () => {
-  const [carWashes, setCarWashes] = useState([]);
-  const [services, setServices] = useState([]);
-  const [drivers, setDrivers] = useState([]);
-  const [vehicles, setVehicles] = useState([]);
+  const [carWashes, setCarWashes] = useState<any[]>([]);
+  const [services, setServices] = useState<any[]>([]);
+  const [drivers, setDrivers] = useState<any[]>([]);
+  const [vehicles, setVehicles] = useState<any[]>([]);
   const [selectedCarWash, setSelectedCarWash] = useState('');
   const [selectedService, setSelectedService] = useState('');
   const [selectedDriver, setSelectedDriver] = useState('');
   const [selectedVehicle, setSelectedVehicle] = useState('');
   const [pickupLocation, setPickupLocation] = useState('');
   const [pickupCoordinates, setPickupCoordinates] = useState<Coordinates | undefined>();
-  const [loading, setLoading] = useState(false);
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { user } = useAuth();
   const { theme } = useTheme();
@@ -116,45 +114,34 @@ const BookingScreen = () => {
     console.log('📍 Location selected:', location, coordinates);
   };
 
-  const handleBooking = async () => {
+  const handleReview = () => {
     if (!selectedCarWash || !selectedService || !selectedVehicle || !pickupLocation) {
       Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
 
-    setLoading(true);
-    try {
-      const bookingData: any = {
-        carWashId: selectedCarWash,
-        serviceId: selectedService,
-        vehicleId: selectedVehicle,
-        driverId: selectedDriver || undefined,
-        pickupLocation,
-      };
+    const wash = carWashes.find((w: any) => (w.id || w._id) === selectedCarWash);
+    const service = services.find((s: any) => (s.id || s._id) === selectedService);
+    const vehicle = vehicles.find((v: any) => (v.id || v._id) === selectedVehicle);
+    const driver = drivers.find((d: any) => (d.id || d._id) === selectedDriver);
 
-      // Add coordinates if available
-      if (pickupCoordinates) {
-        bookingData.pickupCoordinates = {
-          lat: pickupCoordinates.lat,
-          lng: pickupCoordinates.lng,
-        };
-      }
-
-      const response = await apiClient.post('/bookings', bookingData);
-
-      if (response.data.success) {
-        Alert.alert('Success', 'Booking created successfully!');
-        navigation.navigate('MyBookings' as never);
-      } else {
-        Alert.alert('Error', response.data.message || 'Failed to create booking');
-      }
-    } catch (error: any) {
-      const errorMessage = error?.message || error?.response?.data?.message || 'Failed to create booking';
-      Alert.alert('Error', errorMessage);
-      console.error('Booking error:', error);
-    } finally {
-      setLoading(false);
-    }
+    navigation.navigate('ConfirmBooking', {
+      carWashId: selectedCarWash,
+      carWashName: wash?.carWashName || wash?.name || 'Car wash',
+      serviceId: selectedService,
+      serviceName: service?.name || 'Service',
+      servicePrice: parseFloat(service?.price) || 0,
+      vehicleId: selectedVehicle,
+      vehicleLabel: vehicle
+        ? `${vehicle.make} ${vehicle.model} · ${vehicle.plateNo}`
+        : 'Vehicle',
+      driverId: selectedDriver || undefined,
+      driverName: driver?.name,
+      pickupLocation,
+      pickupCoordinates: pickupCoordinates
+        ? { lat: pickupCoordinates.lat, lng: pickupCoordinates.lng }
+        : undefined,
+    });
   };
 
   return (
@@ -278,18 +265,14 @@ const BookingScreen = () => {
           <Animatable.View animation="fadeInUp" duration={600} useNativeDriver>
             <TouchableOpacity
               style={[styles.button, { backgroundColor: theme.colors.primary }, vehicles.length === 0 && styles.buttonDisabled]}
-              onPress={handleBooking}
-              disabled={loading || vehicles.length === 0}
+              onPress={handleReview}
+              disabled={vehicles.length === 0}
               activeOpacity={0.7}
             >
-              {loading ? (
-                <ActivityIndicator color={theme.colors.white} />
-              ) : (
-                <>
-                  <Ionicons name="checkmark-circle" size={20} color={theme.colors.white} />
-                  <Text style={[styles.buttonText, { color: theme.colors.white }]}>Create Booking</Text>
-                </>
-              )}
+              <>
+                <Ionicons name="document-text-outline" size={20} color={theme.colors.white} />
+                <Text style={[styles.buttonText, { color: theme.colors.white }]}>Review & Confirm</Text>
+              </>
             </TouchableOpacity>
           </Animatable.View>
         </View>

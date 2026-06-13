@@ -109,6 +109,61 @@
   background: rgba(255, 255, 255, 0.15);
 }
 
+/* Steps must fit the client column (480px) */
+.book-service.sucar-page .book-steps {
+  max-width: 100%;
+  margin: 0;
+  padding: var(--space-4) var(--space-3);
+  overflow-x: auto;
+  justify-content: flex-start;
+  gap: var(--space-2);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.book-service.sucar-page .book-steps::before {
+  display: none;
+}
+
+.book-service.sucar-page .step {
+  flex: 0 0 auto;
+  min-width: 64px;
+  max-width: none;
+}
+
+.book-service.sucar-page .step-label {
+  font-size: 9px;
+  line-height: 1.2;
+  max-width: 72px;
+}
+
+.book-service.sucar-page .book-content {
+  max-width: 100%;
+  padding: var(--space-4);
+  box-sizing: border-box;
+}
+
+.book-service.sucar-page .book-header {
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.book-service.sucar-page .header-content {
+  min-width: 0;
+  flex: 1 1 180px;
+}
+
+.book-service.sucar-page .booking-type-selection {
+  grid-template-columns: 1fr;
+  margin-top: var(--space-4);
+}
+
+.book-service.sucar-page .carwash-list,
+.book-service.sucar-page .services-list,
+.book-service.sucar-page .vehicles-list {
+  grid-template-columns: 1fr;
+}
+
 .book-header {
   background: var(--bg-primary);
   border-bottom: 1px solid var(--border-primary);

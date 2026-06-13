@@ -133,6 +133,16 @@ export const getAllConversations = asyncHandler(async (req: AuthRequest, res: Re
   });
 });
 
+/**
+ * @desc    Get conversations for the current user
+ * @route   GET /api/chat/my-conversations
+ * @access  Private
+ */
+export const getMyConversations = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+  const conversations = await ChatService.getConversationsForUser(req.user!.id);
+  res.json({ success: true, data: conversations });
+});
+
 // @desc    Mark messages as read
 // @route   PUT /api/chat/read or PUT /api/chat/read/:bookingId
 // @access  Private

@@ -1,0 +1,76 @@
+.staff-panel.card {
+  background: var(--op-card, #fff);
+  border: 1px solid var(--op-border, rgba(0, 0, 0, 0.07));
+  border-radius: 14px;
+}
+
+.staff-empty {
+  padding: 16px 18px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--op-text2, #6b7280);
+}
+
+.staff-list {
+  list-style: none;
+  margin: 0;
+  padding: 8px 12px 14px;
+}
+
+.staff-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 6px;
+  border-bottom: 1px solid var(--op-border, #f0f0ee);
+}
+
+.staff-item:last-child {
+  border-bottom: none;
+}
+
+.staff-av {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--op-green-l, #e1f5ee);
+  color: var(--op-green, #1d9e75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.staff-info {
+  flex: 1;
+}
+
+.staff-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--op-text, #18191f);
+}
+
+.staff-role {
+  font-size: 11px;
+  color: var(--op-text2, #6b7280);
+  margin-top: 2px;
+}
+
+.staff-dot {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 20px;
+}
+
+.staff-available {
+  background: #e1f5ee;
+  color: #1d9e75;
+}
+
+.staff-busy {
+  background: #fef3e2;
+  color: #e07b39;
+}

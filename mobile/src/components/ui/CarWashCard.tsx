@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { ClientColors } from '../../constants/sucarTheme';
+import { ClientColors, AppLayout } from '../../constants/sucarTheme';
 
 export interface CarWashListItem {
   id: string;
@@ -51,9 +51,9 @@ const CarWashCard = ({ wash, onPress }: CarWashCardProps) => {
 
 const styles = StyleSheet.create({
   card: {
-    marginHorizontal: 16,
+    marginHorizontal: AppLayout.screenPadding,
     marginBottom: 10,
-    borderRadius: 14,
+    borderRadius: AppLayout.cardRadius,
     borderWidth: 1,
     borderColor: ClientColors.border,
     backgroundColor: ClientColors.surface,
@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   badgeText: { color: '#FFF', fontSize: 9, fontWeight: '600' },
-  body: { padding: 10, 12 },
+  body: { paddingVertical: 10, paddingHorizontal: 12 },
   title: { fontSize: 13, fontWeight: '600', color: ClientColors.text },
   meta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   metaText: { fontSize: 10, color: ClientColors.textSecondary, flex: 1 },

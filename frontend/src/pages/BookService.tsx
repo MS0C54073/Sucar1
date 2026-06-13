@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../services/api';
 import LocationPicker from '../components/LocationPicker';
@@ -10,10 +10,21 @@ import EmptyState from '../components/EmptyState';
 import { useToast } from '../components/ToastContainer';
 import './BookService.css';
 
+type BookLocationState = { carWashId?: string; serviceId?: string; servicePreset?: string };
+
+const SERVICE_PRESET_MATCH: Record<string, RegExp> = {
+  standard: /standard|basic|exterior wash/i,
+  deluxe: /deluxe|complete|interior/i,
+  detail: /detail|premium/i,
+};
+
 const BookService = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
+  const preselectApplied = useRef(false);
+  const bookState = (location.state as BookLocationState | null) || {};
   const [step, setStep] = useState(1);
   const [bookingType, setBookingType] = useState<'pickup_delivery' | 'drive_in' | null>(null);
   const [selectedCarWash, setSelectedCarWash] = useState<any>(null);
@@ -66,6 +77,30 @@ const BookService = () => {
       return response.data.data;
     },
   });
+
+  useEffect(() => {
+    if (preselectApplied.current || !bookState.carWashId || !carWashes?.length) return;
+    const wash = carWashes.find((c: { id: string }) => String(c.id) === String(bookState.carWashId));
+    if (!wash) return;
+    preselectApplied.current = true;
+    setSelectedCarWash(wash);
+    setBookingType((prev) => prev || 'drive_in');
+    setStep(3);
+  }, [carWashes, bookState.carWashId]);
+
+  useEffect(() => {
+    if (!bookState.serviceId || !services?.length || !selectedCarWash) return;
+    const svc = services.find((s: { id: string }) => String(s.id) === String(bookState.serviceId));
+    if (svc) setSelectedService(svc);
+  }, [services, bookState.serviceId, selectedCarWash]);
+
+  useEffect(() => {
+    if (!bookState.servicePreset || !services?.length || !selectedCarWash) return;
+    const pattern = SERVICE_PRESET_MATCH[bookState.servicePreset];
+    if (!pattern) return;
+    const svc = services.find((s: { name?: string }) => pattern.test(s.name || ''));
+    if (svc) setSelectedService(svc);
+  }, [services, bookState.servicePreset, selectedCarWash]);
 
   const createBookingMutation = useMutation({
     mutationFn: async (bookingData: any) => {

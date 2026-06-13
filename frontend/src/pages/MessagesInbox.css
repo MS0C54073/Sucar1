@@ -1,0 +1,115 @@
+.messages-inbox {
+  min-height: 100dvh;
+  background: var(--bg-primary, #f5f7fb);
+  display: flex;
+  flex-direction: column;
+}
+
+.messages-inbox__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: var(--brand-primary, #2563eb);
+  color: #fff;
+}
+
+.messages-inbox__header h1 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.messages-inbox__back {
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.messages-inbox__body {
+  flex: 1;
+  padding: 12px;
+}
+
+.messages-inbox__loading {
+  display: flex;
+  justify-content: center;
+  padding: 48px;
+}
+
+.messages-inbox__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.messages-inbox__item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border-primary, #e5e7eb);
+  border-radius: 12px;
+  background: var(--bg-secondary, #fff);
+  cursor: pointer;
+  text-align: left;
+}
+
+.messages-inbox__avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--brand-primary, #2563eb);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.messages-inbox__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.messages-inbox__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.messages-inbox__preview {
+  margin: 4px 0 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary, #6b7280);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.messages-inbox__time {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #9ca3af);
+  flex-shrink: 0;
+}
+
+.messages-inbox__badge {
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  min-width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+}

@@ -1,16 +1,21 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
-import EmptyState from '../components/EmptyState';
+import { useToast } from '../components/ToastContainer';
 import './Payment.css';
+
+const MAX_PROOF_BYTES = 2 * 1024 * 1024;
 
 const Payment = () => {
   const { bookingId } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [transactionId, setTransactionId] = useState('');
+  const [proofPreview, setProofPreview] = useState<string | null>(null);
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [methodLabel, setMethodLabel] = useState('Cash Payment');
@@ -32,50 +37,90 @@ const Payment = () => {
       return response.data.data;
     },
     enabled: !!bookingId,
+    retry: false,
   });
 
   const initiatePaymentMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: {
+      bookingId: string;
+      method: string;
+      transactionId?: string;
+      proofUrl?: string;
+    }) => {
       const response = await api.post('/payments/initiate', data);
       return response.data;
     },
     onSuccess: () => {
       setAwaitingConfirmation(true);
-      // set human label
-      const label = paymentMethods.find(m => m.value === paymentMethod)?.label || 'Payment';
+      const label =
+        paymentMethods.find((m) => m.value === paymentMethod)?.label || 'Payment';
       setMethodLabel(label);
-      // start polling for confirmation
+      queryClient.invalidateQueries({ queryKey: ['payment', bookingId] });
+
       if (!pollTimer.current && bookingId) {
-        // poll every 2 seconds
         const t = window.setInterval(async () => {
           try {
             const res = await api.get(`/payments/booking/${bookingId}`);
             const p = res.data?.data;
-            if (p && p.status === 'completed') {
+            if (p?.status === 'completed') {
               window.clearInterval(t);
               pollTimer.current = undefined;
               setConfirmed(true);
               setAwaitingConfirmation(false);
+              queryClient.invalidateQueries({ queryKey: ['bookings'] });
             }
-          } catch {}
+          } catch {
+            /* keep polling */
+          }
         }, 2000);
         pollTimer.current = t as unknown as number;
       }
     },
+    onError: (error: any) => {
+      showToast(error.response?.data?.message || 'Failed to submit payment', 'error');
+    },
   });
+
+  const handleProofChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showToast('Please upload an image (PNG, JPG, or screenshot)', 'error');
+      return;
+    }
+    if (file.size > MAX_PROOF_BYTES) {
+      showToast('Image must be under 2MB', 'error');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setProofPreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!bookingId) return;
 
+    if (paymentMethod !== 'cash' && !proofPreview && !transactionId.trim()) {
+      showToast('Add a transaction reference or upload a payment screenshot', 'error');
+      return;
+    }
+
     initiatePaymentMutation.mutate({
       bookingId,
       method: paymentMethod,
-      transactionId: transactionId || undefined,
+      transactionId: transactionId.trim() || undefined,
+      proofUrl: proofPreview || undefined,
     });
   };
 
-  // Cleanup polling timer on unmount
+  useEffect(() => {
+    if (payment?.status === 'completed') {
+      setConfirmed(true);
+      setAwaitingConfirmation(false);
+    }
+  }, [payment?.status]);
+
   useEffect(() => {
     return () => {
       if (pollTimer.current) {
@@ -85,6 +130,23 @@ const Payment = () => {
     };
   }, []);
 
+  const paymentMethods = [
+    { value: 'cash', label: 'Cash Payment', icon: '💵', description: 'Pay with cash on delivery' },
+    { value: 'card', label: 'Card Payment', icon: '💳', description: 'Credit or debit card' },
+    {
+      value: 'mobile_money',
+      label: 'Mobile Money',
+      icon: '📱',
+      description: 'Pay using Mobile Money (e.g., Airtel, MTN)',
+    },
+    {
+      value: 'bank_transfer',
+      label: 'Bank Transfer',
+      icon: '🏦',
+      description: 'Direct bank transfer',
+    },
+  ];
+
   if (!booking) {
     return (
       <div className="payment-loading">
@@ -93,17 +155,10 @@ const Payment = () => {
     );
   }
 
-  const paymentMethods = [
-    { value: 'cash', label: 'Cash Payment', icon: '💵', description: 'Pay with cash on delivery' },
-    { value: 'card', label: 'Card Payment', icon: '💳', description: 'Credit or debit card' },
-    { value: 'mobile_money', label: 'Mobile Money', icon: '📱', description: 'Pay using Mobile Money (e.g., Airtel, MTN)' },
-    { value: 'bank_transfer', label: 'Bank Transfer', icon: '🏦', description: 'Direct bank transfer' },
-  ];
-
   return (
     <div className="payment-page">
       <header className="payment-header">
-        <button className="back-button" onClick={() => navigate('/client')}>
+        <button type="button" className="back-button" onClick={() => navigate('/client')}>
           ← Back
         </button>
         <div className="header-content">
@@ -142,117 +197,131 @@ const Payment = () => {
         </div>
 
         {!awaitingConfirmation && !confirmed && (
-        <form onSubmit={handleSubmit} className="payment-form">
-          <h3 className="form-title">Select Payment Method</h3>
-          
-          <div className="payment-methods">
-            {paymentMethods.map((method) => (
-              <label
-                key={method.value}
-                className={`payment-method-option ${
-                  paymentMethod === method.value ? 'selected' : ''
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value={method.value}
-                  checked={paymentMethod === method.value}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="method-radio"
-                />
-                <div className="method-icon">{method.icon}</div>
-                <div className="method-content">
-                  <div className="method-label">{method.label}</div>
-                  <div className="method-description">{method.description}</div>
-                </div>
-                <div className="method-check">✓</div>
-              </label>
-            ))}
-          </div>
+          <form onSubmit={handleSubmit} className="payment-form">
+            <h3 className="form-title">Select Payment Method</h3>
 
-          {paymentMethod !== 'cash' && (
-            <div className="form-group">
+            <div className="payment-methods">
+              {paymentMethods.map((method) => (
+                <label
+                  key={method.value}
+                  className={`payment-method-option ${
+                    paymentMethod === method.value ? 'selected' : ''
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value={method.value}
+                    checked={paymentMethod === method.value}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    className="method-radio"
+                  />
+                  <div className="method-icon">{method.icon}</div>
+                  <div className="method-content">
+                    <div className="method-label">{method.label}</div>
+                    <div className="method-description">{method.description}</div>
+                  </div>
+                  <div className="method-check">✓</div>
+                </label>
+              ))}
+            </div>
+
+            {paymentMethod !== 'cash' && (
+              <div className="form-group">
+                <label className="form-label">Transaction reference</label>
+                <input
+                  type="text"
+                  value={transactionId}
+                  onChange={(e) => setTransactionId(e.target.value)}
+                  placeholder="e.g. mobile money confirmation code"
+                  className="form-input"
+                />
+              </div>
+            )}
+
+            <div className="form-group payment-proof-upload">
               <label className="form-label">
-                Transaction ID <span className="required">*</span>
+                Payment receipt / screenshot
+                {paymentMethod !== 'cash' && <span className="required"> *</span>}
               </label>
               <input
-                type="text"
-                value={transactionId}
-                onChange={(e) => setTransactionId(e.target.value)}
-                placeholder="Optional: Enter your transaction reference number"
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleProofChange}
                 className="form-input"
               />
-              <p className="form-hint">Optional: you may leave this blank.</p>
-            </div>
-          )}
-
-          {paymentMethod === 'cash' && (
-            <div className="payment-info">
-              <div className="info-icon">ℹ️</div>
-              <div className="info-content">
-                <strong>Cash Payment</strong>
-                <p>You'll pay the driver in cash when your vehicle is delivered.</p>
-              </div>
-            </div>
-          )}
-
-          <div className="form-actions">
-            <button
-              type="submit"
-              className="btn btn-primary btn-lg pay-btn"
-              disabled={initiatePaymentMutation.isPending}
-            >
-              {initiatePaymentMutation.isPending ? (
-                <>
-                  <LoadingSpinner size="sm" />
-                  <span>Processing Payment...</span>
-                </>
-              ) : (
-                <>
-                  <span>Complete Payment</span>
-                  <span className="btn-arrow">→</span>
-                </>
+              <p className="form-hint">
+                Upload a screenshot of your payment (max 2MB). Required for mobile money and bank
+                transfer.
+              </p>
+              {proofPreview && (
+                <img src={proofPreview} alt="Payment proof preview" className="payment-proof-preview" />
               )}
-            </button>
-            {paymentMethod !== 'cash' && !transactionId && (
-              <p className="form-error">Please enter a transaction ID to continue</p>
+            </div>
+
+            {paymentMethod === 'cash' && (
+              <div className="payment-info">
+                <div className="info-icon">ℹ️</div>
+                <div className="info-content">
+                  <strong>Cash Payment</strong>
+                  <p>Pay the driver or car wash in cash. You can optionally upload proof below.</p>
+                </div>
+              </div>
             )}
-          </div>
-        </form>
+
+            {/* Inline submit — visible without scrolling on short screens */}
+            <div className="form-actions form-actions--inline">
+              <button
+                type="submit"
+                className="payment-submit-btn"
+                disabled={initiatePaymentMutation.isPending}
+              >
+                {initiatePaymentMutation.isPending ? (
+                  <>
+                    <LoadingSpinner size="sm" />
+                    <span>Submitting…</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Submit payment & receipt</span>
+                    <span className="btn-arrow" aria-hidden>
+                      →
+                    </span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
         )}
 
         {awaitingConfirmation && !confirmed && (
           <div className="payment-wait">
-            <h3>Awaiting {methodLabel} Confirmation</h3>
-            <p>The driver or car wash will confirm your payment shortly.</p>
+            <h3>Awaiting {methodLabel} confirmation</h3>
+            <p>The driver or car wash will review your payment and confirm shortly.</p>
             <div className="progress-bar">
               <div className="progress-fill" />
             </div>
-            <p className="hint">This will close automatically once confirmed.</p>
+            <p className="hint">This page updates automatically once confirmed.</p>
           </div>
         )}
 
         {confirmed && (
           <div className="payment-success">
             <div className="success-icon">✓</div>
-            <h3>Payment Confirmed!</h3>
+            <h3>Payment confirmed</h3>
             <p>Your payment has been confirmed. Thank you.</p>
             <div className="post-actions">
-              <button className="btn btn-primary" onClick={() => navigate('/client')}>Go to Home</button>
-              <button className="btn btn-secondary" onClick={() => navigate('/client?newBooking=1')}>Make New Booking</button>
-            </div>
-          </div>
-        )}
-
-        {payment && payment.status === 'completed' && !confirmed && (
-          <div className="payment-success">
-            <div className="success-icon">✓</div>
-            <h3>Payment Confirmed!</h3>
-            <p>Your payment has been confirmed. Thank you.</p>
-            <div className="post-actions">
-              <button className="btn btn-primary" onClick={() => navigate('/client')}>Go to Home</button>
-              <button className="btn btn-secondary" onClick={() => navigate('/client?newBooking=1')}>Make New Booking</button>
+              <button type="button" className="btn btn-primary" onClick={() => navigate('/client')}>
+                Go to Home
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => navigate('/client/book')}
+              >
+                Make new booking
+              </button>
             </div>
           </div>
         )}

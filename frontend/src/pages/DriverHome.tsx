@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../services/api';
@@ -10,30 +11,37 @@ import BookingCardSkeleton from '../components/skeletons/BookingCardSkeleton';
 import DashboardSkeleton from '../components/skeletons/DashboardSkeleton';
 import EmptyState from '../components/EmptyState';
 import DriverEarnings from '../components/driver/DriverEarnings';
-import RouteOptimizer from '../components/driver/RouteOptimizer';
 import { useToast } from '../components/ToastContainer';
 import LiveTracking from '../components/LiveTracking';
-import LiveTrackingMap from '../components/map/LiveTrackingMap';
 import AppShell from '../components/layout/AppShell';
 import DriverHero from '../components/layout/DriverHero';
+import ThemeToggle from '../components/layout/ThemeToggle';
 import { NavItem } from '../components/layout/BottomNav';
+import JobSearchAutocomplete from '../components/search/JobSearchAutocomplete';
+import { parseCoordinates, Coordinates } from '../services/mappingService';
+import '../components/search/SearchAutocomplete.css';
 import './DriverHome.css';
 
 const DRIVER_NAV: NavItem[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: '📊' },
-  { id: 'jobs', label: 'Jobs', icon: '📋' },
-  { id: 'earnings', label: 'Earnings', icon: '💰' },
-  { id: 'map', label: 'Map', icon: '🗺️' },
-  { id: 'profile', label: 'Profile', icon: '👤' },
+  { id: 'dashboard', label: 'Today', icon: 'dashboard' },
+  { id: 'jobs', label: 'Jobs', icon: 'jobs' },
+  { id: 'earnings', label: 'Earnings', icon: 'earnings' },
+  { id: 'map', label: 'Map', icon: 'map' },
+  { id: 'profile', label: 'Profile', icon: 'profile' },
 ];
 
 const DriverHome = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [online, setOnline] = useState(true);
   const [trackingBookingId, setTrackingBookingId] = useState<string | null>(null);
+  const [jobsSheetOpen, setJobsSheetOpen] = useState(false);
+  const [jobSearchQuery, setJobSearchQuery] = useState('');
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  const [mapCenter, setMapCenter] = useState<Coordinates | undefined>();
 
   const { data: bookings, isLoading: bookingsLoading, error: bookingsError } = useBookings({
     filters: { role: 'driver' },
@@ -43,6 +51,42 @@ const DriverHome = () => {
   const isInitialLoad = bookingsLoading && bookings === undefined;
   const pendingJob = bookings?.find((b: any) => b.status === 'pending' || b.status === 'assigned_driver');
 
+  const filteredJobs = useMemo(() => {
+    const q = jobSearchQuery.trim().toLowerCase();
+    if (!q) return bookings || [];
+    return (bookings || []).filter((b: any) => {
+      const haystack = [
+        b.pickupLocation,
+        b.clientId?.name,
+        b.clientName,
+        b.carWashId?.carWashName,
+        b.carWashId?.name,
+        b.vehicleId?.plateNo,
+        b.vehicleId?.make,
+        b.vehicleId?.model,
+        b.status,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return q.split(/\s+/).every((term: string) => haystack.includes(term));
+    });
+  }, [bookings, jobSearchQuery]);
+
+  const filteredMapBookings = useMemo(
+    () => filteredJobs.filter((b: { pickupCoordinates?: unknown }) => b.pickupCoordinates),
+    [filteredJobs]
+  );
+
+  const handleJobSearchSelect = (booking: { id: string; clientId?: { name?: string }; clientName?: string; pickupCoordinates?: unknown }) => {
+    const label = booking.clientId?.name || booking.clientName || 'Job';
+    setJobSearchQuery(label);
+    setSelectedJobId(booking.id);
+    setJobsSheetOpen(true);
+    const coords = parseCoordinates(booking.pickupCoordinates as Coordinates | string);
+    if (coords) setMapCenter(coords);
+  };
+
   useEffect(() => {
     const handleOpenTracking = (event: CustomEvent) => {
       setTrackingBookingId(event.detail.bookingId);
@@ -50,6 +94,14 @@ const DriverHome = () => {
     window.addEventListener('openTracking' as any, handleOpenTracking as EventListener);
     return () => window.removeEventListener('openTracking' as any, handleOpenTracking as EventListener);
   }, []);
+
+  useEffect(() => {
+    if (activeTab !== 'map') {
+      setJobSearchQuery('');
+      setSelectedJobId(null);
+      setMapCenter(undefined);
+    }
+  }, [activeTab]);
 
   const acceptMutation = useMutation({
     mutationFn: async (bookingId: string) => {
@@ -76,6 +128,15 @@ const DriverHome = () => {
     },
   });
 
+  const handleNav = (id: string) => {
+    if (id === 'profile') {
+      navigate('/profile');
+      return;
+    }
+    if (id !== 'map') setJobsSheetOpen(false);
+    setActiveTab(id);
+  };
+
   if (!user?.id) {
     return <DashboardSkeleton />;
   }
@@ -96,7 +157,7 @@ const DriverHome = () => {
             </div>
           </div>
           <div className="sucar-job-detail">
-            <div className="sucar-job-detail-icon">🚗</div>
+            <div className="sucar-job-detail-icon" aria-hidden />
             <div>
               <strong>Car wash service</strong>
               <p>{booking.status?.replace(/_/g, ' ')}</p>
@@ -136,11 +197,9 @@ const DriverHome = () => {
     <>
       {pendingJob && renderJobRequest(pendingJob)}
       <div className="sucar-section-head">
-        <span style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--color-primary-500)' }}>
-          TODAY&apos;S EARNINGS
-        </span>
+        <h2 style={{ fontSize: 'var(--text-lg)', margin: 0 }}>Today&apos;s earnings</h2>
         <button type="button" className="sucar-link" onClick={() => setActiveTab('earnings')}>
-          View Summary ›
+          View summary
         </button>
       </div>
       <div className="sucar-stats-row">
@@ -150,16 +209,12 @@ const DriverHome = () => {
           <div className="sucar-stat-label">Total</div>
         </div>
         <div className="sucar-stat-card">
-          <div className="sucar-stat-icon" style={{ color: 'var(--color-success)' }}>
-            💼
-          </div>
+          <div className="sucar-stat-icon">💼</div>
           <div className="sucar-stat-value">6</div>
           <div className="sucar-stat-label">Jobs done</div>
         </div>
         <div className="sucar-stat-card">
-          <div className="sucar-stat-icon" style={{ color: '#fbbf24' }}>
-            ⏱
-          </div>
+          <div className="sucar-stat-icon">⏱</div>
           <div className="sucar-stat-value">5h 45m</div>
           <div className="sucar-stat-label">Online</div>
         </div>
@@ -174,8 +229,10 @@ const DriverHome = () => {
 
   const renderJobs = () => (
     <div className="sucar-card-panel">
-      <h2 style={{ marginBottom: '1rem' }}>My Jobs</h2>
-      {bookingsError && <div className="alert alert-error">{bookingsError.message}</div>}
+      <div className="sucar-tab-header">
+        <h2>My Jobs</h2>
+      </div>
+      {bookingsError && <div className="alert alert-error">{(bookingsError as Error).message}</div>}
       {isInitialLoad ? (
         <div className="bookings-list">
           {[1, 2, 3].map((i) => (
@@ -193,7 +250,61 @@ const DriverHome = () => {
           ))}
         </div>
       ) : (
-        <EmptyState icon="📋" title="No jobs" description="New requests appear when you're online" />
+        <EmptyState title="No jobs right now" description="Stay online to receive new pickup requests." />
+      )}
+    </div>
+  );
+
+  const mapTabContent = (
+    <div className="driver-map-tab driver-map-tab--fullscreen">
+      <div className="driver-map-tab__search">
+        <JobSearchAutocomplete
+          bookings={bookings || []}
+          value={jobSearchQuery}
+          onChange={setJobSearchQuery}
+          onSelect={handleJobSearchSelect}
+          placeholder="Search jobs by client, location, plate…"
+        />
+      </div>
+      <div className="driver-map-tab-map">
+        <MapView
+          bookings={filteredMapBookings}
+          activeBookingId={selectedJobId || undefined}
+          center={mapCenter}
+          zoom={selectedJobId ? 14 : 12}
+          showNearbyServices
+          height="100%"
+          autoFitMarkers={!selectedJobId && !mapCenter}
+        />
+      </div>
+      {!bookings?.length && (
+        <div className="driver-map-empty-overlay" role="status">
+          <EmptyState icon="🗺️" title="No jobs on map" description="Go online to receive nearby requests" />
+        </div>
+      )}
+      {bookings && bookings.length > 0 && filteredJobs.length === 0 && jobSearchQuery.trim() && (
+        <div className="driver-map-empty-overlay" role="status">
+          <EmptyState icon="🔍" title="No matching jobs" description="Try another name or location" />
+        </div>
+      )}
+      {filteredJobs.length > 0 && (
+        <div className="driver-map-jobs-sheet">
+          <button
+            type="button"
+            className="driver-map-jobs-toggle"
+            onClick={() => setJobsSheetOpen((o) => !o)}
+            aria-expanded={jobsSheetOpen}
+            aria-controls="driver-nearby-jobs"
+          >
+            {jobsSheetOpen ? 'Hide' : 'Show'} jobs ({filteredJobs.length})
+          </button>
+          <div
+            id="driver-nearby-jobs"
+            className={`driver-map-jobs-panel ${jobsSheetOpen ? 'open' : ''}`}
+          >
+            <NearbyBookings bookings={filteredJobs} />
+          </div>
+        </div>
       )}
     </div>
   );
@@ -206,43 +317,44 @@ const DriverHome = () => {
         : activeTab === 'earnings'
           ? (
               <div className="sucar-card-panel">
+                <div className="sucar-tab-header">
+                  <h2>Earnings</h2>
+                </div>
                 <DriverEarnings />
               </div>
             )
           : activeTab === 'map'
-            ? (
-                <div className="driver-map-tab">
-                  <div className="driver-map-tab-map">
-                    <MapView
-                      bookings={bookings?.filter((b: { pickupCoordinates?: unknown }) => b.pickupCoordinates) || []}
-                      showNearbyServices
-                      height="min(42vh, 320px)"
-                    />
-                  </div>
-                  {bookings?.length ? (
-                    <NearbyBookings bookings={bookings} />
-                  ) : (
-                    <EmptyState icon="🗺️" title="No jobs on map" description="Go online to receive nearby requests" />
-                  )}
-                </div>
-              )
+            ? mapTabContent
             : null;
 
   return (
     <>
       <AppShell
         skin="driver"
+        contentVariant={activeTab === 'map' ? 'map' : 'default'}
+        subHeader={
+          activeTab === 'map' ? (
+            <header className="sucar-subheader">
+              <h1>Jobs map</h1>
+              <div className="sucar-subheader-actions">
+                <ThemeToggle variant="segmented" />
+              </div>
+            </header>
+          ) : undefined
+        }
         hero={
-          <DriverHero
-            userName={user.name}
-            profilePictureUrl={user.profilePictureUrl}
-            online={online}
-            onOnlineChange={setOnline}
-          />
+          activeTab === 'dashboard' ? (
+            <DriverHero
+              userName={user.name}
+              profilePictureUrl={user.profilePictureUrl}
+              online={online}
+              onOnlineChange={setOnline}
+            />
+          ) : undefined
         }
         navItems={DRIVER_NAV}
         activeNav={activeTab}
-        onNavChange={setActiveTab}
+        onNavChange={handleNav}
       >
         {content}
       </AppShell>

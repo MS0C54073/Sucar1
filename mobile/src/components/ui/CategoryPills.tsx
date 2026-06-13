@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { ClientColors, CATEGORIES } from '../../constants/sucarTheme';
+import { ClientColors, CATEGORIES, AppLayout } from '../../constants/sucarTheme';
 
 interface CategoryPillsProps {
   selected: string;
@@ -25,7 +25,7 @@ const CategoryPills = ({ selected, onSelect }: CategoryPillsProps) => (
 );
 
 const styles = StyleSheet.create({
-  row: { paddingHorizontal: 16, gap: 10, paddingBottom: 4 },
+  row: { paddingHorizontal: AppLayout.screenPadding, gap: 10, paddingBottom: 4 },
   cat: { alignItems: 'center', width: 64 },
   ic: {
     width: 48,

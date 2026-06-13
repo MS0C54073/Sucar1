@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { supabase } from '../config/supabase';
+import { supabase, isSupabaseConfigured } from '../config/supabase';
 import {
   getMapboxToken,
   setMapboxRuntimeToken,
@@ -42,7 +42,7 @@ export const useMapboxToken = () => {
 
     const refresh = async () => {
       const envToken = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
-      if (envToken) return;
+      if (envToken || !isSupabaseConfigured || !supabase) return;
 
       try {
         const timeout = new Promise<never>((_, reject) =>

@@ -1,29 +1,39 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  ReactNode,
+} from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors as BaseColors } from '../constants/theme';
-import { isDriverApp } from '../config/appVariant';
+import {
+  AuthAppearance,
+  AuthThemePalette,
+  getAuthTheme,
+} from '../constants/sucarTheme';
 
-// Build a light theme by defaulting to existing Colors
+const STORAGE_KEY = 'sucar_appearance';
+
 const light = {
-  name: 'light',
-  colors: {
-    ...BaseColors,
-  },
+  name: 'light' as const,
+  colors: { ...BaseColors },
 };
 
-// Dark-blue theme overrides a subset of colors
 const darkBlue = {
-  name: 'darkBlue',
+  name: 'darkBlue' as const,
   colors: {
     ...BaseColors,
-    primary: '#3DD68C',
-    primaryDark: '#1AAB6D',
-    gradientStart: '#111318',
-    gradientEnd: '#1C2028',
-    headerGradientStart: '#111318',
-    headerGradientEnd: '#1C2028',
-    background: '#111318',
-    surface: '#1C2028',
-    surfaceElevated: '#262C36',
+    primary: '#00C896',
+    primaryDark: '#00A67E',
+    gradientStart: '#0B162C',
+    gradientEnd: '#152238',
+    headerGradientStart: '#0B162C',
+    headerGradientEnd: '#152238',
+    background: '#0B162C',
+    surface: '#152238',
+    surfaceElevated: '#1C2A42',
     textPrimary: '#FFFFFF',
     textSecondary: '#94A3B8',
     textTertiary: '#64748B',
@@ -33,13 +43,17 @@ const darkBlue = {
   },
 };
 
-type ThemeMode = 'light' | 'darkBlue';
+export type ThemeMode = 'light' | 'darkBlue';
 
 type ThemeContextValue = {
   mode: ThemeMode;
+  appearance: AuthAppearance;
   theme: typeof light | typeof darkBlue;
+  authTheme: AuthThemePalette;
   toggle: () => void;
   setMode: (m: ThemeMode) => void;
+  setAppearance: (a: AuthAppearance) => void;
+  ready: boolean;
 };
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
@@ -50,15 +64,74 @@ export const useTheme = () => {
   return ctx;
 };
 
+const modeFromAppearance = (a: AuthAppearance): ThemeMode =>
+  a === 'dark' ? 'darkBlue' : 'light';
+
+const appearanceFromMode = (m: ThemeMode): AuthAppearance =>
+  m === 'darkBlue' ? 'dark' : 'light';
+
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [mode, setMode] = useState<ThemeMode>(isDriverApp() ? 'darkBlue' : 'light');
+  const [appearance, setAppearanceState] = useState<AuthAppearance>('dark');
+  const [ready, setReady] = useState(false);
 
-  const toggle = () => setMode((m) => (m === 'light' ? 'darkBlue' : 'light'));
+  useEffect(() => {
+    (async () => {
+      try {
+        const stored = await AsyncStorage.getItem(STORAGE_KEY);
+        if (stored === 'light' || stored === 'dark') {
+          setAppearanceState(stored);
+        }
+      } catch {
+        /* default dark */
+      } finally {
+        setReady(true);
+      }
+    })();
+  }, []);
 
+  const persistAppearance = useCallback(async (next: AuthAppearance) => {
+    setAppearanceState(next);
+    try {
+      await AsyncStorage.setItem(STORAGE_KEY, next);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const setAppearance = useCallback(
+    (a: AuthAppearance) => {
+      persistAppearance(a);
+    },
+    [persistAppearance],
+  );
+
+  const mode = modeFromAppearance(appearance);
   const theme = mode === 'light' ? light : darkBlue;
+  const authTheme = getAuthTheme(appearance);
+
+  const toggle = () => {
+    persistAppearance(appearance === 'dark' ? 'light' : 'dark');
+  };
+
+  const setMode = (m: ThemeMode) => {
+    persistAppearance(appearanceFromMode(m));
+  };
 
   return (
-    <ThemeContext.Provider value={{ mode, theme, toggle, setMode }}>{children}</ThemeContext.Provider>
+    <ThemeContext.Provider
+      value={{
+        mode,
+        appearance,
+        theme,
+        authTheme,
+        toggle,
+        setMode,
+        setAppearance,
+        ready,
+      }}
+    >
+      {children}
+    </ThemeContext.Provider>
   );
 };
 

@@ -39,30 +39,7 @@
   text-align: left;
 }
 
-.map-layout-client {
-  display: flex;
-  flex-direction: column;
-  min-height: 420px;
-}
-
-@media (min-width: 768px) {
-  .map-layout-client {
-    flex-direction: row;
-    min-height: 480px;
-  }
-
-  .map-sidebar-client {
-    width: 300px;
-    flex-shrink: 0;
-    border-right: 1px solid var(--border-primary);
-    overflow-y: auto;
-  }
-}
-
-.sucar-map-block--tall .sucar-map-inner--tall {
-  flex: 1;
-  min-height: 280px;
-}
+/* Explore layout lives in sucar-client-layout.css */
 
 .text-muted {
   color: var(--text-secondary);

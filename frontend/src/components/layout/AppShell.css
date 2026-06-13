@@ -1,1 +1,63 @@
-/* Layout-specific overrides live in sucar-ui.css */
+.sucar-subheader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-primary);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+}
+
+.sucar-subheader h1 {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--font-bold);
+  color: var(--text-primary);
+}
+
+.sucar-subheader-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.sucar-subheader--stacked h1 {
+  margin-bottom: 4px;
+}
+
+.sucar-subheader-hint {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--font-normal);
+  color: var(--text-secondary);
+  line-height: 1.4;
+  max-width: 28rem;
+}
+
+/* Map tab: fill viewport above bottom nav */
+.sucar-app--map-focus {
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
+.sucar-app--map-focus .sucar-main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sucar-app--map-focus .sucar-content--map {
+  flex: 1;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}

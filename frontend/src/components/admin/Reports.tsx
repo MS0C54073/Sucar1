@@ -24,7 +24,7 @@ const Reports = () => {
   })) || [];
 
   return (
-    <div>
+    <div className="admin-page-reports">
       <h1>Reports & Analytics</h1>
       <div className="dashboard-card">
         <h2>Booking Status Breakdown</h2>
@@ -35,8 +35,8 @@ const Reports = () => {
             <YAxis />
             <Tooltip />
             <Legend />
-            <Bar dataKey="count" fill="#3498db" name="Bookings" />
-            <Bar dataKey="revenue" fill="#27ae60" name="Revenue (K)" />
+            <Bar dataKey="count" fill="#00C896" name="Bookings" />
+            <Bar dataKey="revenue" fill="rgba(0, 200, 150, 0.45)" name="Revenue (K)" />
           </BarChart>
         </ResponsiveContainer>
       </div>

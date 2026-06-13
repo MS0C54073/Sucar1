@@ -10,8 +10,8 @@
   --sucar-card: #ffffff;
   --sucar-radius-lg: 1rem;
   --sucar-radius-xl: 1.25rem;
-  --sucar-shadow-card: 0 4px 24px rgba(0, 86, 210, 0.08);
-  --sucar-header-gradient: linear-gradient(160deg, #0056d2 0%, #0077e6 45%, #00a3ff 100%);
+  --sucar-shadow-card: 0 1px 3px rgba(26, 46, 61, 0.08), 0 4px 12px rgba(26, 46, 61, 0.06);
+  --sucar-header-gradient: #2c4a63;
 }
 
 /* Override design tokens for SuCAR light apps */
@@ -24,7 +24,7 @@
   --color-primary-700: #0047b3;
   --color-primary-900: #1e3a8a;
   --gradient-brand: var(--sucar-header-gradient);
-  --gradient-surface: linear-gradient(180deg, #f4f6fb 0%, #eef2ff 100%);
+  --gradient-surface: #f5f4f1;
   --bg-secondary: var(--sucar-surface);
   --nav-bg: #0056d2;
 }
@@ -47,16 +47,36 @@
 }
 
 [data-app-skin='driver'][data-theme='dark'],
-[data-app-skin='driver'] {
+[data-app-skin='driver']:not([data-theme='light']) {
   color-scheme: dark;
 }
 
-/* App shell */
+/* Driver app — optional light theme */
+[data-app-skin='driver'][data-theme='light'] {
+  color-scheme: light;
+  --bg-primary: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --bg-tertiary: #e2e8f0;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-tertiary: #64748b;
+  --border-primary: #e2e8f0;
+  --border-secondary: #cbd5e1;
+  --sucar-card: #ffffff;
+  --sucar-shadow-card: 0 4px 24px rgba(15, 23, 42, 0.08);
+}
+
+[data-app-skin='driver'][data-theme='light'] .sucar-hero--driver {
+  background: #2c4a63;
+}
+
+/* App shell — client & driver mobile column (480px); not used by admin/operator dashboards */
 .sucar-app {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   background: var(--bg-secondary);
+  width: 100%;
   max-width: 480px;
   margin: 0 auto;
   box-shadow: 0 0 0 1px var(--border-primary);
@@ -64,11 +84,6 @@
 }
 
 @media (min-width: 768px) {
-  .sucar-app {
-    max-width: 100%;
-    box-shadow: none;
-  }
-
   .sucar-app--with-sidebar {
     flex-direction: row;
     max-width: none;
@@ -76,14 +91,15 @@
 
   .sucar-app--with-sidebar .sucar-main {
     margin-left: 260px;
-    max-width: calc(100% - 260px);
+    width: calc(100% - 260px);
+    max-width: none;
   }
 
   .sucar-sidebar {
     display: flex;
   }
 
-  .sucar-bottom-nav {
+  .sucar-app--with-sidebar .sucar-bottom-nav {
     display: none;
   }
 }
@@ -92,7 +108,8 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding-bottom: 72px;
+  min-height: 0;
+  padding-bottom: calc(72px + env(safe-area-inset-bottom));
   overflow-x: hidden;
 }
 
@@ -103,9 +120,12 @@
 .sucar-content {
   flex: 1;
   padding: var(--space-4) var(--space-4) var(--space-6);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
-/* Hero header (client mockup) */
+/* Hero header — full width, properly aligned */
 .sucar-hero {
   background: var(--sucar-header-gradient);
   color: #fff;
@@ -113,15 +133,18 @@
   border-radius: 0 0 var(--sucar-radius-xl) var(--sucar-radius-xl);
   position: relative;
   overflow: hidden;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Allow search dropdown to extend below hero */
+.sucar-hero--with-search {
+  overflow: visible;
+  z-index: 4;
 }
 
 .sucar-hero::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.15) 0%, transparent 45%),
-    radial-gradient(circle at 10% 90%, rgba(255, 255, 255, 0.08) 0%, transparent 40%);
-  pointer-events: none;
+  display: none;
 }
 
 .sucar-hero-top {
@@ -247,25 +270,55 @@
   justify-content: center;
 }
 
-/* Driver hero (dark) */
+/* Driver hero — same footprint as client hero (rounded sheet, gradient) */
 .sucar-hero--driver {
-  background: var(--bg-primary);
-  border-bottom: 1px solid var(--border-primary);
-  border-radius: 0;
-  padding: var(--space-4) var(--space-5);
+  background: #1e323f;
+  border-bottom: none;
+  border-radius: 0 0 var(--sucar-radius-xl) var(--sucar-radius-xl);
+  padding: var(--space-4) var(--space-5) var(--space-6);
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+
+.sucar-hero--driver::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 85% 15%, rgba(96, 165, 250, 0.2) 0%, transparent 50%);
+  pointer-events: none;
 }
 
 .sucar-hero--driver .sucar-logo {
   color: #fff;
 }
 
-.sucar-hero--driver .sucar-hero-greeting h1,
-.sucar-hero--driver .sucar-hero-greeting p {
-  color: var(--text-primary);
+.sucar-hero--driver .sucar-icon-btn {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.1rem;
+}
+
+.sucar-hero--driver .sucar-hero-greeting h1 {
+  color: #fff;
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  margin: 0 0 var(--space-1);
 }
 
 .sucar-hero--driver .sucar-hero-greeting p {
-  color: var(--text-secondary);
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.sucar-hero--driver .sucar-online-toggle label {
+  color: #bbf7d0;
 }
 
 .sucar-profile-row {
@@ -307,6 +360,15 @@
   color: var(--color-success);
   font-weight: var(--font-semibold);
   margin-bottom: var(--space-1);
+}
+
+.sucar-hero--driver .sucar-online-hint {
+  font-size: 0.65rem;
+  color: #bbf7d0;
+  margin: 4px 0 0;
+  max-width: 7rem;
+  text-align: right;
+  line-height: 1.3;
 }
 
 .sucar-switch {
@@ -371,9 +433,7 @@
   gap: var(--space-3);
   overflow-x: auto;
   padding-bottom: var(--space-2);
-  margin: 0 calc(-1 * var(--space-4));
-  padding-left: var(--space-4);
-  padding-right: var(--space-4);
+  margin: 0;
   scrollbar-width: none;
 }
 
@@ -488,6 +548,7 @@
   font-size: var(--text-sm);
   font-weight: var(--font-bold);
   margin: 0 0 2px;
+  color: var(--text-primary);
 }
 
 .sucar-location-meta {
@@ -604,30 +665,48 @@
   gap: var(--space-2);
   flex: 1;
   justify-content: flex-end;
+  align-items: center;
+}
+
+.sucar-btn-decline,
+.sucar-btn-accept {
+  flex: 1;
+  min-width: 90px;
+  max-width: 140px;
+  padding: var(--space-3) var(--space-2);
+  border-radius: var(--radius-md);
+  font-weight: var(--font-semibold);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  text-align: center;
+  white-space: nowrap;
+  line-height: 1.2;
 }
 
 .sucar-btn-decline {
-  flex: 1;
-  max-width: 120px;
-  padding: var(--space-3);
   border: 1px solid var(--border-secondary);
   background: transparent;
   color: var(--text-primary);
-  border-radius: var(--radius-md);
-  font-weight: var(--font-semibold);
-  cursor: pointer;
+}
+
+.sucar-btn-decline:hover:not(:disabled) {
+  background: var(--hover-bg);
 }
 
 .sucar-btn-accept {
-  flex: 1;
-  max-width: 120px;
-  padding: var(--space-3);
   border: none;
   background: var(--color-primary-600);
   color: #fff;
-  border-radius: var(--radius-md);
-  font-weight: var(--font-semibold);
-  cursor: pointer;
+}
+
+.sucar-btn-accept:hover:not(:disabled) {
+  background: var(--color-primary-700);
+}
+
+.sucar-btn-decline:disabled,
+.sucar-btn-accept:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 /* Stats row */
@@ -665,7 +744,7 @@
   margin-top: 2px;
 }
 
-/* Bottom nav */
+/* Bottom nav — aligned to 480px app column */
 .sucar-bottom-nav {
   position: fixed;
   bottom: 0;
@@ -684,12 +763,16 @@
 }
 
 @media (min-width: 768px) {
-  .sucar-bottom-nav {
-    left: auto;
-    transform: none;
-    max-width: none;
+  [data-app-skin='light'] .sucar-app,
+  [data-app-skin='driver'] .sucar-app {
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.12);
+  }
+
+  [data-app-skin='driver'] .sucar-app {
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.35);
   }
 }
+
 
 [data-app-skin='driver'] .sucar-bottom-nav {
   background: var(--bg-primary);
@@ -701,6 +784,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 2px;
   padding: var(--space-2);
   border: none;
@@ -710,6 +794,8 @@
   font-weight: var(--font-medium);
   cursor: pointer;
   transition: color var(--transition-fast);
+  min-height: 48px;
+  min-width: 0;
 }
 
 .sucar-nav-item svg,
@@ -785,6 +871,48 @@
 .sucar-sidebar-footer {
   padding-top: var(--space-4);
   border-top: 1px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.sucar-sidebar-footer-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.sucar-sidebar-footer-top .sucar-sidebar-link {
+  flex: 1;
+}
+
+.sucar-sidebar-theme {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  font-size: 1.1rem;
+}
+
+.sucar-sidebar-user {
+  font-size: 0.8rem;
+  opacity: 0.8;
+  margin-bottom: 1.5rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.sucar-sidebar-signout {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Theme toggle button */
+.theme-toggle-btn {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.theme-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
 }
 
 .sucar-card-panel {
@@ -804,19 +932,14 @@
   font-size: var(--text-xl);
 }
 
-/* Admin dashboard — align existing layout with SuCAR blue */
-.admin-dashboard .admin-sidebar {
-  background: var(--sucar-blue) !important;
+/* Legacy admin (non-mockup shell only) — dark mockup uses sucar-admin-mockup.css */
+.admin-dashboard:not(.admin-mockup) .admin-sidebar {
+  background: var(--sucar-blue);
 }
 
-.admin-dashboard .nav-item.active {
-  background: rgba(255, 255, 255, 0.15) !important;
-  color: #fff !important;
-}
-
-.admin-dashboard .admin-header {
-  background: var(--sucar-card);
-  border-bottom: 1px solid var(--border-primary);
+.admin-dashboard:not(.admin-mockup) .nav-item.active {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
 }
 
 /* Notifications on blue hero */
@@ -844,8 +967,8 @@
 
 @media (min-width: 768px) {
   .sucar-page {
-    max-width: 720px;
-    padding: var(--space-6);
+    max-width: 480px;
+    padding: var(--space-5);
   }
 }
 

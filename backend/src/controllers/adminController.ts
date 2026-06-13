@@ -65,6 +65,48 @@ export const getDashboard = asyncHandler(async (req: AuthRequest, res: Response)
       .reduce((sum: number, b: any) => sum + parseFloat(b.totalAmount || 0), 0) * 100
   ) / 100;
 
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const now = new Date();
+  const monthlyTrend: { month: string; bookings: number; revenue: number }[] = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const y = d.getFullYear();
+    const m = d.getMonth();
+    const inMonth = bookings.filter((b: any) => {
+      const raw = b.createdAt || b.created_at;
+      if (!raw) return false;
+      const bd = new Date(raw);
+      return bd.getFullYear() === y && bd.getMonth() === m;
+    });
+    monthlyTrend.push({
+      month: monthNames[m],
+      bookings: inMonth.length,
+      revenue: Math.round(
+        inMonth
+          .filter((b: any) => b.paymentStatus === 'paid')
+          .reduce((s: number, b: any) => s + parseFloat(b.totalAmount || 0), 0) * 100,
+      ) / 100,
+    });
+  }
+
+  const recentTransactions = [...bookings]
+    .sort((a: any, b: any) => {
+      const ta = new Date(a.createdAt || a.created_at || 0).getTime();
+      const tb = new Date(b.createdAt || b.created_at || 0).getTime();
+      return tb - ta;
+    })
+    .slice(0, 8)
+    .map((b: any, idx: number) => ({
+      id: b.id || b._id,
+      transactionId: `TRX-${String(b.id || b._id || idx).slice(0, 8).toUpperCase()}`,
+      userName: b.clientId?.name || 'Client',
+      userEmail: b.clientId?.email || '',
+      amount: parseFloat(b.totalAmount || 0),
+      date: b.createdAt || b.created_at,
+      paymentStatus: b.paymentStatus || 'pending',
+      status: b.status,
+    }));
+
   const response: ApiSuccessResponse = {
     success: true,
     data: {
@@ -75,6 +117,8 @@ export const getDashboard = asyncHandler(async (req: AuthRequest, res: Response)
       totalClients: users.filter((u: any) => u.role === 'client').length,
       totalDrivers: users.filter((u: any) => u.role === 'driver').length,
       totalCarWashes: users.filter((u: any) => u.role === 'carwash').length,
+      monthlyTrend,
+      recentTransactions,
     },
   };
 

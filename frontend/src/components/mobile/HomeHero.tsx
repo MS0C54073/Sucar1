@@ -39,7 +39,7 @@ const HomeHero = () => {
             </>
           ) : (
             <>
-              <button className="btn btn-primary btn-lg" onClick={() => navigate('/register')}>
+              <button className="btn btn-primary btn-lg" onClick={() => navigate('/book')}>
                 Book Your First Wash
               </button>
               <button className="btn btn-secondary btn-lg" onClick={() => navigate('/login')}>

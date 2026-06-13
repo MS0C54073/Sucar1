@@ -1,6 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import { NavItem } from './BottomNav';
 import { useAuth } from '../../context/AuthContext';
+import ThemeToggle from './ThemeToggle';
+import { NavIcon, type NavIconName } from '../icons/NavIcon';
+import BrandLogo from '../BrandLogo';
 
 interface SidebarNavProps {
   items: NavItem[];
@@ -20,10 +23,9 @@ const SidebarNav = ({ items, activeId, onSelect }: SidebarNavProps) => {
   return (
     <aside className="sucar-sidebar">
       <div className="sucar-sidebar-logo">
-        <span>SuCAR</span>
-        <span className="sucar-logo-sparkle">✦</span>
+        <BrandLogo size={30} />
       </div>
-      <p style={{ fontSize: '0.8rem', opacity: 0.8, marginBottom: '1.5rem' }}>{user?.name}</p>
+      <p className="sucar-sidebar-user">{user?.name}</p>
       <nav className="sucar-sidebar-nav">
         {items.map((item) => (
           <button
@@ -32,16 +34,27 @@ const SidebarNav = ({ items, activeId, onSelect }: SidebarNavProps) => {
             className={`sucar-sidebar-link ${activeId === item.id ? 'active' : ''}`}
             onClick={() => onSelect(item.id)}
           >
-            <span aria-hidden>{item.icon}</span>
+            <span className="sucar-sidebar-link__icon" aria-hidden>
+              <NavIcon name={item.icon as NavIconName} />
+            </span>
             {item.label}
           </button>
         ))}
       </nav>
       <div className="sucar-sidebar-footer">
-        <button type="button" className="sucar-sidebar-link" onClick={() => onSelect('profile')}>
-          👤 Profile
-        </button>
-        <button type="button" className="sucar-sidebar-link" onClick={handleLogout}>
+        <div className="sucar-sidebar-footer-top">
+          <button type="button" className="sucar-sidebar-link" onClick={() => onSelect('profile')}>
+            <span className="sucar-sidebar-link__icon" aria-hidden>
+              <NavIcon name="profile" />
+            </span>
+            Profile
+          </button>
+          <ThemeToggle className="sucar-sidebar-theme" />
+        </div>
+        <button type="button" className="sucar-sidebar-link sucar-sidebar-signout" onClick={handleLogout}>
+          <span className="sucar-sidebar-link__icon" aria-hidden>
+            <NavIcon name="signout" />
+          </span>
           Sign out
         </button>
       </div>

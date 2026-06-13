@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../services/api';
 import { useToast } from '../components/ToastContainer';
 import LoadingSpinner from '../components/LoadingSpinner';
+import ThemeToggle from '../components/layout/ThemeToggle';
 import './Profile.css';
 
 const Profile = () => {
@@ -178,6 +179,12 @@ const Profile = () => {
             </header>
 
             <div className="profile-container">
+                <div className="profile-card profile-appearance-card">
+                    <h3>Appearance</h3>
+                    <p className="profile-appearance-hint">Choose light or dark mode for the app interface.</p>
+                    <ThemeToggle variant="segmented" />
+                </div>
+
                 <div className="profile-card main-info">
                     <div className="profile-pic-section">
                         <div className="profile-pic-container">
