@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { apiClient, API_URL, testBackendConnection } from '../utils/api';
+import { getRequiredRole, getOtherAppName, getAppDisplayName } from '../config/appVariant';
 
 interface User {
   _id: string;
@@ -72,15 +73,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
    * Throws descriptive errors that are formatted for display in the UI.
    */
   const login = async (email: string, password: string) => {
+    const normalizedEmail = email.trim().toLowerCase();
     try {
-      // Test backend connection first
       const isBackendAvailable = await testBackendConnection();
       if (!isBackendAvailable) {
-        throw new Error('Cannot connect to server. Please ensure:\n1. Backend is running\n2. Correct API URL configured\n3. Network connection is active');
+        console.warn('⚠️ Health check failed; attempting login anyway…');
       }
 
       console.log(`🔐 Attempting login to: ${API_URL}/auth/login`);
-      const response = await apiClient.post('/auth/login', { email, password });
+      const response = await apiClient.post('/auth/login', {
+        email: normalizedEmail,
+        password,
+      });
       
       if (!response.data.success) {
         throw new Error(response.data.message || 'Login failed');
@@ -93,8 +97,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
       
       console.log(`✅ Login successful for: ${userData.name} (${userData.role})`);
-      
-      // Set user state first to trigger navigation
+
+      const requiredRole = getRequiredRole();
+      if (userData.role !== requiredRole) {
+        throw new Error(
+          `This account is for ${userData.role}s. Please use ${getOtherAppName()} or sign in with a ${requiredRole} account in ${getAppDisplayName()}.`
+        );
+      }
+
       setUser(userData);
       setToken(newToken);
       
@@ -136,8 +146,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         throw new Error(errorMsg);
       }
 
+      const payload = { ...userData, role: userData.role || getRequiredRole() };
+      if (payload.role !== getRequiredRole()) {
+        throw new Error(`Registration in ${getAppDisplayName()} is only for ${getRequiredRole()} accounts.`);
+      }
+
       console.log(`📝 Attempting registration to: ${API_URL}/auth/register`);
-      const response = await apiClient.post('/auth/register', userData);
+      const response = await apiClient.post('/auth/register', payload);
       
       if (!response.data.success) {
         throw new Error(response.data.message || 'Registration failed');

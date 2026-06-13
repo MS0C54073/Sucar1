@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../services/api';
 import LocationPicker from '../components/LocationPicker';
+import MapView from '../components/MapView';
 import { Coordinates } from '../services/locationService';
 import LoadingSpinner from '../components/LoadingSpinner';
 import EmptyState from '../components/EmptyState';
@@ -142,7 +143,7 @@ const BookService = () => {
   };
 
   return (
-    <div className="book-service">
+    <div className="book-service sucar-page">
       <header className="book-header">
         <button className="back-button" onClick={() => navigate('/client')}>
           ← Back
@@ -387,9 +388,20 @@ const BookService = () => {
                   }}
                   initialLocation={pickupLocation}
                   initialCoordinates={pickupCoordinates}
+                  showMapPreview
                 />
+                {pickupCoordinates && (
+                  <div className="book-service-map-preview">
+                    <MapView
+                      center={pickupCoordinates}
+                      pinLocation={pickupCoordinates}
+                      zoom={15}
+                      height="200px"
+                    />
+                  </div>
+                )}
                 {!pickupLocation && (
-                  <p className="form-hint">Select a location on the map or enter an address</p>
+                  <p className="form-hint">Search for an address or use your current location — the map updates as you pick a spot</p>
                 )}
               </div>
 

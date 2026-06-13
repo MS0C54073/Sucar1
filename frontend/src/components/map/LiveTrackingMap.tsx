@@ -8,12 +8,12 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useAuth } from '../context/AuthContext';
-import api from '../services/api';
-import useLiveLocation from '../hooks/useLiveLocation';
+import { useAuth } from '../../context/AuthContext';
+import api from '../../services/api';
+import useLiveLocation from '../../hooks/useLiveLocation';
 import useMapboxDirections from '../../hooks/useMapboxDirections';
-import MapView from './MapView';
-import LoadingSpinner from './LoadingSpinner';
+import MapView from '../MapView';
+import LoadingSpinner from '../LoadingSpinner';
 import TurnByTurnDirections from './TurnByTurnDirections';
 import './LiveTrackingMap.css';
 
@@ -56,7 +56,7 @@ const LiveTrackingMap: React.FC<LiveTrackingMapProps> = ({
   const { data: fetchedCounterparty, isLoading: counterpartyLoading } = useQuery<LocationData | any>({
     queryKey: ['booking-counterparty', bookingId, userRole],
     queryFn: async () => {
-      const response = await api.get(`/api/locations/booking-counterparty/${bookingId}`);
+      const response = await api.get(`/locations/booking-counterparty/${bookingId}`);
       return response.data.data;
     },
     enabled: !!bookingId && !!user,
@@ -304,7 +304,6 @@ const LiveTrackingMap: React.FC<LiveTrackingMapProps> = ({
       </div>
     </div>
   );
-};
 };
 
 export default LiveTrackingMap;

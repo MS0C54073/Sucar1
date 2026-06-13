@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { Colors as BaseColors } from '../constants/theme';
+import { isDriverApp } from '../config/appVariant';
 
 // Build a light theme by defaulting to existing Colors
 const light = {
@@ -14,18 +15,20 @@ const darkBlue = {
   name: 'darkBlue',
   colors: {
     ...BaseColors,
-    primary: '#0f4c81',
-    primaryDark: '#0b3b66',
-    gradientStart: '#07203a',
-    gradientEnd: '#0f4c81',
-    headerGradientStart: '#07203a',
-    headerGradientEnd: '#0f4c81',
-    background: '#071127',
-    surface: '#0b1a2b',
-    textPrimary: '#e6eef9',
-    textSecondary: '#b6c9e1',
-    border: '#122436',
-    borderLight: '#082033',
+    primary: '#3DD68C',
+    primaryDark: '#1AAB6D',
+    gradientStart: '#111318',
+    gradientEnd: '#1C2028',
+    headerGradientStart: '#111318',
+    headerGradientEnd: '#1C2028',
+    background: '#111318',
+    surface: '#1C2028',
+    surfaceElevated: '#262C36',
+    textPrimary: '#FFFFFF',
+    textSecondary: '#94A3B8',
+    textTertiary: '#64748B',
+    border: '#2A3548',
+    borderLight: '#1E293B',
     white: '#ffffff',
   },
 };
@@ -48,7 +51,7 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [mode, setMode] = useState<ThemeMode>('light');
+  const [mode, setMode] = useState<ThemeMode>(isDriverApp() ? 'darkBlue' : 'light');
 
   const toggle = () => setMode((m) => (m === 'light' ? 'darkBlue' : 'light'));
 

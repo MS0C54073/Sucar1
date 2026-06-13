@@ -1,5 +1,4 @@
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import PageLayout from '../components/PageLayout';
 import DownloadAppSection from '../components/DownloadAppSection';
@@ -11,37 +10,26 @@ import FloatingElements from '../components/animations/FloatingElements';
 import { AnimatedCard } from '../components/animations/CardAnimations';
 import './LandingPage.css';
 
+function dashboardPath(role: string): string {
+  if (role === 'admin' || role === 'subadmin') return '/admin';
+  if (role === 'carwash') return '/carwash';
+  if (role === 'driver') return '/driver';
+  return '/client';
+}
+
 const LandingPage = () => {
-  const navigate = useNavigate();
   const { user, loading } = useAuth();
 
-  // Redirect authenticated users to their dashboard
-  useEffect(() => {
-    if (!loading && user) {
-      if (user.role === 'admin') {
-        navigate('/admin', { replace: true });
-      } else if (user.role === 'carwash') {
-        navigate('/carwash', { replace: true });
-      } else if (user.role === 'driver') {
-        navigate('/driver', { replace: true });
-      } else {
-        navigate('/client', { replace: true });
-      }
-    }
-  }, [user, loading, navigate]);
-
-  // Show loading state while checking auth
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-        <p>Loading...</p>
+      <div className="app-boot-screen">
+        <p>Loading SuCAR…</p>
       </div>
     );
   }
 
-  // Don't render landing page if user is authenticated
   if (user) {
-    return null;
+    return <Navigate to={dashboardPath(user.role)} replace />;
   }
 
   return (

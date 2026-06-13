@@ -92,6 +92,27 @@ const DashboardHome = () => {
         <ContextualHelp sectionId="dashboard-overview" />
       </div>
 
+      <div className="kpi-grid-mockup">
+        {isInitialLoad ? (
+          Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="kpi-card-mockup skeleton-stat-card" style={{ minHeight: 80 }} />
+          ))
+        ) : (
+          [
+            { label: 'Total bookings', value: data?.totalBookings ?? 0, cls: '' },
+            { label: 'Pending pickups', value: data?.pendingPickups ?? 0, cls: 'kpi-amber' },
+            { label: 'Completed washes', value: data?.completedWashes ?? 0, cls: 'kpi-blue' },
+            { label: 'Revenue', value: `K${(data?.totalRevenue ?? 0).toLocaleString()}`, cls: 'kpi-green' },
+            { label: 'Active partners', value: data?.totalCarWashes ?? 0, cls: 'kpi-purple' },
+          ].map((k, i) => (
+            <div key={i} className={`kpi-card-mockup ${k.cls}`}>
+              <div className="kpi-lbl">{k.label}</div>
+              <div className="kpi-val">{k.value}</div>
+            </div>
+          ))
+        )}
+      </div>
+
       <div className="stats-grid">
         {isInitialLoad ? (
           // Show skeleton cards while loading

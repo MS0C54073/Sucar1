@@ -4,13 +4,26 @@
  */
 
 import axios, { AxiosError, AxiosInstance } from 'axios';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 
-// API Configuration
+function resolveDevApiUrl(): string {
+  const extra = Constants.expoConfig?.extra as { apiUrl?: string } | undefined;
+  if (extra?.apiUrl) return extra.apiUrl.replace(/\/$/, '').endsWith('/api') ? extra.apiUrl : `${extra.apiUrl}/api`;
+
+  const hostUri = Constants.expoConfig?.hostUri;
+  if (hostUri) {
+    const host = hostUri.split(':')[0];
+    if (host && host !== 'localhost') return `http://${host}:5000/api`;
+  }
+  if (Platform.OS === 'android') return 'http://10.0.2.2:5000/api';
+  return 'http://localhost:5000/api';
+}
+
 export const API_URL = __DEV__
-  ? 'http://172.20.10.6:5000/api' // ID: 172.20.10.6 (Machine IP for physical device & emulator)
-  : 'https://your-production-api.com/api'; // Production API URL
+  ? resolveDevApiUrl()
+  : 'https://your-production-api.com/api';
 
 // Create axios instance with default config
 export const apiClient: AxiosInstance = axios.create({

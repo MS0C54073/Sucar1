@@ -121,7 +121,8 @@ export const login = asyncHandler(async (req: Request, res: Response): Promise<v
     throw new ValidationError('Validation failed', errorMap);
   }
 
-  const { email, password } = req.body;
+  const email = String(req.body.email || '').trim().toLowerCase();
+  const password = String(req.body.password || '');
 
   if (!email || !password) {
     throw new BadRequestError('Email and password are required');

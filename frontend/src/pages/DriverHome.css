@@ -1,287 +1,52 @@
-.driver-home {
-  min-height: 100vh;
-  background: #f5f5f5;
-}
-
-.driver-header {
-  background: var(--color-primary-600);
-  color: white;
-  padding: var(--space-4) var(--space-6);
+.sucar-incentive {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid var(--border-primary);
-  box-shadow: var(--shadow-sm);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-[data-theme='dark'] .driver-header {
-  background: var(--color-primary-700);
-}
-
-.header-content {
-  flex: 1;
-}
-
-.driver-header h1 {
-  margin: 0 0 var(--space-1) 0;
-  font-size: var(--text-xl);
-  font-weight: var(--font-bold);
-}
-
-.welcome-text {
-  margin: 0;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
   font-size: var(--text-sm);
-  opacity: 0.9;
-}
-
-.header-actions {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.header-actions button {
-  /* Use design system button styles */
-  padding: var(--space-2) var(--space-4);
-  font-size: var(--text-sm);
-  font-weight: var(--font-medium);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: all var(--transition-base);
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 36px;
-  /* Override for light background on dark header */
-  background: rgba(255, 255, 255, 0.95);
-  color: var(--color-primary-600);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.header-actions button:hover {
-  background: white;
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
-}
-
-[data-theme='dark'] .header-actions button {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-[data-theme='dark'] .header-actions button:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.driver-filters {
-  background: var(--card-bg, white);
-  padding: var(--space-4);
-  border-bottom: 1px solid var(--border-color, #e5e7eb);
-  transition: background-color 0.3s ease, border-color 0.3s ease;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space-4);
-  flex-wrap: wrap;
-}
-
-.driver-filters select {
-  padding: var(--space-2) var(--space-4);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-md);
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  font-size: var(--text-sm);
-  flex: 1;
-  min-width: 200px;
-}
-
-.view-toggle {
-  display: flex;
-  gap: var(--space-1);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-md);
-  padding: var(--space-1);
-  background: var(--bg-secondary);
-}
-
-.view-toggle button {
-  padding: var(--space-2) var(--space-4);
-  border: none;
-  background: transparent;
   color: var(--text-secondary);
-  font-size: var(--text-sm);
-  font-weight: var(--font-medium);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: all var(--transition-base);
 }
 
-.view-toggle button.active {
-  background: var(--color-primary-600);
-  color: white;
-}
-
-.driver-map-view {
-  margin-top: var(--space-6);
-}
-
-.driver-map-view h2 {
-  margin-bottom: var(--space-4);
-  font-size: var(--text-xl);
-  font-weight: var(--font-bold);
-  color: var(--text-primary);
-}
-
-.driver-map-layout {
-  display: grid;
-  grid-template-columns: 350px 1fr;
-  gap: var(--space-4);
-  height: 600px;
-}
-
-.driver-map-sidebar {
-  overflow-y: auto;
-  padding-right: var(--space-2);
-}
-
-.driver-map-content {
-  height: 100%;
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  border: 1px solid var(--border-primary);
-}
-
-@media (max-width: 1024px) {
-  .driver-map-layout {
-    grid-template-columns: 1fr;
-    height: auto;
-  }
-  
-  .driver-map-sidebar {
-    max-height: 300px;
-  }
-  
-  .driver-map-content {
-    height: 500px;
-  }
-}
-
-.driver-content {
-  padding: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
+.sucar-incentive p {
+  flex: 1;
+  margin: 0;
 }
 
 .bookings-list {
-  display: grid;
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
-.booking-card {
-  background: var(--card-bg, white);
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: var(--shadow);
-  transition: background-color 0.3s ease;
-}
-
-.booking-header {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.driver-map-tab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.driver-map-tab-map {
+  border-radius: var(--sucar-radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--border-primary);
+  box-shadow: var(--sucar-shadow-card);
+}
+
+.live-tracking-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  z-index: var(--z-modal);
+  display: flex;
   align-items: center;
-  margin-bottom: 1rem;
+  justify-content: center;
+  padding: var(--space-4);
 }
 
-.status-badge {
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  text-transform: capitalize;
-}
-
-.status-pending {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.status-accepted {
-  background: #dbeafe;
-  color: #1e40af;
-}
-
-.status-picked_up,
-.status-delivered_to_wash {
-  background: #e0e7ff;
-  color: #3730a3;
-}
-
-.status-delivered_to_client {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.booking-details p {
-  margin: 0.5rem 0;
-  color: var(--text-color, #333);
-  line-height: 1.6;
-}
-
-.booking-details strong {
-  color: var(--text-color, #333);
-  font-weight: 600;
-}
-
-[data-theme='dark'] .booking-details p,
-[data-theme='dark'] .booking-details strong {
-  color: #f3f4f6;
-}
-
-.booking-actions {
-  margin-top: 1rem;
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.booking-actions button {
-  flex: 1;
-  min-width: 100px;
-}
-
-.accept-btn,
-.decline-btn,
-.update-btn {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.accept-btn {
-  background: #10b981;
-  color: white;
-}
-
-.decline-btn {
-  background: #ef4444;
-  color: white;
-}
-
-.update-btn {
-  background: #2563eb;
-  color: white;
-}
-
-.loading {
-  text-align: center;
-  padding: 2rem;
+.live-tracking-overlay > div {
+  width: 100%;
+  max-width: 900px;
+  max-height: 90vh;
+  overflow: auto;
+  background: var(--bg-primary);
+  border-radius: var(--sucar-radius-xl);
 }

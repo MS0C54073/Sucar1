@@ -17,8 +17,7 @@ export const requirePermission = (requiredLevel: AdminLevel) => {
       return;
     }
 
-    // Only admins can access admin routes
-    if (req.user.role !== 'admin') {
+    if (req.user.role !== 'admin' && req.user.role !== 'subadmin') {
       res.status(403).json({
         success: false,
         message: 'Admin access required',

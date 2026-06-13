@@ -13,7 +13,7 @@ import {
 import * as Animatable from 'react-native-animatable';
 import { Picker } from '@react-native-picker/picker';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
 import { apiClient, API_URL } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import LocationPicker from '../../components/LocationPicker';
@@ -41,8 +41,15 @@ const BookingScreen = () => {
   const [pickupCoordinates, setPickupCoordinates] = useState<Coordinates | undefined>();
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
+  const route = useRoute<any>();
   const { user } = useAuth();
   const { theme } = useTheme();
+
+  useEffect(() => {
+    if (route.params?.carWashId) {
+      setSelectedCarWash(route.params.carWashId);
+    }
+  }, [route.params?.carWashId]);
 
   useEffect(() => {
     fetchCarWashes();
@@ -127,8 +134,10 @@ const BookingScreen = () => {
 
       // Add coordinates if available
       if (pickupCoordinates) {
-        bookingData.pickupLatitude = pickupCoordinates.lat;
-        bookingData.pickupLongitude = pickupCoordinates.lng;
+        bookingData.pickupCoordinates = {
+          lat: pickupCoordinates.lat,
+          lng: pickupCoordinates.lng,
+        };
       }
 
       const response = await apiClient.post('/bookings', bookingData);

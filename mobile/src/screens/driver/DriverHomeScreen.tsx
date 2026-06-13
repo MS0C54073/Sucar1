@@ -1,307 +1,212 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
   ScrollView,
   SafeAreaView,
   RefreshControl,
+  Switch,
+  TouchableOpacity,
   Alert,
 } from 'react-native';
-import { useTheme } from '../../context/ThemeContext';
-import * as Animatable from 'react-native-animatable';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { apiClient } from '../../utils/api';
-import GradientBackground from '../../components/common/GradientBackground';
-import StatCard from '../../components/common/StatCard';
-import ActionCard from '../../components/common/ActionCard';
-import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import JobRequestCard, { JobRequestData } from '../../components/ui/JobRequestCard';
+import { DriverColors } from '../../constants/sucarTheme';
 
-/**
- * Main home/dashboard screen for driver users.
- *
- * Fetches and displays booking statistics for the logged‑in driver,
- * and provides quick navigation into the driver bookings list.
- */
 const DriverHomeScreen = () => {
-  const navigation = useNavigation();
-  const { user, logout } = useAuth();
-  const { theme } = useTheme();
-  const [stats, setStats] = useState({
-    totalBookings: 0,
-    pendingBookings: 0,
-    activeBookings: 0,
-    completedBookings: 0,
-  });
+  const navigation = useNavigation<any>();
+  const { user } = useAuth();
+  const [online, setOnline] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [accepting, setAccepting] = useState(false);
+  const [pendingJob, setPendingJob] = useState<JobRequestData | null>(null);
+  const [activeJobs, setActiveJobs] = useState<any[]>([]);
+  const [stats, setStats] = useState({ today: 'K0', jobs: '0', rating: '4.8' });
 
-  useEffect(() => {
-    fetchStats();
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await apiClient.get('/drivers/bookings');
+      const bookings = res.data.data || [];
+      const pending = bookings.find((b: any) => b.status === 'pending');
+      const active = bookings.filter((b: any) =>
+        ['accepted', 'picked_up', 'at_wash', 'washing_bay', 'drying_bay', 'wash_completed'].includes(b.status),
+      );
+
+      if (pending) {
+        const created = new Date(pending.createdAt || pending.created_at || Date.now());
+        const mins = Math.max(1, Math.floor((Date.now() - created.getTime()) / 60000));
+        setPendingJob({
+          id: pending.id || pending._id,
+          clientName: pending.clientId?.name || 'Customer',
+          serviceName: pending.serviceId?.name || 'Car wash',
+          vehicleInfo: pending.vehicleId
+            ? `${pending.vehicleId.make || ''} ${pending.vehicleId.model || ''}`.trim()
+            : undefined,
+          distanceKm: 0.8,
+          earnings: parseFloat(pending.totalAmount) * 0.8 || parseFloat(pending.totalAmount) || 68,
+          minutesAgo: mins,
+        });
+      } else {
+        setPendingJob(null);
+      }
+      setActiveJobs(active.slice(0, 3));
+
+      const today = new Date().toDateString();
+      const doneToday = bookings.filter((b: any) => {
+        if (!['completed', 'delivered', 'wash_completed'].includes(b.status)) return false;
+        const d = new Date(b.updatedAt || b.updated_at || b.createdAt);
+        return d.toDateString() === today;
+      });
+      const earn = doneToday.reduce((s: number, b: any) => s + (parseFloat(b.totalAmount) || 0) * 0.8, 0);
+      setStats({
+        today: `K${Math.round(earn)}`,
+        jobs: String(doneToday.length),
+        rating: '4.8',
+      });
+    } catch (e) {
+      console.error('Driver home:', e);
+    } finally {
+      setRefreshing(false);
+    }
   }, []);
 
-  const fetchStats = async () => {
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const handleAccept = async () => {
+    if (!pendingJob) return;
+    setAccepting(true);
     try {
-      const response = await apiClient.get('/drivers/bookings');
-      const bookings = response.data.data || [];
-
-      const pendingBookings = bookings.filter((b: any) => b.status === 'pending');
-      const activeBookings = bookings.filter(
-        (b: any) => ['accepted', 'picked_up', 'at_wash', 'washing_bay', 'drying_bay'].includes(b.status)
-      );
-      const completedBookings = bookings.filter(
-        (b: any) => ['completed', 'delivered', 'wash_completed'].includes(b.status)
-      );
-
-      setStats({
-        totalBookings: bookings.length,
-        pendingBookings: pendingBookings.length,
-        activeBookings: activeBookings.length,
-        completedBookings: completedBookings.length,
-      });
-    } catch (error: any) {
-      console.error('Error fetching stats:', error);
+      const res = await apiClient.put(`/drivers/bookings/${pendingJob.id}/accept`);
+      if (res.data.success) {
+        Alert.alert('Accepted', 'Job added to your queue.');
+        fetchData();
+      } else {
+        Alert.alert('Error', res.data.message || 'Could not accept');
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'Failed to accept');
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      setAccepting(false);
     }
   };
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchStats();
-  };
-
-  const handleLogout = async () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await logout();
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'Login' as never }],
-              });
-            } catch (error) {
-              console.error('Logout error:', error);
-            }
-          },
-        },
-      ]
-    );
-  };
-
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safe}>
       <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.contentContainer}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />
+          <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchData(); }} tintColor={DriverColors.primary} />
         }
-        showsVerticalScrollIndicator={false}
       >
-        {/* Header with Gradient */}
-        <GradientBackground style={styles.header}>
-          <Animatable.View animation="fadeInDown" duration={700} useNativeDriver style={styles.headerContent}>
-            <View style={styles.headerTop}>
-              <View>
-                <Text style={[styles.greeting, { color: theme.colors.textPrimary }]}>Hello,</Text>
-                <Text style={[styles.userName, { color: theme.colors.textPrimary }]}>{user?.name?.split(' ')[0] || 'Driver'}</Text>
-              </View>
-              <TouchableOpacity
-                onPress={handleLogout}
-                style={styles.logoutButton}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="log-out-outline" size={24} color={theme.colors.white || '#fff'} />
-              </TouchableOpacity>
-            </View>
-            <Text style={[styles.subtitle, { color: theme.colors.textPrimary }]}>Manage your bookings and deliveries</Text>
-          </Animatable.View>
-        </GradientBackground>
-
-        {/* Statistics Cards */}
-        <View style={styles.statsContainer}>
-          <StatCard
-            title="Total"
-            value={stats.totalBookings}
-            icon="list-outline"
-            iconColor={Colors.primary}
-          />
-          <StatCard
-            title="Pending"
-            value={stats.pendingBookings}
-            icon="time-outline"
-            iconColor={Colors.warning}
-          />
-          <StatCard
-            title="Active"
-            value={stats.activeBookings}
-            icon="car-outline"
-            iconColor={Colors.info}
-          />
-          <StatCard
-            title="Completed"
-            value={stats.completedBookings}
-            icon="checkmark-circle-outline"
-            iconColor={Colors.success}
+        <View style={styles.onlineRow}>
+          <View style={styles.dot} />
+          <Text style={styles.onlineText}>{online ? 'Online — accepting jobs' : 'Offline'}</Text>
+          <Switch
+            value={online}
+            onValueChange={setOnline}
+            trackColor={{ false: '#334155', true: DriverColors.primaryDark }}
+            thumbColor="#FFF"
           />
         </View>
 
-        {/* Quick Actions */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <ActionCard
-            title="My Bookings"
-            description={`View and manage ${stats.totalBookings} booking${stats.totalBookings !== 1 ? 's' : ''}`}
-            icon="list-outline"
-            iconColor={Colors.primary}
-            badge={stats.pendingBookings > 0 ? stats.pendingBookings : undefined}
-            onPress={() => navigation.navigate('DriverBookings' as never)}
-          />
-        </View>
-
-        {/* Driver Info */}
-        {user && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Driver Information</Text>
-            <View style={styles.infoCard}>
-              <View style={styles.infoRow}>
-                <Ionicons name="person-outline" size={20} color={Colors.textSecondary} />
-                <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Name</Text>
-                  <Text style={styles.infoValue}>{user.name}</Text>
-                </View>
-              </View>
-              {user.email && (
-                <View style={styles.infoRow}>
-                  <Ionicons name="mail-outline" size={20} color={Colors.textSecondary} />
-                  <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Email</Text>
-                    <Text style={styles.infoValue}>{user.email}</Text>
-                  </View>
-                </View>
-              )}
-              {user.phone && (
-                <View style={styles.infoRow}>
-                  <Ionicons name="call-outline" size={20} color={Colors.textSecondary} />
-                  <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Phone</Text>
-                    <Text style={styles.infoValue}>{user.phone}</Text>
-                  </View>
-                </View>
-              )}
-            </View>
+        <View style={styles.earnBar}>
+          <View style={styles.earnStat}>
+            <Text style={styles.earnLbl}>Today</Text>
+            <Text style={styles.earnVal}>{stats.today} <Text style={styles.earnSub}>earned</Text></Text>
           </View>
+          <View style={styles.earnStat}>
+            <Text style={styles.earnLbl}>Jobs done</Text>
+            <Text style={styles.earnVal}>{stats.jobs} <Text style={styles.earnSub}>washes</Text></Text>
+          </View>
+          <View style={styles.earnStat}>
+            <Text style={styles.earnLbl}>Rating</Text>
+            <Text style={styles.earnVal}>{stats.rating} <Text style={styles.earnSub}>★</Text></Text>
+          </View>
+        </View>
+
+        {pendingJob && online && (
+          <>
+            <Text style={styles.sec}>New job alert</Text>
+            <JobRequestCard job={pendingJob} loading={accepting} onAccept={handleAccept} onDecline={() => setPendingJob(null)} />
+          </>
         )}
+
+        {activeJobs.length > 0 && (
+          <>
+            <Text style={styles.sec}>In progress</Text>
+            {activeJobs.map((j) => (
+              <TouchableOpacity
+                key={j.id || j._id}
+                style={styles.activeCard}
+                onPress={() => navigation.navigate('BookingDetail', { bookingId: j.id || j._id })}
+              >
+                <Text style={styles.activeTitle}>{j.serviceId?.name || 'Active job'}</Text>
+                <Text style={styles.activeMeta}>{j.carWashId?.carWashName || j.pickupLocation || ''}</Text>
+                <View style={styles.navBtn}>
+                  <Ionicons name="navigate" size={14} color={DriverColors.blue} />
+                  <Text style={styles.navTxt}>View job</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </>
+        )}
+
+        {!pendingJob && activeJobs.length === 0 && online && (
+          <Text style={styles.empty}>No jobs right now. Pull to refresh.</Text>
+        )}
+        <View style={{ height: 24 }} />
       </ScrollView>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  container: {
-    flex: 1,
-  },
-  contentContainer: {
-    paddingBottom: Spacing.xl,
-  },
-  header: {
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.xl,
-    paddingHorizontal: Spacing.lg,
-    borderBottomLeftRadius: BorderRadius['2xl'],
-    borderBottomRightRadius: BorderRadius['2xl'],
-  },
-  headerContent: {
-    paddingTop: Spacing.md,
-  },
-  headerTop: {
+  safe: { flex: 1, backgroundColor: DriverColors.background },
+  onlineRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: Spacing.sm,
+    alignItems: 'center',
+    padding: 14,
+    backgroundColor: 'rgba(61,214,140,0.08)',
+    borderBottomWidth: 1,
+    borderBottomColor: DriverColors.border,
+    gap: 8,
   },
-  greeting: {
-    fontSize: Typography.base,
-    color: Colors.white,
-    opacity: 0.9,
-    marginBottom: Spacing.xs,
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: DriverColors.primary },
+  onlineText: { flex: 1, fontSize: 12, fontWeight: '600', color: DriverColors.primary },
+  earnBar: { flexDirection: 'row', padding: 14, borderBottomWidth: 1, borderBottomColor: DriverColors.border, gap: 12 },
+  earnStat: { flex: 1 },
+  earnLbl: { fontSize: 9, color: DriverColors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 },
+  earnVal: { fontSize: 18, fontWeight: '700', color: DriverColors.text, marginTop: 3 },
+  earnSub: { fontSize: 11, fontWeight: '400', color: DriverColors.textSecondary },
+  sec: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 6,
+    fontSize: 10,
+    fontWeight: '600',
+    color: DriverColors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
   },
-  userName: {
-    fontSize: Typography['3xl'],
-    fontWeight: Typography.bold,
-    color: Colors.white,
+  activeCard: {
+    marginHorizontal: 12,
+    marginBottom: 10,
+    backgroundColor: DriverColors.surfaceElevated,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: DriverColors.border,
+    padding: 12,
   },
-  logoutButton: {
-    padding: Spacing.sm,
-    borderRadius: BorderRadius.md,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  subtitle: {
-    fontSize: Typography.base,
-    color: Colors.white,
-    opacity: 0.9,
-    marginTop: Spacing.sm,
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.lg,
-    marginTop: -Spacing.xl,
-    marginBottom: Spacing.lg,
-    gap: Spacing.sm,
-  },
-  section: {
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.lg,
-  },
-  sectionTitle: {
-    fontSize: Typography.xl,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-    marginBottom: Spacing.md,
-  },
-  infoCard: {
-    backgroundColor: Colors.white,
-    padding: Spacing.md,
-    borderRadius: BorderRadius.lg,
-    ...Shadows.md,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: Spacing.md,
-    gap: Spacing.md,
-  },
-  infoContent: {
-    flex: 1,
-  },
-  infoLabel: {
-    fontSize: Typography.sm,
-    color: Colors.textSecondary,
-    marginBottom: Spacing.xs,
-  },
-  infoValue: {
-    fontSize: Typography.base,
-    color: Colors.textPrimary,
-    fontWeight: Typography.medium,
-  },
+  activeTitle: { fontSize: 12, fontWeight: '600', color: DriverColors.text },
+  activeMeta: { fontSize: 10, color: DriverColors.textSecondary, marginTop: 4 },
+  navBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
+  navTxt: { fontSize: 11, fontWeight: '600', color: DriverColors.blue },
+  empty: { textAlign: 'center', color: DriverColors.textMuted, margin: 24, fontSize: 13 },
 });
 
 export default DriverHomeScreen;

@@ -1,213 +1,158 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
   ScrollView,
   SafeAreaView,
   RefreshControl,
   TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
-import { useTheme } from '../../context/ThemeContext';
-import * as Animatable from 'react-native-animatable';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { apiClient } from '../../utils/api';
-import GradientBackground from '../../components/common/GradientBackground';
-import StatCard from '../../components/common/StatCard';
-import ActionCard from '../../components/common/ActionCard';
-import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import CategoryPills from '../../components/ui/CategoryPills';
+import CarWashCard, { CarWashListItem } from '../../components/ui/CarWashCard';
+import { ClientColors } from '../../constants/sucarTheme';
 
-/**
- * Main home/dashboard screen for client users.
- *
- * Shows booking and vehicle statistics, a search bar for carwash discovery,
- * and quick actions (new booking, bookings list, vehicles).
- * The "More" grid has been removed – those items now live in
- * the bottom tab bar and the side drawer.
- */
 const ClientHomeScreen = () => {
   const navigation = useNavigation<any>();
   const { user } = useAuth();
-  const { theme } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
-  const [stats, setStats] = useState({
-    totalBookings: 0,
-    activeBookings: 0,
-    completedBookings: 0,
-    totalVehicles: 0,
-  });
-  const [refreshing, setRefreshing] = useState(false);
+  const [category, setCategory] = useState('exterior');
+  const [carWashes, setCarWashes] = useState<CarWashListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    fetchStats();
-  }, []);
+  const firstName = user?.name?.split(' ')[0] || 'there';
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
-  const fetchStats = async () => {
+  const fetchWashes = async () => {
     try {
-      const bookingsResponse = await apiClient.get('/bookings');
-      const bookings = bookingsResponse.data.data || [];
-
-      const vehiclesResponse = await apiClient.get('/vehicles');
-      const vehicles = vehiclesResponse.data.data || [];
-
-      const activeBookings = bookings.filter(
-        (b: any) => !['completed', 'cancelled', 'delivered'].includes(b.status),
-      );
-      const completedBookings = bookings.filter(
-        (b: any) => ['completed', 'delivered'].includes(b.status),
-      );
-
-      setStats({
-        totalBookings: bookings.length,
-        activeBookings: activeBookings.length,
-        completedBookings: completedBookings.length,
-        totalVehicles: vehicles.length,
-      });
-    } catch (error: any) {
-      console.error('Error fetching stats:', error);
+      const res = await apiClient.get('/carwash/list?includeServices=true');
+      setCarWashes(res.data.data || []);
+    } catch (e) {
+      console.error('Car washes:', e);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchStats();
+  useEffect(() => {
+    fetchWashes();
+  }, []);
+
+  const filtered = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return carWashes.filter((w) => {
+      const name = (w.carWashName || w.name || '').toLowerCase();
+      const loc = (w.location || '').toLowerCase();
+      if (q && !name.includes(q) && !loc.includes(q)) return false;
+      if (category === 'exterior') return true;
+      const svc = (w.services || []).map((s) => (s.name || '').toLowerCase()).join(' ');
+      if (category === 'full') return svc.includes('full') || svc.includes('detail');
+      if (category === 'interior') return svc.includes('interior');
+      if (category === 'eco') return svc.includes('eco');
+      if (category === 'ev') return svc.includes('ev');
+      return true;
+    });
+  }, [carWashes, searchQuery, category]);
+
+  const openBook = (wash: CarWashListItem) => {
+    navigation.navigate('Booking', { carWashId: wash.id });
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safe}>
       <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.contentContainer}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />
-        }
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              fetchWashes();
+            }}
+            tintColor={ClientColors.primary}
+          />
+        }
       >
-        {/* Header with Gradient */}
-        <GradientBackground style={styles.header}>
-          <Animatable.View animation="fadeInDown" duration={700} useNativeDriver style={styles.headerContent}>
-            <View style={styles.headerTop}>
-              <View>
-                <Text style={[styles.greeting, { color: theme.colors.textPrimary }]}>Hello,</Text>
-                <Text style={[styles.userName, { color: theme.colors.textPrimary }]}>
-                  {user?.name?.split(' ')[0] || 'User'}
-                </Text>
-              </View>
-            </View>
-            <Text style={[styles.subtitle, { color: theme.colors.textPrimary }]}>
-              Let's get your car sparkling clean!
-            </Text>
-          </Animatable.View>
-        </GradientBackground>
-
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <View style={styles.searchBar}>
-            <Ionicons name="search-outline" size={20} color={Colors.gray400} />
+        <LinearGradient colors={[ClientColors.primary, ClientColors.primaryDark]} style={styles.hero}>
+          <Text style={styles.hello}>
+            {greeting}, {firstName} 👋
+          </Text>
+          <Text style={styles.tagline}>Find a car wash near you</Text>
+          <View style={styles.search}>
+            <Ionicons name="search" size={18} color={ClientColors.textMuted} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Search carwash locations…"
-              placeholderTextColor={Colors.gray400}
+              placeholder="Search services or location..."
+              placeholderTextColor={ClientColors.textMuted}
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <Ionicons name="close-circle" size={20} color={Colors.gray400} />
-              </TouchableOpacity>
-            )}
           </View>
+        </LinearGradient>
+
+        <View style={styles.secHead}>
+          <Text style={styles.secTitle}>Categories</Text>
+        </View>
+        <CategoryPills selected={category} onSelect={setCategory} />
+
+        <View style={styles.secHead}>
+          <Text style={styles.secTitle}>Nearby services</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Booking')}>
+            <Text style={styles.secLink}>See all</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Statistics Cards */}
-        <View style={styles.statsContainer}>
-          <StatCard title="Total Bookings" value={stats.totalBookings} icon="calendar-outline" iconColor={Colors.primary} />
-          <StatCard title="Active" value={stats.activeBookings} icon="time-outline" iconColor={Colors.info} />
-          <StatCard title="Completed" value={stats.completedBookings} icon="checkmark-circle-outline" iconColor={Colors.success} />
-        </View>
-
-        {/* Quick Actions */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <ActionCard
-            title="Book Now"
-            description="Book a car wash pickup service"
-            icon="add-circle-outline"
-            iconColor={Colors.primary}
-            onPress={() => navigation.navigate('Booking')}
-          />
-          <ActionCard
-            title="My Bookings"
-            description="View and manage all your bookings"
-            icon="list-outline"
-            iconColor={Colors.info}
-            badge={stats.activeBookings > 0 ? stats.activeBookings : undefined}
-            onPress={() => navigation.navigate('MyBookings')}
-          />
-          <ActionCard
-            title="My Vehicles"
-            description={`Manage your ${stats.totalVehicles} vehicle${stats.totalVehicles !== 1 ? 's' : ''}`}
-            icon="car-outline"
-            iconColor={Colors.success}
-            badge={stats.totalVehicles > 0 ? stats.totalVehicles : undefined}
-            onPress={() => navigation.navigate('VehicleList')}
-          />
-        </View>
+        {loading ? (
+          <ActivityIndicator color={ClientColors.primary} style={{ marginVertical: 24 }} />
+        ) : filtered.length === 0 ? (
+          <Text style={styles.empty}>No car washes found. Pull to refresh.</Text>
+        ) : (
+          filtered.map((w) => (
+            <CarWashCard key={w.id} wash={w} onPress={() => openBook(w)} />
+          ))
+        )}
+        <View style={{ height: 24 }} />
       </ScrollView>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: Colors.background },
-  container: { flex: 1 },
-  contentContainer: { paddingBottom: 80 }, // extra space for bottom tab bar
-  header: {
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.xl,
-    paddingHorizontal: Spacing.lg,
-    borderBottomLeftRadius: BorderRadius['2xl'],
-    borderBottomRightRadius: BorderRadius['2xl'],
-  },
-  headerContent: { paddingTop: Spacing.md },
-  headerTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: Spacing.sm,
-  },
-  greeting: { fontSize: Typography.base, color: Colors.white, opacity: 0.9, marginBottom: Spacing.xs },
-  userName: { fontSize: Typography['3xl'], fontWeight: Typography.bold, color: Colors.white },
-  subtitle: { fontSize: Typography.base, color: Colors.white, opacity: 0.9, marginTop: Spacing.sm },
-  searchContainer: { paddingHorizontal: Spacing.lg, marginTop: -Spacing.md, marginBottom: Spacing.sm },
-  searchBar: {
+  safe: { flex: 1, backgroundColor: ClientColors.background },
+  hero: { paddingHorizontal: 18, paddingTop: 12, paddingBottom: 22 },
+  hello: { fontSize: 17, fontWeight: '600', color: '#FFF' },
+  tagline: { fontSize: 12, color: ClientColors.primaryLight, marginTop: 2, marginBottom: 12 },
+  search: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
-    borderRadius: BorderRadius.lg,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm + 2,
-    ...Shadows.md,
-    gap: Spacing.sm,
+    backgroundColor: '#FFF',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    gap: 8,
   },
-  searchInput: { flex: 1, fontSize: Typography.base, color: Colors.textPrimary },
-  statsContainer: {
+  searchInput: { flex: 1, fontSize: 12, color: ClientColors.text },
+  secHead: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: Spacing.lg,
-    marginTop: Spacing.sm,
-    marginBottom: Spacing.lg,
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 8,
   },
-  section: { paddingHorizontal: Spacing.lg, marginBottom: Spacing.lg },
-  sectionTitle: { fontSize: Typography.xl, fontWeight: Typography.bold, color: Colors.textPrimary, marginBottom: Spacing.md },
+  secTitle: { fontSize: 13, fontWeight: '600', color: ClientColors.text },
+  secLink: { fontSize: 11, fontWeight: '500', color: ClientColors.primary },
+  empty: { textAlign: 'center', color: ClientColors.textSecondary, marginVertical: 20, fontSize: 13 },
 });
 
 export default ClientHomeScreen;

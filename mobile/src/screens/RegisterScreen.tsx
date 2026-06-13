@@ -16,6 +16,7 @@ import * as Animatable from 'react-native-animatable';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { getAppDisplayName, getRequiredRole } from '../config/appVariant';
 
 /**
  * Multi‑role registration screen.
@@ -30,7 +31,7 @@ const RegisterScreen = () => {
     password: '',
     phone: '',
     nrc: '',
-    role: 'client' as 'client' | 'driver' | 'carwash',
+    role: getRequiredRole() as 'client' | 'driver',
     // Client specific
     businessName: '',
     isBusiness: false,
@@ -114,10 +115,6 @@ const RegisterScreen = () => {
         registerData.licenseExpiry = formData.licenseExpiry;
         registerData.address = formData.address;
         registerData.maritalStatus = formData.maritalStatus;
-      } else if (formData.role === 'carwash') {
-        registerData.carWashName = formData.carWashName;
-        registerData.location = formData.location;
-        registerData.washingBays = parseInt(formData.washingBays) || 0;
       }
 
       await register(registerData);
@@ -166,30 +163,13 @@ const RegisterScreen = () => {
               resizeMode="contain"
             />
           </View>
-          <Text style={styles.title}>Register</Text>
+          <Text style={styles.title}>Register — {getAppDisplayName()}</Text>
         </Animatable.View>
-        
-        <Text style={styles.label}>Role</Text>
-        <View style={styles.roleContainer}>
-          {['client', 'driver', 'carwash'].map((role) => (
-            <TouchableOpacity
-              key={role}
-              style={[
-                styles.roleButton,
-                formData.role === role && styles.roleButtonActive,
-              ]}
-              onPress={() => setFormData({ ...formData, role: role as any })}
-            >
-              <Text
-                style={[
-                  styles.roleButtonText,
-                  formData.role === role && styles.roleButtonTextActive,
-                ]}
-              >
-                {role.charAt(0).toUpperCase() + role.slice(1)}
-              </Text>
-            </TouchableOpacity>
-          ))}
+
+        <View style={styles.roleBadge}>
+          <Text style={styles.roleBadgeText}>
+            Account type: {getRequiredRole().charAt(0).toUpperCase() + getRequiredRole().slice(1)}
+          </Text>
         </View>
 
         <Text style={styles.label}>Full Name *</Text>
@@ -261,30 +241,6 @@ const RegisterScreen = () => {
               style={styles.input}
               value={formData.address}
               onChangeText={(text) => setFormData({ ...formData, address: text })}
-            />
-          </>
-        )}
-
-        {formData.role === 'carwash' && (
-          <>
-            <Text style={styles.label}>Car Wash Name *</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.carWashName}
-              onChangeText={(text) => setFormData({ ...formData, carWashName: text })}
-            />
-            <Text style={styles.label}>Location *</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.location}
-              onChangeText={(text) => setFormData({ ...formData, location: text })}
-            />
-            <Text style={styles.label}>Number of Washing Bays *</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.washingBays}
-              onChangeText={(text) => setFormData({ ...formData, washingBays: text })}
-              keyboardType="numeric"
             />
           </>
         )}
@@ -362,6 +318,19 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     fontSize: 16,
     backgroundColor: '#fff',
+  },
+  roleBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#667eea22',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  roleBadgeText: {
+    color: '#667eea',
+    fontWeight: '600',
+    fontSize: 14,
   },
   roleContainer: {
     flexDirection: 'row',

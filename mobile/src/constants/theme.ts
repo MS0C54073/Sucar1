@@ -4,17 +4,17 @@
  */
 
 export const Colors = {
-  // Primary brand colors
-  primary: '#667eea',
-  primaryDark: '#5568d3',
-  primaryLight: '#818cf8',
+  // Primary brand colors (SuCAR green — client mockup)
+  primary: '#1D9E75',
+  primaryDark: '#0F6E56',
+  primaryLight: '#9FE1CB',
   
   // Gradient colors
-  gradientStart: '#667eea',
-  gradientEnd: '#764ba2',
+  gradientStart: '#1D9E75',
+  gradientEnd: '#0F6E56',
   /** Aliases for auth/marketing headers (same as gradient by default) */
-  headerGradientStart: '#667eea',
-  headerGradientEnd: '#764ba2',
+  headerGradientStart: '#1D9E75',
+  headerGradientEnd: '#0F6E56',
   gradientSecondary: ['#f093fb', '#f5576c'],
   
   // Status colors
@@ -42,7 +42,7 @@ export const Colors = {
   gray900: '#111827',
   
   // Background colors
-  background: '#f5f7fa',
+  background: '#f4f3ef',
   surface: '#ffffff',
   surfaceElevated: '#ffffff',
   

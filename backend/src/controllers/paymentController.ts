@@ -251,7 +251,7 @@ export const confirmPayment = async (req: AuthRequest, res: Response): Promise<v
     if (bookingClientId) {
       await NotificationService.createNotification({
         userId: bookingClientId as string,
-        type: 'payment_update',
+        type: 'payment',
         title: 'Payment Confirmed',
         message: 'Your payment has been confirmed. Thank you!',
         data: { bookingId },

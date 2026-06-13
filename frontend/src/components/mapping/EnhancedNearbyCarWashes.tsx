@@ -405,6 +405,7 @@ const EnhancedNearbyCarWashes = () => {
             onLocationSelect={handleLocationSelect}
             initialLocation={searchLocation ? `Lat: ${searchLocation.lat.toFixed(4)}, Lng: ${searchLocation.lng.toFixed(4)}` : ''}
             initialCoordinates={searchLocation || undefined}
+            showMapPreview
           />
           {locationError && (
             <p className="location-error">{locationError}</p>

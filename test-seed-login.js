@@ -25,18 +25,18 @@ async function testLogin(email, password, expectedRole, name) {
             password
         });
 
-        if (response.status === 200) {
-            const { token, user } = response.data;
+        if (response.status === 200 && response.data?.success) {
+            const data = response.data.data || {};
+            const token = data.token;
             console.log(`✅ LOGIN SUCCESSFUL`);
             console.log(`   Token received: ${token ? token.substring(0, 30) + '...' : 'NO TOKEN'}`);
-            console.log(`   User role: ${user.role}`);
-            console.log(`   User name: ${user.name}`);
-            console.log(`   User active: ${user.is_active}`);
+            console.log(`   User role: ${data.role}`);
+            console.log(`   User name: ${data.name}`);
             
-            if (user.role === expectedRole) {
+            if (data.role === expectedRole) {
                 console.log(`   ✅ Role matches expected: ${expectedRole}`);
             } else {
-                console.log(`   ⚠️  Role mismatch! Expected: ${expectedRole}, Got: ${user.role}`);
+                console.log(`   ⚠️  Role mismatch! Expected: ${expectedRole}, Got: ${data.role}`);
             }
             
             return true;

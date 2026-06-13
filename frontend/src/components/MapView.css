@@ -9,6 +9,22 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
+.map-container--background {
+  min-height: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+.map-container--background .map-view {
+  min-height: 0 !important;
+}
+
+.map-container--background .map-marker {
+  opacity: 0.85;
+  transform: scale(0.9);
+}
+
 .map-loading-overlay {
   position: absolute;
   top: 0;

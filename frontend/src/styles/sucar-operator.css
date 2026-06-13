@@ -1,0 +1,80 @@
+/* Operator (car wash) dashboard — sucar_operator_dashboard.html */
+
+.carwash-dashboard-operator {
+  --op-bg: #f5f4f0;
+  --op-card: #ffffff;
+  --op-sidebar: #18191f;
+  --op-green: #1d9e75;
+  --op-green-l: #e1f5ee;
+  --op-text: #18191f;
+  --op-text2: #6b7280;
+  --op-border: rgba(0, 0, 0, 0.07);
+  display: flex;
+  min-height: 100vh;
+  background: var(--op-bg);
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
+.carwash-dashboard-operator .operator-sidebar {
+  width: 220px;
+  min-height: 100vh;
+  background: var(--op-sidebar);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.carwash-dashboard-operator .operator-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.carwash-dashboard-operator .operator-topbar {
+  background: var(--op-card);
+  border-bottom: 1px solid var(--op-border);
+  padding: 14px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.carwash-dashboard-operator .operator-content {
+  padding: 24px 28px;
+}
+
+.carwash-dashboard-operator .stats-grid-op {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.carwash-dashboard-operator .stat-card-op {
+  background: var(--op-card);
+  border: 1px solid var(--op-border);
+  border-radius: 14px;
+  padding: 16px 18px;
+}
+
+.carwash-dashboard-operator .stat-card-op .value {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--op-text);
+}
+
+.carwash-dashboard-operator .stat-card-op h3 {
+  font-size: 12px;
+  color: var(--op-text2);
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.carwash-dashboard-operator .stat-card-op.highlight .value {
+  color: var(--op-green);
+}
+
+@media (max-width: 900px) {
+  .carwash-dashboard-operator .stats-grid-op {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

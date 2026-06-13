@@ -23,7 +23,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
   logout: () => void;
   loading: boolean;
   loginWithGoogle?: (googleToken: string, role?: string) => Promise<any>;
@@ -33,7 +33,37 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// In dev, use Vite proxy (/api → backend) so login works when only the proxy port differs
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV ? '/api' : 'http://localhost:5000/api');
+
+const API_TIMEOUT_MS = 12000;
+
+axios.defaults.timeout = API_TIMEOUT_MS;
+
+function getLoginErrorMessage(error: any): string {
+  if (!error.response) {
+    if (
+      error.code === 'ECONNREFUSED' ||
+      error.code === 'ECONNABORTED' ||
+      error.message?.includes('Network Error') ||
+      error.message?.includes('timeout')
+    ) {
+      return 'Cannot reach the server. Start the backend: cd backend && npm run dev';
+    }
+    return error.message || 'Network error — is the backend running on port 5000?';
+  }
+
+  const data = error.response.data;
+  if (data?.errors && typeof data.errors === 'object') {
+    const firstField = Object.keys(data.errors)[0];
+    const firstMsg = data.errors[firstField]?.[0];
+    if (firstMsg) return firstMsg;
+  }
+
+  return data?.message || 'Login failed';
+}
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   // Try to restore user from localStorage first (fast, no API call)
@@ -51,27 +81,30 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      // If we have cached user, show it immediately and verify in background
-      const cachedUser = getStoredUser();
-      if (cachedUser) {
-        setUser(cachedUser);
-        setLoading(false);
-        // Verify token in background without blocking
-        fetchUser();
-      } else {
-        // No cached user, fetch it
-        fetchUser();
-      }
-    } else {
+    if (!token) {
       setLoading(false);
+      return;
     }
+
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    const cachedUser = getStoredUser();
+    if (cachedUser) {
+      setUser(cachedUser);
+      setLoading(false);
+      fetchUser();
+      return;
+    }
+
+    fetchUser();
+
+    // Never block the login screen for more than a few seconds
+    const safetyTimer = window.setTimeout(() => setLoading(false), 4000);
+    return () => clearTimeout(safetyTimer);
   }, [token]);
 
   const fetchUser = async () => {
     try {
-      const response = await axios.get(`${API_URL}/auth/me`);
+      const response = await axios.get(`${API_URL}/auth/me`, { timeout: API_TIMEOUT_MS });
 
       // Validate response
       if (!response || !response.data) {
@@ -111,13 +144,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<User> => {
     try {
+      const normalizedEmail = email.trim().toLowerCase();
+
       console.log('🔐 Attempting login...');
       console.log('   API URL:', `${API_URL}/auth/login`);
-      console.log('   Email:', email);
+      console.log('   Email:', normalizedEmail);
 
-      const response = await axios.post(`${API_URL}/auth/login`, { email, password });
+      const response = await axios.post(
+        `${API_URL}/auth/login`,
+        { email: normalizedEmail, password },
+        { timeout: API_TIMEOUT_MS }
+      );
 
       console.log('   Response status:', response.status);
       console.log('   Response data:', response.data);
@@ -144,16 +183,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       localStorage.setItem('user', JSON.stringify(userData));
       axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
 
-      // User is now available immediately, navigation can proceed
-      // Token verification happens in background if needed
+      return userData as User;
     } catch (error: any) {
       console.error('❌ Login error:', error);
       console.error('   Error response:', error.response?.data);
       console.error('   Error status:', error.response?.status);
       console.error('   Error message:', error.message);
 
-      const errorMessage = error.response?.data?.message || error.message || 'Login failed';
-      throw new Error(errorMessage);
+      throw new Error(getLoginErrorMessage(error));
     }
   };
 

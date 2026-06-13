@@ -152,6 +152,20 @@ async function seedData() {
   };
 
   try {
+    // 0. Ensure default admin
+    console.log('👑 Processing default admin...');
+    const adminHashed = await hashPassword('admin123');
+    await upsertUser({
+      name: 'Admin User',
+      email: 'admin@sucar.com',
+      password: adminHashed,
+      phone: '+260970000000',
+      nrc: 'ADMIN001',
+      role: 'admin',
+      is_active: true,
+      admin_level: 'super_admin',
+    });
+
     // 1. Create Clients
     console.log('📝 Processing clients...');
     for (const client of clients) {

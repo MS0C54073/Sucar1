@@ -16,6 +16,7 @@
     "migrate:rest": "ts-node src/migrations/migrate-rest.ts",
     "create-admin": "node scripts/create-admin.js",
     "seed": "node scripts/seed-data.js",
+    "test:logins": "node scripts/test-all-logins.js",
     "fix-approvals": "node scripts/fix-approval-status.js"
   },
   "keywords": [

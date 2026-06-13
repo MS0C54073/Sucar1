@@ -5,7 +5,6 @@ import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './components/ToastContainer';
 import ErrorBoundary from './components/ErrorBoundary';
-import ThemeToggle from './components/ThemeToggle';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -46,9 +45,9 @@ function App() {
             <AuthProvider>
               <Router>
                 <Routes>
-                  <Route path="/" element={<LandingPage />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
+                  <Route path="/" element={<LandingPage />} />
                   <Route
                     path="/admin/*"
                     element={
@@ -129,10 +128,8 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
-                  <Route path="/" element={<Navigate to="/login" replace />} />
                 </Routes>
               </Router>
-              <ThemeToggle />
             </AuthProvider>
           </ToastProvider>
         </ThemeProvider>

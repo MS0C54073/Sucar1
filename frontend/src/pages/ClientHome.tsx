@@ -1,358 +1,302 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../services/api';
 import { useBookings } from '../hooks/useBookings';
-import LoadingSpinner from '../components/LoadingSpinner';
 import EmptyState from '../components/EmptyState';
 import MapView from '../components/MapView';
 import EnhancedNearbyCarWashes from '../components/mapping/EnhancedNearbyCarWashes';
 import LiveTracking from '../components/LiveTracking';
-import NearbyCarWashes from '../components/map/NearbyCarWashes';
 import LiveTrackingMap from '../components/map/LiveTrackingMap';
-import NotificationCenter from '../components/notifications/NotificationCenter';
 import BookingCard from '../components/booking/BookingCard';
 import BookingCardSkeleton from '../components/skeletons/BookingCardSkeleton';
 import DashboardSkeleton from '../components/skeletons/DashboardSkeleton';
-import { useQueryClient } from '@tanstack/react-query';
+import AppShell from '../components/layout/AppShell';
+import ClientHero from '../components/layout/ClientHero';
+import { NavItem } from '../components/layout/BottomNav';
 import './ClientHome.css';
-import ThemeToggle from '../components/ThemeToggle';
+
+const CLIENT_NAV: NavItem[] = [
+  { id: 'home', label: 'Home', icon: '🏠' },
+  { id: 'bookings', label: 'Bookings', icon: '📅' },
+  { id: 'vehicles', label: 'My Car', icon: '🚗' },
+  { id: 'explore', label: 'Deals', icon: '🏷️' },
+  { id: 'profile', label: 'Profile', icon: '👤' },
+];
+
+const SERVICES = [
+  { id: 'standard', title: 'Standard Wash', desc: 'Exterior wash and clean', price: '$15', icon: '🫧' },
+  { id: 'deluxe', title: 'Deluxe Wash', desc: 'Exterior + interior complete clean', price: '$30', icon: '✨' },
+  { id: 'detail', title: 'Detailing', desc: 'Premium interior & exterior care', price: '$55', icon: '💎' },
+];
 
 const ClientHome = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<'bookings' | 'vehicles' | 'book' | 'map' | 'nearby' | 'track-driver'>('bookings');
+  const [activeTab, setActiveTab] = useState('home');
+  const [searchQuery, setSearchQuery] = useState('');
   const [trackingBookingId, setTrackingBookingId] = useState<string | null>(null);
   const [mapRoute, setMapRoute] = useState<any[]>([]);
 
-  // Debug logging
-  useEffect(() => {
-    console.log('🔍 ClientHome Debug:', {
-      user: user ? { id: user.id, name: user.name, role: user.role } : null,
-      hasToken: !!localStorage.getItem('token'),
-    });
-  }, [user]);
-
-  // Use centralized bookings hook for consistent state
-  // Critical data: Load immediately
   const { data: bookings, isLoading: bookingsLoading, error: bookingsError } = useBookings({
     filters: { role: 'client' },
-    refetchInterval: activeTab === 'bookings' ? 30000 : false, // Only refetch when on bookings tab, every 30 seconds
+    refetchInterval: activeTab === 'bookings' ? 30000 : false,
   });
 
-  // Secondary data: Load in background, don't block UI
   const { data: vehicles, isLoading: vehiclesLoading, error: vehiclesError } = useQuery({
     queryKey: ['vehicles', user?.id],
     queryFn: async () => {
-      try {
-        if (!user?.id) {
-          throw new Error('User not authenticated');
-        }
-
-        console.log('📡 Fetching vehicles for client');
-        const response = await api.get('/vehicles');
-
-        // Validate response
-        if (!response || !response.data) {
-          throw new Error('Invalid response from server');
-        }
-
-        if (response.data.success === false) {
-          throw new Error(response.data.message || 'Failed to fetch vehicles');
-        }
-
-        const vehiclesData = response.data?.data || response.data || [];
-
-        // Validate array
-        if (!Array.isArray(vehiclesData)) {
-          console.warn('⚠️ Vehicles data is not an array:', vehiclesData);
-          return [];
-        }
-
-        console.log(`✅ Received ${vehiclesData.length} vehicles`);
-        return vehiclesData;
-      } catch (error: any) {
-        // Log error but let React Query handle it
-        console.error('❌ Error in vehicles queryFn:', error);
-        // Re-throw so React Query can handle it properly
-        throw error;
-      }
+      const response = await api.get('/vehicles');
+      const vehiclesData = response.data?.data || response.data || [];
+      return Array.isArray(vehiclesData) ? vehiclesData : [];
     },
+    enabled: !!user?.id,
     staleTime: 30000,
-    refetchOnMount: true,
-    enabled: !!user && !!user.id,
-    retry: (failureCount, error: any) => {
-      if (error?.response?.status === 401 || error?.response?.status === 403) {
-        return false;
-      }
-      return failureCount < 1;
-    },
   });
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
-  // Listen for tracking events from BookingCard
   useEffect(() => {
     const handleOpenTracking = (event: CustomEvent) => {
       setTrackingBookingId(event.detail.bookingId);
     };
     window.addEventListener('openTracking' as any, handleOpenTracking as EventListener);
-    return () => {
-      window.removeEventListener('openTracking' as any, handleOpenTracking as EventListener);
-    };
+    return () => window.removeEventListener('openTracking' as any, handleOpenTracking as EventListener);
   }, []);
 
-  // Don't block on vehicles loading - show bookings immediately
-  // Only show full loading on initial bookings load
   const isInitialLoad = bookingsLoading && bookings === undefined;
+  const hasActiveDriver = bookings?.some((b: any) =>
+    ['assigned_driver', 'driver_arrived', 'in_service', 'ready_for_delivery', 'out_for_delivery'].includes(
+      b.status
+    )
+  );
 
-  // Ensure user is loaded before rendering
-  if (!user || !user.id) {
+  if (!user?.id) {
     return <DashboardSkeleton />;
   }
 
-  return (
-    <div className="client-home">
-      <header className="client-header">
-        <div>
-          <h1>SuCAR</h1>
-          <p className="welcome-text">
-            Welcome back, {user?.name}
-          </p>
-        </div>
-        <div className="header-actions">
-          <ThemeToggle />
-          <NotificationCenter />
-          <button className="avatar-btn" onClick={() => navigate('/profile')} title="My Profile" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
-            {user?.profilePictureUrl ? (
-              <img src={user.profilePictureUrl} alt={user.name} style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
-            ) : (
-              <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--color-primary-600)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>{user?.name?.charAt(0)}</div>
-            )}
-          </button>
-          <button className="btn btn-secondary" onClick={handleLogout}>
-            Sign Out
-          </button>
-        </div>
-      </header>
-
-      <nav className="client-nav">
-        <button
-          className={activeTab === 'bookings' ? 'active' : ''}
-          onClick={() => setActiveTab('bookings')}
-        >
-          My Bookings
-        </button>
-        <button
-          className={activeTab === 'vehicles' ? 'active' : ''}
-          onClick={() => setActiveTab('vehicles')}
-        >
-          My Vehicles
-        </button>
-        <button
-          className={activeTab === 'book' ? 'active' : ''}
-          onClick={() => setActiveTab('book')}
-        >
-          Book Service
-        </button>
-        <button
-          className={activeTab === 'nearby' ? 'active' : ''}
-          onClick={() => setActiveTab('nearby')}
-        >
-          Nearby Washes
-        </button>
-        {bookings?.some((b: any) => ['assigned_driver', 'driver_arrived', 'in_service', 'ready_for_delivery', 'out_for_delivery'].includes(b.status)) && (
+  const renderHome = () => (
+    <>
+      <div className="sucar-section-head">
+        <h2>Services</h2>
+      </div>
+      <div className="sucar-services-scroll">
+        {SERVICES.map((s) => (
           <button
-            className={activeTab === 'track-driver' ? 'active' : ''}
-            onClick={() => setActiveTab('track-driver')}
+            key={s.id}
+            type="button"
+            className="sucar-service-card"
+            onClick={() => navigate('/client/book')}
           >
-            Track Driver 📍
+            <div className="sucar-service-card-top">
+              <div className="sucar-service-icon">{s.icon}</div>
+              <span aria-hidden>›</span>
+            </div>
+            <h3>{s.title}</h3>
+            <p>{s.desc}</p>
+            <span className="sucar-service-price">{s.price} from</span>
           </button>
-        )}
-      </nav>
+        ))}
+      </div>
 
-      <main className="client-content">
-        {activeTab === 'bookings' && (
-          <div className="bookings-section">
-            <h2>My Bookings</h2>
-            {bookingsError && (
-              <div style={{ padding: '16px', background: '#fee', color: '#c33', borderRadius: '8px', marginBottom: '16px' }}>
-                <strong>Error loading bookings:</strong> {bookingsError.message || 'Failed to load bookings. Please check console for details.'}
-              </div>
-            )}
-            {vehiclesError && activeTab === 'vehicles' && (
-              <div style={{ padding: '16px', background: '#fee', color: '#c33', borderRadius: '8px', marginBottom: '16px' }}>
-                <strong>Error loading vehicles:</strong> {vehiclesError.message || 'Failed to load vehicles. Please check console for details.'}
-              </div>
-            )}
-            {isInitialLoad ? (
-              <div className="bookings-list">
-                {[1, 2, 3].map((i) => (
-                  <BookingCardSkeleton key={i} />
-                ))}
-              </div>
-            ) : !bookingsError && bookings && bookings.length > 0 ? (
-              <div className="bookings-list">
-                {bookings.map((booking: any) => (
-                  <BookingCard
-                    key={booking.id}
-                    booking={booking}
-                    onStatusUpdate={() => {
-                      queryClient.invalidateQueries({ queryKey: ['bookings'] });
-                    }}
-                  />
-                ))}
-              </div>
-            ) : (
-              <EmptyState
-                icon="📋"
-                title="No bookings yet"
-                description="Start by booking your first car wash service"
-                action={{
-                  label: "Book Service",
-                  onClick: () => setActiveTab('book')
-                }}
-              />
-            )}
-          </div>
-        )}
+      <div className="sucar-section-head" style={{ marginTop: '1.5rem' }}>
+        <h2>Quick Book</h2>
+        <button type="button" className="sucar-link" onClick={() => setActiveTab('explore')}>
+          View all
+        </button>
+      </div>
 
-        {activeTab === 'vehicles' && (
-          <div className="vehicles-section">
-            <h2>My Vehicles</h2>
-            <button
-              className="add-vehicle-btn"
-              onClick={() => navigate('/client/vehicles/add')}
-            >
-              Add Vehicle
-            </button>
-            {vehiclesLoading ? (
-              <div className="vehicles-list">
-                {[1, 2].map((i) => (
-                  <div key={i} className="vehicle-card skeleton">
-                    <div className="skeleton-line" style={{ width: '60%', height: '20px', marginBottom: '8px' }}></div>
-                    <div className="skeleton-line" style={{ width: '40%', height: '16px' }}></div>
-                  </div>
-                ))}
-              </div>
-            ) : vehicles && vehicles.length > 0 ? (
-              <div className="vehicles-list">
-                {vehicles.map((vehicle: any) => (
-                  <div key={vehicle.id} className="vehicle-card">
-                    <h3>{vehicle.make} {vehicle.model}</h3>
-                    <p>Plate: {vehicle.plateNo}</p>
-                    <p>Color: {vehicle.color}</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <EmptyState
-                icon="🚗"
-                title="No vehicles yet"
-                description="Add your first vehicle to start booking car wash services"
-                action={{
-                  label: "Add Vehicle",
-                  onClick: () => navigate('/client/vehicles/add')
-                }}
-              />
-            )}
-          </div>
-        )}
-
-        {activeTab === 'book' && (
-          <div className="book-section">
-            <h2>Book a Car Wash Service</h2>
-            <button
-              className="book-btn"
-              onClick={() => navigate('/client/book')}
-            >
-              Create New Booking
-            </button>
-          </div>
-        )}
-
-        {activeTab === 'map' && (
-          <div className="map-section">
-            <div className="map-section-header">
-              <h2>Bookings & Nearby Services</h2>
-              <p className="map-section-subtitle">
-                View your bookings and discover nearby car wash services
-              </p>
-            </div>
-            <div className="map-layout">
-              <div className="map-sidebar">
-                <EnhancedNearbyCarWashes
-                  onRouteChange={(route) => {
-                    setMapRoute(route || []);
-                  }}
-                />
-              </div>
-              <div className="map-section-content">
-                <MapView
-                  bookings={bookings?.filter((b: any) => b.pickupCoordinates) || []}
-                  showNearbyServices={true}
-                  showCarWashes={true}
-                  showRoute={mapRoute.length > 0}
-                  routeSegments={mapRoute}
-                  onBookingClick={(booking) => {
-                    if (['accepted', 'picked_up', 'at_wash'].includes(booking.status)) {
-                      setTrackingBookingId(booking.id);
-                    }
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'nearby' && (
-          <div className="nearby-section">
-            <h2>Find Nearby Car Washes</h2>
-            <div style={{ height: '600px' }}>
-              <NearbyCarWashes
-                onCarWashSelect={() => {}}
-                showBookButton={true}
-              />
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'track-driver' && (
-          <div className="tracking-section">
-            {bookings?.find((b: any) => ['assigned_driver', 'driver_arrived', 'in_service', 'ready_for_delivery', 'out_for_delivery'].includes(b.status)) ? (
-              <LiveTrackingMap
-                bookingId={bookings.find((b: any) => ['assigned_driver', 'driver_arrived', 'in_service', 'ready_for_delivery', 'out_for_delivery'].includes(b.status))?.id}
-                userRole="client"
-              />
-            ) : (
-              <EmptyState
-                icon="📍"
-                title="No active booking"
-                description="You don't have an active booking with a driver assigned yet"
-                action={{
-                  label: "Book Service",
-                  onClick: () => setActiveTab('book')
-                }}
-              />
-            )}
-          </div>
-        )}
-      </main>
-
-      {trackingBookingId && (
-        <div className="live-tracking-overlay">
-          <LiveTracking
-            bookingId={trackingBookingId}
-            onClose={() => setTrackingBookingId(null)}
+      <div className="sucar-map-block">
+        <div className="sucar-map-inner">
+          <MapView
+            bookings={bookings?.filter((b: any) => b.pickupCoordinates) || []}
+            showNearbyServices
+            showCarWashes
+            height="220px"
           />
         </div>
+        <div className="sucar-location-card">
+          <div className="sucar-location-thumb">🧼</div>
+          <div className="sucar-location-info">
+            <h3>SuCAR Downtown</h3>
+            <div className="sucar-location-meta">
+              <span>0.6 mi away</span>
+              <span className="sucar-rating">★ 4.8 (128)</span>
+            </div>
+            <div className="sucar-location-meta">Open until 8:00 PM</div>
+          </div>
+          <button type="button" className="sucar-btn-book" onClick={() => navigate('/client/book')}>
+            Book Now
+          </button>
+        </div>
+      </div>
+
+      {hasActiveDriver && (
+        <button
+          type="button"
+          className="sucar-track-banner"
+          onClick={() => setActiveTab('track')}
+        >
+          📍 Track your driver — tap to view live map
+        </button>
+      )}
+    </>
+  );
+
+  const renderBookings = () => (
+    <div className="sucar-card-panel">
+      <div className="sucar-section-head">
+        <h2>My Bookings</h2>
+      </div>
+      {bookingsError && (
+        <div className="alert alert-error" role="alert">
+          {bookingsError.message || 'Failed to load bookings'}
+        </div>
+      )}
+      {isInitialLoad ? (
+        <div className="bookings-list">
+          {[1, 2, 3].map((i) => (
+            <BookingCardSkeleton key={i} />
+          ))}
+        </div>
+      ) : bookings?.length ? (
+        <div className="bookings-list">
+          {bookings.map((booking: any) => (
+            <BookingCard
+              key={booking.id}
+              booking={booking}
+              onStatusUpdate={() => queryClient.invalidateQueries({ queryKey: ['bookings'] })}
+            />
+          ))}
+        </div>
+      ) : (
+        <EmptyState
+          icon="📋"
+          title="No bookings yet"
+          description="Book your first wash from the home screen"
+          action={{ label: 'Book now', onClick: () => navigate('/client/book') }}
+        />
       )}
     </div>
+  );
+
+  const renderVehicles = () => (
+    <div className="sucar-card-panel">
+      <div className="sucar-section-head">
+        <h2>My Vehicles</h2>
+        <button type="button" className="sucar-link" onClick={() => navigate('/client/vehicles/add')}>
+          + Add
+        </button>
+      </div>
+      {vehiclesError && <div className="alert alert-error">{vehiclesError.message}</div>}
+      {vehiclesLoading ? (
+        <p className="text-muted">Loading vehicles…</p>
+      ) : vehicles?.length ? (
+        <div className="vehicles-list">
+          {vehicles.map((v: any) => (
+            <div key={v.id} className="sucar-vehicle-row">
+              <span className="sucar-vehicle-icon">🚗</span>
+              <div>
+                <strong>
+                  {v.make} {v.model}
+                </strong>
+                <p>
+                  {v.plateNo} · {v.color}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <EmptyState
+          icon="🚗"
+          title="No vehicles"
+          description="Add a vehicle to book faster"
+          action={{ label: 'Add vehicle', onClick: () => navigate('/client/vehicles/add') }}
+        />
+      )}
+    </div>
+  );
+
+  const renderExplore = () => (
+    <div className="sucar-map-block sucar-map-block--tall">
+      <div className="map-layout-client">
+        <div className="map-sidebar-client">
+          <EnhancedNearbyCarWashes />
+        </div>
+        <div className="sucar-map-inner sucar-map-inner--tall">
+          <MapView
+            bookings={bookings?.filter((b: any) => b.pickupCoordinates) || []}
+            showNearbyServices
+            showCarWashes
+            showRoute={mapRoute.length > 0}
+            routeSegments={mapRoute}
+            height="100%"
+          />
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderTrack = () => {
+    const activeBooking = bookings?.find((b: any) =>
+      ['assigned_driver', 'driver_arrived', 'in_service', 'ready_for_delivery', 'out_for_delivery'].includes(
+        b.status
+      )
+    );
+    return activeBooking ? (
+      <LiveTrackingMap bookingId={activeBooking.id} userRole="client" />
+    ) : (
+      <EmptyState
+        icon="📍"
+        title="No active trip"
+        description="Track your driver when a booking is in progress"
+        action={{ label: 'View bookings', onClick: () => setActiveTab('bookings') }}
+      />
+    );
+  };
+
+  const content =
+    activeTab === 'home'
+      ? renderHome()
+      : activeTab === 'bookings'
+        ? renderBookings()
+        : activeTab === 'vehicles'
+          ? renderVehicles()
+          : activeTab === 'explore'
+            ? renderExplore()
+            : activeTab === 'track'
+              ? renderTrack()
+              : null;
+
+  return (
+    <>
+      <AppShell
+        skin="light"
+        hero={
+          activeTab === 'home' ? (
+            <ClientHero
+              userName={user.name}
+              searchValue={searchQuery}
+              onSearchChange={setSearchQuery}
+            />
+          ) : undefined
+        }
+        navItems={CLIENT_NAV}
+        activeNav={activeTab === 'track' ? 'bookings' : activeTab}
+        onNavChange={setActiveTab}
+      >
+        {content}
+      </AppShell>
+
+      {trackingBookingId && (
+        <div className="live-tracking-overlay" onClick={() => setTrackingBookingId(null)}>
+          <div onClick={(e) => e.stopPropagation()}>
+            <LiveTracking bookingId={trackingBookingId} onClose={() => setTrackingBookingId(null)} />
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

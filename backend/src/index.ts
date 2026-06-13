@@ -26,6 +26,10 @@ connectDB().then(async () => {
   // Auto-create tables if they don't exist (only if DATABASE_URL is set)
   const { initDatabase } = await import('./migrations/init-database');
   await initDatabase();
+  const { ensureDefaultAdmin } = await import('./services/ensure-default-admin');
+  await ensureDefaultAdmin();
+  const { ensureSeedUsers } = await import('./services/ensure-seed-users');
+  await ensureSeedUsers();
 }).catch((error) => {
   console.error('Database setup error:', error);
 });

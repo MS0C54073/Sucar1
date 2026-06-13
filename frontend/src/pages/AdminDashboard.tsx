@@ -7,6 +7,7 @@ import OnboardingWelcome from '../components/admin/OnboardingWelcome';
 import HelpCenter from '../components/admin/HelpCenter';
 import { OnboardingService, ONBOARDING_SECTIONS } from '../services/onboarding-service';
 import './AdminDashboard.css';
+import '../styles/sucar-admin-mockup.css';
 import ThemeToggle from '../components/ThemeToggle';
 
 // Lazy load admin components for better performance
@@ -121,7 +122,7 @@ const AdminDashboard = () => {
   ];
 
   return (
-    <div className="admin-dashboard">
+    <div className="admin-dashboard admin-mockup">
       {/* Sidebar */}
       <aside className={`admin-sidebar ${mobileMenuOpen ? 'open' : ''}`}>
         <div className="sidebar-header">

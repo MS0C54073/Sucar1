@@ -18,6 +18,7 @@ import { useAuth } from '../context/AuthContext';
 import GradientBackground from '../components/common/GradientBackground';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../constants/theme';
 import { useTheme } from '../context/ThemeContext';
+import { getAppDisplayName, isDriverApp } from '../config/appVariant';
 
 /**
  * Login screen for all user roles.
@@ -29,8 +30,10 @@ const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login, user } = useAuth();
+  const { login } = useAuth();
   const navigation = useNavigation();
+  const appName = getAppDisplayName();
+  const driverApp = isDriverApp();
   const { theme, toggle } = useTheme();
   const { width } = Dimensions.get('window');
 
@@ -100,40 +103,19 @@ const LoginScreen = () => {
     );
   };
 
-  React.useEffect(() => {
-    if (user) {
-      console.log(`🔄 User logged in, navigating based on role: ${user.role}`);
-      // Use reset to replace the navigation stack and prevent going back to login
-      if (user.role === 'client' || user.role === 'admin') {
-        // Admin can use ClientHome for now, or create a separate AdminHome
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'ClientHome' as never }],
-        });
-      } else if (user.role === 'driver') {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'DriverHome' as never }],
-        });
-      } else if (user.role === 'carwash') {
-        // Car wash can use ClientHome for now
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'ClientHome' as never }],
-        });
-      }
-    }
-  }, [user, navigation]);
+  const devHint = driverApp
+    ? 'Test: james.mulenga@driver.com / driver123'
+    : 'Test: john.mwansa@email.com / client123';
 
   const handleLogin = async () => {
-    if (!email || !password) {
+    if (!email.trim() || !password) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
 
     setLoading(true);
     try {
-      await login(email, password);
+      await login(email.trim(), password);
       // Navigation will happen automatically via useEffect when user is set
       // The useEffect will trigger when user state updates
       console.log('✅ Login completed, waiting for navigation...');
@@ -196,8 +178,10 @@ const LoginScreen = () => {
             />
           </Animatable.View>
           <WashingBubbles top={140} />
-          <Text style={styles.title}>SuCAR</Text>
-          <Text style={styles.subtitle}>Car Wash Booking System</Text>
+          <Text style={styles.title}>{appName}</Text>
+          <Text style={styles.subtitle}>
+            {driverApp ? 'Driver pickup & delivery' : 'Book car wash on demand'}
+          </Text>
         </Animatable.View>
         
         <View style={styles.form}>
@@ -256,6 +240,10 @@ const LoginScreen = () => {
           >
             <Text style={styles.linkText}>Don't have an account? <Text style={styles.linkTextBold}>Register</Text></Text>
           </TouchableOpacity>
+
+          {__DEV__ && (
+            <Text style={styles.devHint}>{devHint}</Text>
+          )}
         </View>
       </ScrollView>
     </GradientBackground>
@@ -408,6 +396,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.12)'
+  },
+  devHint: {
+    marginTop: 16,
+    fontSize: 11,
+    color: Colors.gray400,
+    textAlign: 'center',
   },
 });
 

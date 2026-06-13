@@ -19,8 +19,6 @@ export interface RouteData {
   geometry: GeoJSON.Feature;
 }
 
-const MAPBOX_TOKEN = getMapboxToken();
-
 export const useMapboxDirections = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +36,12 @@ export const useMapboxDirections = () => {
         setLoading(true);
         setError(null);
 
-        const url = `https://api.mapbox.com/directions/v5/mapbox/${profile}/${startLng},${startLat};${endLng},${endLat}?steps=true&geometries=geojson&access_token=${MAPBOX_TOKEN}`;
+        const token = getMapboxToken();
+        if (!token) {
+          throw new Error('Mapbox token not available');
+        }
+
+        const url = `https://api.mapbox.com/directions/v5/mapbox/${profile}/${startLng},${startLat};${endLng},${endLat}?steps=true&geometries=geojson&access_token=${token}`;
 
         const response = await fetch(url);
         const data = await response.json();

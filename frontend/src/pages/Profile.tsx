@@ -161,7 +161,7 @@ const Profile = () => {
     if (!user) return <LoadingSpinner />;
 
     return (
-        <div className="profile-page">
+        <div className="profile-page sucar-page">
             <header className="profile-header">
                 <div className="header-left">
                     <button className="btn btn-secondary" onClick={handleBackClick}>

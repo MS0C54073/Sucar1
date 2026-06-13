@@ -1,40 +1,68 @@
 /**
  * Mapbox Configuration
- * 
- * Secure configuration for Mapbox integration
- * Token is loaded from environment variables to prevent exposure in source code
+ *
+ * Token resolution order:
+ * 1. Runtime token set by MapboxProvider / useMapboxToken
+ * 2. localStorage cache from edge function
+ * 3. VITE_MAPBOX_TOKEN in .env
+ * 4. Development fallback (replace for production)
  */
 
-// Get token from environment variable with fallback
-// IMPORTANT: Never commit the token to source control
-// Set VITE_MAPBOX_TOKEN in .env file (which should be in .gitignore)
-const MAPBOX_TOKEN = 
-  import.meta.env.VITE_MAPBOX_TOKEN || 
+export const MAPBOX_TOKEN_CACHE_KEY = 'mapbox_token';
+export const MAPBOX_TOKEN_EXPIRY_KEY = 'mapbox_token_expiry';
+
+const FALLBACK_TOKEN =
   'pk.eyJ1IjoibXV6b3NhbGkiLCJhIjoiY21oc2J2d2tyMGg3ejJtc2N4dXg0NGo4eiJ9.p75SiHMh2nWAlbnFR8kyXQ';
 
-// Validate token format
+let runtimeToken: string | null = null;
+
+export function setMapboxRuntimeToken(token: string) {
+  runtimeToken = token;
+}
+
 export function validateMapboxToken(token: string): boolean {
-  return token && token.startsWith('pk.eyJ') && token.length > 20;
+  return Boolean(token && token.startsWith('pk.') && token.length > 20);
 }
 
-// Get the Mapbox token securely
+function readCachedToken(): string | null {
+  if (typeof localStorage === 'undefined') return null;
+  const cached = localStorage.getItem(MAPBOX_TOKEN_CACHE_KEY);
+  const expiry = localStorage.getItem(MAPBOX_TOKEN_EXPIRY_KEY);
+  if (!cached || !expiry) return null;
+  if (new Date(expiry).getTime() <= Date.now()) return null;
+  return validateMapboxToken(cached) ? cached : null;
+}
+
+/** Synchronous token for geocoding / directions (after provider has loaded). */
 export function getMapboxToken(): string {
-  const token = MAPBOX_TOKEN;
-  
-  if (!token || !validateMapboxToken(token)) {
-    const errorMsg = 
-      '⚠️ Mapbox token not configured. Please create frontend/.env file with:\n' +
-      'VITE_MAPBOX_TOKEN=pk.eyJ1IjoibXV6b3NhbGkiLCJhIjoiY21oc2J2d2tyMGg3ejJtc2N4dXg0NGo4eiJ9.p75SiHMh2nWAlbnFR8kyXQ\n\n' +
-      'Or copy frontend/.env.example to frontend/.env and update the token.';
-    console.error(errorMsg);
-    // Don't throw - use fallback token instead
-    console.warn('⚠️ Using fallback Mapbox token. For production, set VITE_MAPBOX_TOKEN in .env file.');
-    return 'pk.eyJ1IjoibXV6b3NhbGkiLCJhIjoiY21oc2J2d2tyMGg3ejJtc2N4dXg0NGo4eiJ9.p75SiHMh2nWAlbnFR8kyXQ';
+  if (runtimeToken && validateMapboxToken(runtimeToken)) {
+    return runtimeToken;
   }
-  
-  return token;
-}
 
+  const cached = readCachedToken();
+  if (cached) {
+    runtimeToken = cached;
+    return cached;
+  }
+
+  const envToken = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
+  if (envToken && validateMapboxToken(envToken)) {
+    runtimeToken = envToken;
+    return envToken;
+  }
+
+  if (validateMapboxToken(FALLBACK_TOKEN)) {
+    console.warn(
+      'Mapbox: using built-in dev token. Set VITE_MAPBOX_TOKEN in frontend/.env for production.'
+    );
+    return FALLBACK_TOKEN;
+  }
+
+  console.error(
+    'Mapbox token missing. Add VITE_MAPBOX_TOKEN to frontend/.env or deploy get-mapbox-token edge function.'
+  );
+  return '';
+}
 // Mapbox style configuration
 export const MAPBOX_STYLES = {
   streets: 'mapbox://styles/mapbox/streets-v12',

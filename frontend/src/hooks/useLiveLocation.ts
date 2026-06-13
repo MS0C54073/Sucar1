@@ -31,7 +31,7 @@ export const useLiveLocation = (options: UseLiveLocationOptions = {}) => {
   const [location, setLocation] = useState<LocationData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const watchIdRef = useRef<number | null>(null);
 
   // Request initial location and start tracking
@@ -70,7 +70,7 @@ export const useLiveLocation = (options: UseLiveLocationOptions = {}) => {
 
               // Upload to backend
               try {
-                await api.post('/api/locations/update-location', {
+                await api.post('/locations/update-location', {
                   latitude,
                   longitude,
                   accuracyMeters: accuracy,

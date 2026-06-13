@@ -1,0 +1,130 @@
+/* Admin dashboard — sucar_admin_dashboard.html */
+
+.admin-dashboard.admin-mockup {
+  --adm-bg: #0e1117;
+  --adm-bg2: #161b25;
+  --adm-card: #1a2030;
+  --adm-border: rgba(255, 255, 255, 0.07);
+  --adm-text: #e8eaf0;
+  --adm-text2: #7f8999;
+  --adm-green: #22d3a0;
+  --adm-green-bg: rgba(34, 211, 160, 0.1);
+  background: var(--adm-bg);
+  color: var(--adm-text);
+}
+
+.admin-mockup .admin-sidebar {
+  width: 230px;
+  background: var(--adm-bg2);
+  border-right: 1px solid var(--adm-border);
+}
+
+.admin-mockup .admin-sidebar .logo h1 {
+  color: var(--adm-text);
+}
+
+.admin-mockup .admin-sidebar .logo h1 span,
+.admin-mockup .role-badge {
+  color: var(--adm-green);
+  background: var(--adm-green-bg);
+  border-color: rgba(34, 211, 160, 0.2);
+}
+
+.admin-mockup .nav-item {
+  color: var(--adm-text2);
+}
+
+.admin-mockup .nav-item.active {
+  background: var(--adm-green-bg);
+  color: var(--adm-green);
+  border: 1px solid rgba(34, 211, 160, 0.15);
+}
+
+.admin-mockup .admin-main {
+  background: var(--adm-bg);
+}
+
+.admin-mockup .admin-header {
+  background: var(--adm-bg2);
+  border-bottom: 1px solid var(--adm-border);
+  color: var(--adm-text);
+}
+
+.admin-mockup .admin-content {
+  padding: 20px 24px;
+}
+
+.admin-mockup .kpi-grid-mockup {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.admin-mockup .kpi-card-mockup {
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-mockup .kpi-card-mockup::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--adm-green);
+}
+
+.admin-mockup .kpi-card-mockup.kpi-blue::before { background: #60a5fa; }
+.admin-mockup .kpi-card-mockup.kpi-amber::before { background: #fbbf24; }
+.admin-mockup .kpi-card-mockup.kpi-red::before { background: #f87171; }
+.admin-mockup .kpi-card-mockup.kpi-purple::before { background: #a78bfa; }
+
+.admin-mockup .kpi-lbl {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--adm-text2);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.admin-mockup .kpi-val {
+  font-size: 24px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--adm-text);
+}
+
+.admin-mockup .dashboard-home .dashboard-header h1,
+.admin-mockup .dashboard-subtitle {
+  color: var(--adm-text);
+}
+
+.admin-mockup .dashboard-subtitle {
+  color: var(--adm-text2);
+}
+
+.admin-mockup .stat-card {
+  background: var(--adm-card);
+  border-color: var(--adm-border);
+}
+
+.admin-mockup .stat-label {
+  color: var(--adm-text2);
+}
+
+.admin-mockup .stat-value {
+  color: var(--adm-text);
+}
+
+@media (max-width: 1100px) {
+  .admin-mockup .kpi-grid-mockup {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

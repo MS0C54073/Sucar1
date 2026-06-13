@@ -1,24 +1,16 @@
-
 # System Test Credentials
 
-All accounts use password: **password123**
-(Admin uses **123456**)
+Use these after running `cd backend && npm run seed` (and `npm run dev` for the API).
 
-## 👑 Admin
-- **Email**: admin@sucar.com
-- **Pass**: 123456
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | admin@sucar.com | admin123 |
+| Client | john.mwansa@email.com | client123 |
+| Driver | james.mulenga@driver.com | driver123 |
+| Car wash | sparkle@carwash.com | carwash123 |
 
-## 📱 Clients
-- John Client: john@client.com
-- Alice Smith: alice@client.com
-- Bob Jones: bob@client.com
+**Login URL:** http://localhost:5173/login
 
-## 🚗 Drivers
-- Mike Driver: mike@driver.com (License: DL001)
-- Steve Wheel: steve@driver.com (License: DL002)
-- Jane Racer: jane@driver.com (License: DL003)
+**Run both servers:** from repo root, `npm run dev` (backend + frontend).
 
-## 🧼 Car Washes
-- Sparkle Wash: sparkle@carwash.com (Cairo Road, Lusaka)
-- Crystal Clean: crystal@carwash.com (Manda Hill, Lusaka)
-- Speedy Shine: speedy@carwash.com (Kabulonga, Lusaka)
+If admin login fails, restart the backend once — it auto-repairs the default admin account.

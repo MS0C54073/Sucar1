@@ -40,19 +40,19 @@ export class DBService {
     const normalizedEmail = email.toLowerCase().trim();
 
     try {
-      // Try exact match first (most common case)
+      // Case-insensitive lookup via normalized email
       let { data, error } = await supabase
         .from('users')
         .select('*')
-        .eq('email', email)
+        .eq('email', normalizedEmail)
         .maybeSingle();
 
-      // If not found with exact match, try lowercase
+      // Fallback: exact match for legacy rows with mixed-case emails
       if (!data && (error?.code === 'PGRST116' || !error)) {
         const { data: data2, error: error2 } = await supabase
           .from('users')
           .select('*')
-          .eq('email', normalizedEmail)
+          .eq('email', email)
           .maybeSingle();
 
         if (data2) {

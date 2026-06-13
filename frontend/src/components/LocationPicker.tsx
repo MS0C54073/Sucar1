@@ -1,18 +1,22 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { getCurrentPosition, Coordinates } from '../services/locationService';
 import { searchLocations, reverseGeocode, GeocodingResult } from '../services/geocodingService';
+import MapView from './MapView';
 import './LocationPicker.css';
 
 interface LocationPickerProps {
   onLocationSelect: (location: string, coordinates: Coordinates) => void;
   initialLocation?: string;
   initialCoordinates?: Coordinates;
+  /** Show Mapbox map preview when coordinates are set */
+  showMapPreview?: boolean;
 }
 
 const LocationPicker = ({
   onLocationSelect,
   initialLocation,
   initialCoordinates,
+  showMapPreview = false,
 }: LocationPickerProps) => {
   const [location, setLocation] = useState<string>(initialLocation || '');
   const [coordinates, setCoordinates] = useState<Coordinates | undefined>(initialCoordinates);
@@ -157,6 +161,11 @@ const LocationPicker = ({
           📍 Current
         </button>
       </div>
+      {coordinates && showMapPreview && (
+        <div className="location-picker-map">
+          <MapView center={coordinates} pinLocation={coordinates} zoom={15} height="180px" />
+        </div>
+      )}
       {coordinates && (
         <div className="location-picker-coordinates">
           <small>

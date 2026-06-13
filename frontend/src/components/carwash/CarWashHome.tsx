@@ -46,10 +46,10 @@ const CarWashHome = () => {
         <p className="page-subtitle">Monitor your car wash operations and performance</p>
       </div>
 
-      <div className="stats-grid">
+      <div className="stats-grid stats-grid-op">
         {isInitialLoad ? (
           // Show skeleton cards while loading
-          Array.from({ length: 5 }).map((_, index) => (
+          Array.from({ length: 4 }).map((_, index) => (
             <div key={index} className="stat-card skeleton-stat-card">
               <div className="skeleton-stat-icon"></div>
               <div className="skeleton-stat-content">
@@ -60,29 +60,20 @@ const CarWashHome = () => {
           ))
         ) : (
           <>
-            <div className="stat-card">
-              <div className="stat-icon">📋</div>
-              <h3>Total Bookings</h3>
+            <div className="stat-card-op">
+              <h3>Today's bookings</h3>
               <div className="value">{data?.totalBookings || 0}</div>
             </div>
-            <div className="stat-card">
-              <div className="stat-icon">⏳</div>
+            <div className="stat-card-op">
               <h3>Pending</h3>
               <div className="value">{data?.pendingBookings || 0}</div>
             </div>
-            <div className="stat-card">
-              <div className="stat-icon">🔄</div>
-              <h3>In Progress</h3>
+            <div className="stat-card-op">
+              <h3>In progress</h3>
               <div className="value">{data?.inProgressBookings || 0}</div>
             </div>
-            <div className="stat-card">
-              <div className="stat-icon">✅</div>
-              <h3>Completed</h3>
-              <div className="value">{data?.completedBookings || 0}</div>
-            </div>
-            <div className="stat-card highlight">
-              <div className="stat-icon">💰</div>
-              <h3>Total Revenue</h3>
+            <div className="stat-card-op highlight">
+              <h3>Revenue</h3>
               <div className="value">K{data?.totalRevenue?.toLocaleString() || 0}</div>
             </div>
           </>

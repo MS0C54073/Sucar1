@@ -16,14 +16,12 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { getCurrentPosition, Coordinates } from '../services/locationService';
 import { formatDistance } from '../services/mappingService';
-import { getMapboxToken, DEFAULT_CENTER, DEFAULT_ZOOM } from '../config/mapbox';
+import { DEFAULT_CENTER, DEFAULT_ZOOM, getMapboxToken } from '../config/mapbox';
 import { parseCoordinates, calculateDistance } from '../services/mappingService';
 import RouteVisualization from './mapping/RouteVisualization';
 import api from '../services/api';
 import LoadingSpinner from './LoadingSpinner';
 import './MapView.css';
-
-const MAPBOX_TOKEN = getMapboxToken();
 
 interface Booking {
   id: string;
@@ -80,8 +78,12 @@ interface MapViewProps {
   showRoute?: boolean;
   routeSegments?: RouteSegment[];
   center?: Coordinates;
+  /** Single highlighted pin (e.g. pickup location picker) */
+  pinLocation?: Coordinates;
   zoom?: number;
   height?: string;
+  /** Non-interactive full-bleed map (auth screens) */
+  backgroundMode?: boolean;
 }
 
 const MapView = ({
@@ -94,9 +96,14 @@ const MapView = ({
   showRoute = false,
   routeSegments = [],
   center,
+  pinLocation,
   zoom = DEFAULT_ZOOM,
   height = '100%',
+  backgroundMode = false,
 }: MapViewProps) => {
+  const mapboxToken = getMapboxToken();
+  const tokenLoading = false;
+  const tokenError = mapboxToken ? null : 'Mapbox token not configured';
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<Map<string, mapboxgl.Marker>>(new Map());
@@ -138,74 +145,123 @@ const MapView = ({
     staleTime: 10000, // Cache for 10 seconds (more dynamic)
   });
 
-  // Initialize map
+  // Initialize map when token is ready
   useEffect(() => {
-    if (!mapContainer.current || map.current) return;
+    if (tokenLoading || !mapContainer.current || map.current) return;
 
-    // Validate token
-    if (!MAPBOX_TOKEN || !MAPBOX_TOKEN.startsWith('pk.')) {
-      setMapError('Invalid Mapbox token. Please configure VITE_MAPBOX_TOKEN in environment variables.');
+    if (!mapboxToken || !mapboxToken.startsWith('pk.')) {
+      setMapError(
+        tokenError ||
+          'Mapbox is not configured. Add VITE_MAPBOX_TOKEN to frontend/.env'
+      );
       setMapLoaded(true);
       return;
     }
 
+    let loadTimeout: ReturnType<typeof setTimeout> | undefined;
+
     try {
-      mapboxgl.accessToken = MAPBOX_TOKEN;
+      mapboxgl.accessToken = mapboxToken;
 
       const initialCenter: [number, number] = center
         ? [center.lng, center.lat]
-        : DEFAULT_CENTER;
+        : pinLocation
+          ? [pinLocation.lng, pinLocation.lat]
+          : DEFAULT_CENTER;
 
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
         style: 'mapbox://styles/mapbox/streets-v12',
         center: initialCenter,
-        zoom: zoom,
+        zoom,
         attributionControl: false,
+        interactive: !backgroundMode,
       });
 
-      // Add navigation controls
-      map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
-      map.current.addControl(new mapboxgl.FullscreenControl(), 'top-right');
+      if (!backgroundMode) {
+        map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+        map.current.addControl(new mapboxgl.FullscreenControl(), 'top-right');
+      }
 
-      // Handle map load
       map.current.on('load', () => {
         setMapLoaded(true);
         setMapError(null);
       });
 
-      // Handle map errors
-      map.current.on('error', (e: any) => {
+      map.current.on('error', (e: { error?: { message?: string } }) => {
         console.error('Mapbox error:', e);
         setMapError(e.error?.message || 'Failed to load map');
-        setMapLoaded(true); // Show container even on error
+        setMapLoaded(true);
       });
 
-      // Timeout fallback
-      const loadTimeout = setTimeout(() => {
-        if (!mapLoaded) {
-          console.warn('Map load timeout - showing map anyway');
-          setMapLoaded(true);
-        }
+      loadTimeout = setTimeout(() => {
+        setMapLoaded((loaded) => {
+          if (!loaded) {
+            console.warn('Map load timeout - showing map anyway');
+            return true;
+          }
+          return loaded;
+        });
       }, 10000);
-
-      return () => {
-        clearTimeout(loadTimeout);
-        if (map.current) {
-          map.current.remove();
-          map.current = null;
-        }
-      };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to initialize map';
       console.error('Error initializing map:', error);
-      setMapError(error.message || 'Failed to initialize map');
+      setMapError(message);
       setMapLoaded(true);
     }
-  }, []); // Only run once on mount
+
+    return () => {
+      if (loadTimeout) clearTimeout(loadTimeout);
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+      }
+      setMapLoaded(false);
+    };
+  }, [mapboxToken, tokenLoading, tokenError, backgroundMode]);
+
+  // Gentle camera drift for auth background maps
+  useEffect(() => {
+    if (!backgroundMode || !map.current || !mapLoaded) return;
+
+    const mapInstance = map.current;
+    const [lng, lat] = DEFAULT_CENTER;
+    const waypoints: [number, number][] = [
+      [lng, lat],
+      [lng + 0.035, lat + 0.018],
+      [lng - 0.02, lat + 0.028],
+      [lng + 0.012, lat - 0.015],
+      [lng, lat],
+    ];
+    let index = 0;
+    let intervalId: ReturnType<typeof setInterval> | undefined;
+    let startId: ReturnType<typeof setTimeout> | undefined;
+
+    const pan = () => {
+      if (!map.current) return;
+      index = (index + 1) % waypoints.length;
+      mapInstance.easeTo({
+        center: waypoints[index],
+        zoom,
+        duration: 14000,
+        essential: true,
+      });
+    };
+
+    startId = window.setTimeout(() => {
+      pan();
+      intervalId = window.setInterval(pan, 15000);
+    }, 2000);
+
+    return () => {
+      if (startId) clearTimeout(startId);
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [backgroundMode, mapLoaded, zoom]);
 
   // Get user location
   useEffect(() => {
-    if (!showNearbyServices) return;
+    if (!showNearbyServices || backgroundMode) return;
 
     getCurrentPosition()
       .then((position) => {
@@ -337,6 +393,21 @@ const MapView = ({
       markersRef.current.set('user-location', marker);
     }
 
+    // Pinned location (location picker / booking)
+    if (pinLocation) {
+      const el = createMarkerElement('pickup');
+      const marker = new mapboxgl.Marker(el)
+        .setLngLat([pinLocation.lng, pinLocation.lat])
+        .addTo(map.current!);
+      markersRef.current.set('pin-location', marker);
+    } else {
+      const existingPin = markersRef.current.get('pin-location');
+      if (existingPin) {
+        existingPin.remove();
+        markersRef.current.delete('pin-location');
+      }
+    }
+
     // Add route markers (pickup and destination) when route is shown
     if (showRoute && routeSegments && routeSegments.length > 0) {
       // Remove existing route markers first
@@ -384,14 +455,14 @@ const MapView = ({
       }
     }
 
-    // Fit bounds to show all markers (including route markers)
-    if (markersRef.current.size > 0) {
+    // Fit bounds to show all markers (skip on auth background — keep city-wide view)
+    if (!backgroundMode && markersRef.current.size > 0) {
       const bounds = new mapboxgl.LngLatBounds();
       markersRef.current.forEach((marker) => {
         const lngLat = marker.getLngLat();
         bounds.extend([lngLat.lng, lngLat.lat]);
       });
-      
+
       if (map.current) {
         map.current.fitBounds(bounds, {
           padding: 50,
@@ -399,7 +470,19 @@ const MapView = ({
         });
       }
     }
-  }, [bookings, carWashes, drivers, userLocation, activeBookingId, mapLoaded, onBookingClick, showRoute, routeSegments]);
+  }, [
+    bookings,
+    carWashes,
+    drivers,
+    userLocation,
+    pinLocation,
+    activeBookingId,
+    mapLoaded,
+    onBookingClick,
+    showRoute,
+    routeSegments,
+    backgroundMode,
+  ]);
 
   // Helper to create marker elements
   const createMarkerElement = (
@@ -424,11 +507,14 @@ const MapView = ({
   };
 
   return (
-    <div className="map-container" style={{ height }}>
-      {!mapLoaded && !mapError ? (
+    <div
+      className={`map-container${backgroundMode ? ' map-container--background' : ''}`}
+      style={{ height, minHeight: backgroundMode ? 0 : undefined }}
+    >
+      {!backgroundMode && (tokenLoading || !mapLoaded) && !mapError ? (
         <div className="map-loading-overlay">
           <LoadingSpinner size="lg" />
-          <p>Loading map...</p>
+          <p>{tokenLoading ? 'Connecting to Mapbox…' : 'Loading map…'}</p>
         </div>
       ) : null}
       <div
@@ -437,7 +523,7 @@ const MapView = ({
         style={{
           width: '100%',
           height: '100%',
-          minHeight: '400px',
+          minHeight: backgroundMode ? 0 : 400,
           display: 'block',
         }}
       />
@@ -448,14 +534,14 @@ const MapView = ({
           color="#3b82f6"
         />
       )}
-      {mapError && (
+      {mapError && !backgroundMode && (
         <div className="map-error-overlay">
           <div className="map-error-message">
             <span>⚠️ {mapError}</span>
           </div>
         </div>
       )}
-      {locationError && (
+      {locationError && !backgroundMode && (
         <div className="map-error-overlay">
           <div className="map-error-message">
             <span>⚠️ {locationError}</span>
