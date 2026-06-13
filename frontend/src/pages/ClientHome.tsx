@@ -21,6 +21,7 @@ import DashboardSkeleton from '../components/skeletons/DashboardSkeleton';
 import AppShell from '../components/layout/AppShell';
 import ClientHero from '../components/layout/ClientHero';
 import { NavItem } from '../components/layout/BottomNav';
+import Icon from '../components/icons/Icon';
 import './ClientHome.css';
 
 const CLIENT_NAV: NavItem[] = [
@@ -150,7 +151,7 @@ const ClientHome = () => {
             <div className="sucar-service-card-top">
               <div className={`sucar-service-icon sucar-service-icon--${s.tier}`} aria-hidden />
               <span className="sucar-service-chevron" aria-hidden>
-                ›
+                <Icon name="chevronRight" size={18} />
               </span>
             </div>
             <h3>{s.title}</h3>
@@ -183,7 +184,9 @@ const ClientHome = () => {
             <h3>SuCAR Downtown</h3>
             <div className="sucar-location-meta">
               <span>0.6 mi away</span>
-              <span className="sucar-rating">★ 4.8 (128)</span>
+              <span className="sucar-rating">
+                <Icon name="star" size={14} /> 4.8 (128)
+              </span>
             </div>
             <div className="sucar-location-meta">Open until 8:00 PM</div>
           </div>
@@ -199,7 +202,7 @@ const ClientHome = () => {
           className="sucar-track-banner"
           onClick={() => setActiveTab('track')}
         >
-          📍 Track your driver — tap to view live map
+          <Icon name="mapPin" size={18} /> Track your driver — tap to view live map
         </button>
       )}
     </>
@@ -214,7 +217,7 @@ const ClientHome = () => {
           className="sucar-link"
           onClick={() => navigate('/client/messages')}
         >
-          💬 Messages
+          <Icon name="messageCircle" size={16} /> Messages
         </button>
       </div>
       {bookingsError && (

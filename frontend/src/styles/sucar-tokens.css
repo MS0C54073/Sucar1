@@ -126,6 +126,11 @@
 .su-cta:hover {
   transform: translateY(-1px);
 }
+.su-cta:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
 
 .su-cta--primary {
   background: var(--su-ink);
@@ -139,6 +144,11 @@
   background: var(--su-surface);
   color: var(--su-ink);
   border: 1px solid var(--su-line);
+}
+/* Full-width variant for forms/auth actions */
+.su-cta--block {
+  width: 100%;
+  justify-content: center;
 }
 
 /* ---------- Glass card (for dark surfaces) ---------- */

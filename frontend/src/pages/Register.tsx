@@ -344,7 +344,7 @@ const RegisterContent = memo(({
                 )}
               </div>
 
-              <button type="submit" disabled={loading} className="btn btn-primary register-submit">
+              <button type="submit" disabled={loading} className="su-cta su-cta--primary su-cta--block register-submit">
                 {loading ? (
                   <>
                     <LoadingSpinner size="sm" />

@@ -6,6 +6,7 @@ import OnboardingTooltip from '../components/admin/OnboardingTooltip';
 import OnboardingWelcome from '../components/admin/OnboardingWelcome';
 import HelpCenter from '../components/admin/HelpCenter';
 import { OnboardingService, ONBOARDING_SECTIONS } from '../services/onboarding-service';
+import Icon from '../components/icons/Icon';
 import './AdminDashboard.css';
 import '../styles/sucar-admin-mockup.css';
 
@@ -202,7 +203,7 @@ const AdminDashboard = () => {
           </button>
           <span className="role-badge">{user?.role === 'subadmin' ? 'Sub-admin' : 'Super admin'}</span>
           <button type="button" className="mobile-close-btn" onClick={() => setMobileMenuOpen(false)} aria-label="Close menu">
-            ✕
+            <Icon name="x" size={18} />
           </button>
         </div>
 
@@ -251,7 +252,7 @@ const AdminDashboard = () => {
           </div>
           <div className="footer-actions">
             <button type="button" className="help-btn" onClick={() => setShowHelpCenter(true)} title="Help center" aria-label="Help">
-              ?
+              <Icon name="helpCircle" size={18} />
             </button>
             <button type="button" className="logout-btn" onClick={handleLogout}>
               Sign out
@@ -263,7 +264,7 @@ const AdminDashboard = () => {
       <main className="admin-main">
         <header className="admin-header">
           <button type="button" className="mobile-menu-btn" onClick={() => setMobileMenuOpen(true)} aria-label="Open menu">
-            ☰
+            <Icon name="menu" size={20} />
           </button>
           <div className="header-title">{currentPage}</div>
           <form className="header-search-wrap" onSubmit={handleHeaderSearch}>

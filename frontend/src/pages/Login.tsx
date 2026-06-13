@@ -175,7 +175,7 @@ const LoginContent = memo(({
                   </button>
                 </div>
               </div>
-              <button type="submit" disabled={loading} className="btn btn-primary btn-lg login-submit">
+              <button type="submit" disabled={loading} className="su-cta su-cta--primary su-cta--block login-submit">
                 {loading ? (
                   <>
                     <LoadingSpinner size="sm" />

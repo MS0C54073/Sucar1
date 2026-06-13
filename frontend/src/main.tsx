@@ -2,6 +2,10 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
+// SuCAR advanced design system (tokens + su-* components) — global so every
+// page (auth, client, dashboards) shares the same look. Namespaced; does not
+// override legacy styles. The SuCAR logo asset is never touched here.
+import './styles/sucar-tokens.css'
 
 // Initialize theme and view mode from localStorage
 const theme = localStorage.getItem('theme') || 'light';

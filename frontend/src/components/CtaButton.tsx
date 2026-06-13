@@ -11,8 +11,13 @@ interface CtaButtonProps {
   href?: string;
   variant?: 'primary' | 'ghost';
   icon?: IconName;
-  /** Icon side. Default: trailing arrow on the right. */
+  /** Icon side. Default: trailing arrow on the right. Pass null for no icon. */
   iconRight?: boolean;
+  /** Button type when not a link. Defaults to 'button'. */
+  type?: 'button' | 'submit';
+  disabled?: boolean;
+  /** Full-width (forms/auth). */
+  block?: boolean;
   className?: string;
 }
 
@@ -23,9 +28,14 @@ const CtaButton = ({
   variant = 'primary',
   icon = 'arrowRight',
   iconRight = true,
+  type = 'button',
+  disabled = false,
+  block = false,
   className,
 }: CtaButtonProps) => {
-  const cls = `su-cta su-cta--${variant}${className ? ` ${className}` : ''}`;
+  const cls = `su-cta su-cta--${variant}${block ? ' su-cta--block' : ''}${
+    className ? ` ${className}` : ''
+  }`;
   const glyph = (
     <span className="su-cta__icon">
       <Icon name={icon} size={18} />
@@ -54,7 +64,7 @@ const CtaButton = ({
     );
   }
   return (
-    <button type="button" className={cls} onClick={onClick}>
+    <button type={type} className={cls} onClick={onClick} disabled={disabled}>
       {inner}
     </button>
   );

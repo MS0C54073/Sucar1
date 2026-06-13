@@ -20,7 +20,13 @@ export type IconName =
   | 'arrowRight'
   | 'apple'
   | 'play'
-  | 'shieldCheck';
+  | 'shieldCheck'
+  | 'messageCircle'
+  | 'chevronRight'
+  | 'plus'
+  | 'x'
+  | 'menu'
+  | 'helpCircle';
 
 const PATHS: Record<IconName, JSX.Element> = {
   mapPin: (
@@ -95,6 +101,34 @@ const PATHS: Record<IconName, JSX.Element> = {
     <>
       <path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3Z" />
       <path d="M9 12l2 2 4-4" />
+    </>
+  ),
+  messageCircle: <path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.8-.8L3 21l1.9-5.2A8.4 8.4 0 1 1 21 11.5Z" />,
+  chevronRight: <path d="M9 6l6 6-6 6" />,
+  plus: (
+    <>
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
+    </>
+  ),
+  x: (
+    <>
+      <path d="M6 6l12 12" />
+      <path d="M18 6L6 18" />
+    </>
+  ),
+  menu: (
+    <>
+      <path d="M4 7h16" />
+      <path d="M4 12h16" />
+      <path d="M4 17h16" />
+    </>
+  ),
+  helpCircle: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.6 9.5a2.4 2.4 0 0 1 4.7.6c0 1.6-2.3 2-2.3 3.4" />
+      <path d="M12 17h.01" />
     </>
   ),
 };

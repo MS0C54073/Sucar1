@@ -10,9 +10,7 @@ import { AnimatedCard } from '../components/animations/CardAnimations';
 import Icon from '../components/icons/Icon';
 import CtaButton from '../components/CtaButton';
 import './LandingPage.css';
-// Loaded after the page CSS so the advanced design-system classes (su-badge,
-// su-avatar, su-cta) win over legacy .feature-icon/.author-avatar rules.
-import '../styles/sucar-tokens.css';
+// Design system (su-* classes) is imported globally in main.tsx.
 
 function dashboardPath(role: string): string {
   if (role === 'admin' || role === 'subadmin') return '/admin';
