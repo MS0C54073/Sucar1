@@ -22,6 +22,7 @@ import { getRequiredRole } from '../config/appVariant';
 import AuthThemeToggle from '../components/auth/AuthThemeToggle';
 import AuthRolePills, { SignInRole } from '../components/auth/AuthRolePills';
 import type { AuthThemePalette } from '../constants/sucarTheme';
+import { useGoogleAuth } from '../hooks/useGoogleAuth';
 
 const DEV_HINTS: Record<SignInRole, string> = {
   client: 'Test: john.mwansa@email.com / client123',
@@ -40,6 +41,22 @@ const LoginScreen = () => {
   const { authTheme: C } = useTheme();
   const styles = useMemo(() => createStyles(C), [C]);
   const buildRole = getRequiredRole();
+
+  const google = useGoogleAuth({
+    role: signInRole,
+    onError: (m) => Alert.alert('Google sign-in', m),
+  });
+
+  const onGooglePress = () => {
+    if (!google.configured) {
+      Alert.alert(
+        'Google sign-in',
+        'Not configured yet. Add EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID to mobile/.env (see GOOGLE_AUTH_SETUP.md).',
+      );
+      return;
+    }
+    google.signIn();
+  };
 
   const onRoleChange = (role: SignInRole) => {
     if (role !== buildRole) {
@@ -195,14 +212,17 @@ const LoginScreen = () => {
           </View>
 
           <TouchableOpacity
-            style={styles.googleBtn}
-            onPress={() => Alert.alert('Google sign-in', 'Coming soon.')}
+            style={[styles.googleBtn, google.loading && { opacity: 0.6 }]}
+            onPress={onGooglePress}
+            disabled={google.loading}
             activeOpacity={0.8}
           >
             <View style={styles.googleMark}>
               <Text style={styles.googleG}>G</Text>
             </View>
-            <Text style={styles.googleLabel}>Continue with Google</Text>
+            <Text style={styles.googleLabel}>
+              {google.loading ? 'Signing in…' : 'Continue with Google'}
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity

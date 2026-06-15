@@ -298,10 +298,23 @@ export const googleLogin = asyncHandler(async (req: Request, res: Response) => {
     throw new BadRequestError('Google token is required');
   }
 
+  // Accept ID tokens minted for any of our configured OAuth clients
+  // (web + Android + iOS). Google sets the token `aud` to the client that
+  // requested it, so mobile tokens won't match the web client id alone.
+  const allowedAudiences = [
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_ANDROID_CLIENT_ID,
+    process.env.GOOGLE_IOS_CLIENT_ID,
+  ].filter(Boolean) as string[];
+
+  if (allowedAudiences.length === 0) {
+    throw new BadRequestError('Google sign-in is not configured on the server.');
+  }
+
   try {
     const ticket = await googleClient.verifyIdToken({
       idToken: token,
-      audience: process.env.GOOGLE_CLIENT_ID,
+      audience: allowedAudiences,
     });
 
     const payload = ticket.getPayload();

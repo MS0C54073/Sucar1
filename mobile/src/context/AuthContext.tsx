@@ -16,6 +16,7 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: (idToken: string, role?: string) => Promise<void>;
   register: (userData: any) => Promise<void>;
   logout: () => Promise<void>;
   loading: boolean;
@@ -168,6 +169,49 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   /**
+   * Authenticate with a Google ID token. Posts the token to /auth/google,
+   * which verifies it server-side and returns our JWT + user. New accounts are
+   * created with this app variant's role (client / driver).
+   */
+  const loginWithGoogle = async (idToken: string, role?: string) => {
+    try {
+      const response = await apiClient.post('/auth/google', {
+        token: idToken,
+        role: role || getRequiredRole(),
+      });
+
+      if (!response.data.success) {
+        throw new Error(response.data.message || 'Google sign-in failed');
+      }
+
+      const { token: newToken, ...userData } = response.data.data;
+      if (!newToken) {
+        throw new Error('No token received from server');
+      }
+
+      const requiredRole = getRequiredRole();
+      if (userData.role !== requiredRole) {
+        throw new Error(
+          `This account is for ${userData.role}s. Please use ${getOtherAppName()} or sign in with a ${requiredRole} account in ${getAppDisplayName()}.`
+        );
+      }
+
+      setUser(userData);
+      setToken(newToken);
+      await AsyncStorage.setItem('token', newToken);
+      await AsyncStorage.setItem('user', JSON.stringify(toStoredUser(userData)));
+      apiClient.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+      axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+    } catch (error: any) {
+      console.error('❌ Google sign-in error:', error);
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      }
+      throw new Error(error.message || 'Google sign-in failed. Please try again');
+    }
+  };
+
+  /**
    * Create a new user account on the backend and, on success,
    * immediately log the user in and persist their auth state.
    */
@@ -247,7 +291,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, login, loginWithGoogle, register, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

@@ -29,6 +29,8 @@ module.exports = {
     version: '1.0.0',
     orientation: 'portrait',
     userInterfaceStyle: 'light',
+    // Custom URL scheme — required for the Google OAuth redirect on native.
+    scheme: variant === 'driver' ? 'sucardriver' : 'sucar',
     splash: {
       image: './assets/Sucarcar.jpeg',
       resizeMode: 'contain',
@@ -62,9 +64,15 @@ module.exports = {
     web: {
       favicon: './assets/Sucarcar.jpeg',
     },
-    plugins: ['expo-font'],
+    plugins: ['expo-font', 'expo-web-browser'],
     extra: {
       appVariant: variant,
+      // Google OAuth client IDs (from Google Cloud Console). The Web client id
+      // is also used as the audience the backend verifies against; Android/iOS
+      // clients are used by the native auth flow. See GOOGLE_AUTH_SETUP.md.
+      googleWebClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || undefined,
+      googleAndroidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || undefined,
+      googleIosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || undefined,
       // Optional backend override. When unset, the app auto-detects the host
       // from the Expo dev server (physical device) or falls back to the Android
       // emulator address (10.0.2.2). Set this to point at a specific backend, e.g.:
