@@ -4,10 +4,10 @@ import {
     Text,
     StyleSheet,
     FlatList,
-    SafeAreaView,
     TouchableOpacity,
     RefreshControl,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { apiClient } from '../utils/api';
 import { Typography, Spacing, BorderRadius } from '../constants/theme';

@@ -4,10 +4,10 @@ import {
     Text,
     StyleSheet,
     FlatList,
-    SafeAreaView,
     TouchableOpacity,
     RefreshControl,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Animatable from 'react-native-animatable';
 import { useAuth } from '../../context/AuthContext';
@@ -139,7 +139,7 @@ const CarwashHomeScreen = () => {
     );
 
     return (
-        <SafeAreaView style={styles.safeArea}>
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
             {/* Header */}
             <GradientBackground style={styles.header}>
                 <Animatable.View animation="fadeInDown" duration={700} useNativeDriver>

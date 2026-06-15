@@ -7,6 +7,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
+import { Ionicons } from '@expo/vector-icons';
 import { Coordinates } from '../services/locationService';
 import { getMapboxAccessToken } from '../config/mapbox';
 
@@ -42,11 +43,22 @@ const CustomMapView: React.FC<MapViewProps> = ({
 }) => {
   const webViewRef = useRef<WebView>(null);
   const [mapReady, setMapReady] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [mapHtml, setMapHtml] = useState('');
+
+  const hasToken = getMapboxAccessToken().length > 0;
 
   useEffect(() => {
     generateMapHTML();
   }, [pickupLocation, destinationLocation, height, interactive]);
+
+  // Never spin forever: if the map hasn't reported ready within a few seconds
+  // (slow tiles, network, bad token), fall back to the static preview.
+  useEffect(() => {
+    if (!hasToken || mapReady) return;
+    const t = setTimeout(() => setLoadFailed(true), 7000);
+    return () => clearTimeout(t);
+  }, [hasToken, mapReady, mapHtml]);
 
   const generateMapHTML = () => {
     const mapboxToken = getMapboxAccessToken();
@@ -227,11 +239,32 @@ const CustomMapView: React.FC<MapViewProps> = ({
         if (onMapReady) {
           onMapReady();
         }
+      } else if (data.type === 'mapError') {
+        setLoadFailed(true);
       }
     } catch (error) {
       // Ignore parse errors
     }
   };
+
+  // Static placeholder when no token is configured or the map can't load —
+  // avoids an indefinite "Loading map..." spinner and keeps the layout clean.
+  if (!hasToken || loadFailed) {
+    const coord = pickupLocation || destinationLocation;
+    return (
+      <View style={[styles.container, { height }, styles.placeholder]}>
+        <Ionicons name="map-outline" size={28} color="#64748B" />
+        <Text style={styles.placeholderTitle}>Map preview</Text>
+        {coord ? (
+          <Text style={styles.placeholderCoord}>
+            {coord.lat.toFixed(4)}, {coord.lng.toFixed(4)}
+          </Text>
+        ) : (
+          <Text style={styles.placeholderCoord}>Location set</Text>
+        )}
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { height }]}>
@@ -284,6 +317,22 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 14,
     color: '#666',
+  },
+  placeholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EEF2F7',
+  },
+  placeholderTitle: {
+    marginTop: 8,
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  placeholderCoord: {
+    marginTop: 2,
+    fontSize: 11,
+    color: '#94A3B8',
   },
 });
 
