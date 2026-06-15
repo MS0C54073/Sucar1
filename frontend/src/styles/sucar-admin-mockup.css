@@ -3,32 +3,32 @@
  * Remaps design-system variables so ALL admin child pages inherit dark surfaces.
  */
 .admin-dashboard.admin-mockup {
-  /* Brand — professional neutral slate (replaces the old teal-green) */
-  --adm-accent: #8b95ab;
-  --adm-accent-hover: #a6afc2;
-  --adm-accent-muted: rgba(139, 149, 171, 0.16);
-  --adm-accent-border: rgba(139, 149, 171, 0.38);
+  /* Brand — professional neutral slate (readable on light surfaces) */
+  --adm-accent: #475569;
+  --adm-accent-hover: #334155;
+  --adm-accent-muted: rgba(71, 85, 105, 0.1);
+  --adm-accent-border: rgba(71, 85, 105, 0.22);
 
-  /* Surfaces */
-  --adm-bg: #0c0c14;
-  --adm-bg-elevated: #12121c;
-  --adm-card: #1a1a2e;
-  --adm-card-hover: #22223a;
-  --adm-border: rgba(255, 255, 255, 0.1);
-  --adm-border-subtle: rgba(255, 255, 255, 0.06);
+  /* Surfaces — clean light theme */
+  --adm-bg: #f4f6fa;
+  --adm-bg-elevated: #ffffff;
+  --adm-card: #ffffff;
+  --adm-card-hover: #f4f7fb;
+  --adm-border: rgba(15, 27, 45, 0.1);
+  --adm-border-subtle: rgba(15, 27, 45, 0.06);
 
   /* Text */
-  --adm-text: #ececf4;
-  --adm-text-muted: #9a9ab0;
-  --adm-text-faint: #65657a;
+  --adm-text: #1a2333;
+  --adm-text-muted: #5a6678;
+  --adm-text-faint: #8a93a6;
 
   /* Semantic (badges / alerts only) */
-  --adm-success: #00c896;
-  --adm-success-bg: rgba(0, 200, 150, 0.14);
-  --adm-warning: #eab308;
-  --adm-warning-bg: rgba(234, 179, 8, 0.14);
-  --adm-error: #ef4444;
-  --adm-error-bg: rgba(239, 68, 68, 0.14);
+  --adm-success: #059669;
+  --adm-success-bg: rgba(5, 150, 105, 0.12);
+  --adm-warning: #b45309;
+  --adm-warning-bg: rgba(180, 83, 9, 0.12);
+  --adm-error: #dc2626;
+  --adm-error-bg: rgba(220, 38, 38, 0.1);
 
   --adm-sidebar-w: 260px;
   --adm-radius: 14px;
@@ -51,23 +51,23 @@
   --bg-color: var(--adm-bg);
   --text-color: var(--adm-text);
   --border-color: var(--adm-border);
-  --hover-bg: rgba(255, 255, 255, 0.05);
-  --shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
-  --shadow-sm: 0 1px 6px rgba(0, 0, 0, 0.25);
-  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.35);
+  --hover-bg: rgba(15, 27, 45, 0.05);
+  --shadow: 0 1px 3px rgba(15, 27, 45, 0.08), 0 1px 2px rgba(15, 27, 45, 0.04);
+  --shadow-sm: 0 1px 2px rgba(15, 27, 45, 0.06);
+  --shadow-md: 0 6px 24px rgba(15, 27, 45, 0.1);
   --color-primary-50: var(--adm-accent-muted);
   --color-primary-100: var(--adm-accent-muted);
   --color-primary-300: var(--adm-accent);
   --color-primary-500: var(--adm-accent);
   --color-primary-600: var(--adm-accent);
   --color-primary-700: var(--adm-accent-hover);
-  --color-primary-900: #004d3d;
+  --color-primary-900: #1a2333;
   --color-info: var(--adm-accent);
   --color-success: var(--adm-success);
   --color-warning: var(--adm-warning);
   --color-error: var(--adm-error);
-  --bg-skeleton: #2a2a42;
-  --bg-skeleton-shimmer: #353550;
+  --bg-skeleton: #e8ecf3;
+  --bg-skeleton-shimmer: #f1f4f9;
 
   background: var(--adm-bg);
   color: var(--adm-text);
@@ -154,7 +154,7 @@ body:has(.admin-dashboard.admin-mockup) {
   height: 40px;
   border-radius: 11px;
   background: var(--adm-accent);
-  color: #0c0c14;
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -220,7 +220,7 @@ body:has(.admin-dashboard.admin-mockup) {
 }
 
 .admin-mockup .nav-item:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(15, 27, 45, 0.05);
   color: var(--adm-text);
 }
 
@@ -255,7 +255,7 @@ body:has(.admin-dashboard.admin-mockup) {
 }
 
 .admin-mockup .user-info:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(15, 27, 45, 0.04);
   border-radius: var(--adm-radius-sm);
 }
 
@@ -266,7 +266,7 @@ body:has(.admin-dashboard.admin-mockup) {
   min-height: 40px;
   flex-shrink: 0;
   background: var(--adm-accent);
-  color: #0c0c14;
+  color: #ffffff;
   overflow: hidden;
 }
 
@@ -413,8 +413,8 @@ body:has(.admin-dashboard.admin-mockup) {
 }
 
 .admin-mockup .kpi-card-mockup:hover {
-  border-color: rgba(255, 255, 255, 0.14);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  border-color: rgba(15, 27, 45, 0.12);
+  box-shadow: 0 8px 24px rgba(15, 27, 45, 0.1);
 }
 
 .admin-mockup .kpi-top {
@@ -497,7 +497,7 @@ body:has(.admin-dashboard.admin-mockup) {
 }
 
 .admin-mockup .admin-tx-table th {
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(15, 27, 45, 0.04);
   color: var(--adm-text-faint);
   font-size: 11px;
   padding: 12px 18px;
@@ -514,7 +514,7 @@ body:has(.admin-dashboard.admin-mockup) {
 }
 
 .admin-mockup .admin-tx-table tbody tr:hover td {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(15, 27, 45, 0.04);
 }
 
 .admin-mockup .tx-user {
@@ -597,7 +597,7 @@ body:has(.admin-dashboard.admin-mockup) {
 }
 
 .admin-mockup .data-table thead {
-  background: rgba(0, 0, 0, 0.25) !important;
+  background: rgba(15, 27, 45, 0.04) !important;
   border-bottom: 1px solid var(--adm-border) !important;
 }
 
@@ -611,7 +611,7 @@ body:has(.admin-dashboard.admin-mockup) {
 }
 
 .admin-mockup .data-table tbody tr:hover td {
-  background: rgba(255, 255, 255, 0.04) !important;
+  background: rgba(15, 27, 45, 0.04) !important;
 }
 
 .admin-mockup .search-input,
@@ -634,7 +634,7 @@ body:has(.admin-dashboard.admin-mockup) {
 .admin-mockup button[class*='primary'],
 .admin-mockup .create-btn {
   background: var(--adm-accent) !important;
-  color: #0c0c14 !important;
+  color: #ffffff !important;
   border: none !important;
 }
 
@@ -693,7 +693,7 @@ body:has(.admin-dashboard.admin-mockup) {
 
 .admin-mockup .welcome-start-btn {
   background: var(--adm-accent) !important;
-  color: #0c0c14 !important;
+  color: #ffffff !important;
 }
 
 /* Reports / misc */
