@@ -15,7 +15,11 @@ const CategoryPills = ({ selected, onSelect }: CategoryPillsProps) => (
       return (
         <TouchableOpacity key={c.id} style={styles.cat} onPress={() => onSelect(c.id)} activeOpacity={0.8}>
           <View style={[styles.ic, on && styles.icOn]}>
-            <Ionicons name={c.icon} size={22} color={on ? ClientColors.primary : ClientColors.textSecondary} />
+            <Ionicons
+              name={c.icon}
+              size={22}
+              color={on ? ClientColors.accent : ClientColors.textSecondary}
+            />
           </View>
           <Text style={[styles.lbl, on && styles.lblOn]}>{c.label}</Text>
         </TouchableOpacity>
@@ -25,22 +29,25 @@ const CategoryPills = ({ selected, onSelect }: CategoryPillsProps) => (
 );
 
 const styles = StyleSheet.create({
-  row: { paddingHorizontal: AppLayout.screenPadding, gap: 10, paddingBottom: 4 },
-  cat: { alignItems: 'center', width: 64 },
+  row: { paddingHorizontal: AppLayout.screenPadding, gap: 12, paddingBottom: 8 },
+  cat: { alignItems: 'center', width: 68 },
   ic: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
+    width: 52,
+    height: 52,
+    borderRadius: 16,
     backgroundColor: ClientColors.background,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
     borderColor: 'transparent',
-    marginBottom: 4,
+    marginBottom: 6,
   },
-  icOn: { backgroundColor: ClientColors.greenLight, borderColor: ClientColors.primaryLight },
-  lbl: { fontSize: 9, fontWeight: '500', color: ClientColors.textSecondary },
-  lblOn: { color: ClientColors.primaryDark, fontWeight: '600' },
+  icOn: {
+    backgroundColor: ClientColors.accentLight,
+    borderColor: ClientColors.accent,
+  },
+  lbl: { fontSize: 11, fontWeight: '500', color: ClientColors.textSecondary },
+  lblOn: { color: ClientColors.accent, fontWeight: '700' },
 });
 
 export default CategoryPills;

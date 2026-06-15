@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 13, fontWeight: '600', color: ClientColors.text },
   meta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   metaText: { fontSize: 10, color: ClientColors.textSecondary, flex: 1 },
-  price: { fontSize: 12, fontWeight: '600', color: ClientColors.primary, marginTop: 6 },
+  price: { fontSize: 12, fontWeight: '700', color: ClientColors.accent, marginTop: 6 },
 });
 
 export default CarWashCard;

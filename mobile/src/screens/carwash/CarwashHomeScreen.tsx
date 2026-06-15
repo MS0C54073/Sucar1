@@ -6,15 +6,17 @@ import {
     FlatList,
     TouchableOpacity,
     RefreshControl,
+    StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Animatable from 'react-native-animatable';
 import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
 import { apiClient } from '../../utils/api';
-import GradientBackground from '../../components/common/GradientBackground';
 import StatCard from '../../components/common/StatCard';
+import SuCarLogo from '../../components/brand/SuCarLogo';
+import { BrandGradients } from '../../constants/sucarTheme';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/theme';
 
 type TabKey = 'pending' | 'in_progress' | 'done';
@@ -46,7 +48,6 @@ const statusGroupMap: Record<TabKey, string[]> = {
  */
 const CarwashHomeScreen = () => {
     const { user } = useAuth();
-    const { theme } = useTheme();
     const [activeTab, setActiveTab] = useState<TabKey>('pending');
     const [allBookings, setAllBookings] = useState<QueueItem[]>([]);
     const [refreshing, setRefreshing] = useState(false);
@@ -138,19 +139,29 @@ const CarwashHomeScreen = () => {
         </View>
     );
 
+    const insets = useSafeAreaInsets();
+
     return (
-        <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
+            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
             {/* Header */}
-            <GradientBackground style={styles.header}>
+            <LinearGradient
+                colors={[...BrandGradients.header]}
+                locations={[...BrandGradients.headerLocations]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={[styles.header, { paddingTop: insets.top + 12 }]}
+            >
+                <View style={styles.headerTopRow}>
+                    <SuCarLogo size={22} suffix=" Partner" />
+                </View>
                 <Animatable.View animation="fadeInDown" duration={700} useNativeDriver>
-                    <Text style={[styles.greeting, { color: theme.colors.textPrimary }]}>
-                        Welcome back,
-                    </Text>
-                    <Text style={[styles.userName, { color: theme.colors.textPrimary }]}>
+                    <Text style={styles.greeting}>Welcome back,</Text>
+                    <Text style={styles.userName}>
                         {user?.name?.split(' ')[0] || 'Carwash'}
                     </Text>
                 </Animatable.View>
-            </GradientBackground>
+            </LinearGradient>
 
             {/* Stats Row */}
             <View style={styles.statsRow}>
@@ -209,11 +220,16 @@ const CarwashHomeScreen = () => {
 const styles = StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: Colors.background },
     header: {
-        paddingTop: Spacing.lg,
         paddingBottom: Spacing.xl,
         paddingHorizontal: Spacing.lg,
         borderBottomLeftRadius: BorderRadius['2xl'],
         borderBottomRightRadius: BorderRadius['2xl'],
+    },
+    headerTopRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: Spacing.lg,
     },
     greeting: { fontSize: Typography.base, color: Colors.white, opacity: 0.9 },
     userName: { fontSize: Typography['3xl'], fontWeight: Typography.bold, color: Colors.white },

@@ -2,14 +2,13 @@ import { memo, useCallback, useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import PageLayout from '../components/PageLayout';
 import GoogleLoginButton from '../components/auth/GoogleLoginButton';
 import PhoneLogin from '../components/auth/PhoneLogin';
-import ThemeToggle from '../components/ThemeToggle';
-import AuthBackdrop from '../components/auth/AuthBackdrop';
+import Icon from '../components/icons/Icon';
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import '../components/auth/AuthMapBackground.css';
 import './Login.css';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
@@ -45,6 +44,34 @@ const EyeIcon = ({ open }: { open: boolean }) =>
     </svg>
   );
 
+const MailIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+    <rect x="2" y="4" width="20" height="16" rx="2" />
+    <path d="m22 7-10 6L2 7" />
+  </svg>
+);
+
+const LockIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+    <rect x="3" y="11" width="18" height="11" rx="2" />
+    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+  </svg>
+);
+
+const ArrowIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden>
+    <line x1="5" y1="12" x2="19" y2="12" />
+    <polyline points="12 5 19 12 12 19" />
+  </svg>
+);
+
+const TEST_ACCOUNTS = [
+  { role: 'Admin', cred: 'admin@sucar.com / admin123', color: '#f59e0b' },
+  { role: 'Client', cred: 'john.mwansa@email.com / client123', color: '#ec4899' },
+  { role: 'Driver', cred: 'james.mulenga@driver.com / driver123', color: '#a855f7' },
+  { role: 'Car wash', cred: 'sparkle@carwash.com / carwash123', color: '#22d3ee' },
+];
+
 const LoginContent = memo(({
   email,
   password,
@@ -60,183 +87,207 @@ const LoginContent = memo(({
   apiOnline,
 }: LoginContentProps) => {
   const [showPassword, setShowPassword] = useState(false);
+  const [remember, setRemember] = useState(true);
+  const { theme, toggleTheme } = useTheme();
 
   return (
-    <div className="auth-screen">
+    <div className="login-screen">
+      <button
+        type="button"
+        className="login-darkmode"
+        onClick={toggleTheme}
+        aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
+      >
+        <Icon name={theme === 'light' ? 'moon' : 'sun'} size={18} />
+        <span>{theme === 'light' ? 'Dark mode' : 'Light mode'}</span>
+      </button>
+
       <div className="login-page">
-      <aside className="login-brand">
-        <div className="login-brand-inner">
-          <img src="/images/Sucarcar.jpeg" alt="" className="login-brand-logo" />
-          <h1 className="login-brand-title">SuCAR</h1>
-          <p className="login-brand-tagline">
-            Book pickup, drive-in, or delivery car wash — all in one place.
-          </p>
-          <ul className="login-brand-features">
-            <li>Find nearby washes instantly</li>
-            <li>Track your driver in real time</li>
-            <li>Manage vehicles &amp; bookings</li>
-          </ul>
-        </div>
-      </aside>
-
-      <div className="login-panel">
-        <div className="login-panel-top">
-          <Link to="/" className="login-back">
-            ← Home
-          </Link>
-          <ThemeToggle />
-        </div>
-
-        <div className="login-card">
-          <div className="login-card-header">
-            <img src="/images/Sucarcar.jpeg" alt="SuCar" className="login-card-logo" />
-            <span className="auth-greeting"><span className="auth-greeting__dot" /> Good to see you</span>
-            <h2>Welcome back</h2>
-            <p>Sign in to pick up right where you left off.</p>
-          </div>
-
-          <div className="segmented-control login-tabs" role="tablist">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={authMethod === 'email'}
-              className={authMethod === 'email' ? 'active' : ''}
-              onClick={() => onChangeAuthMethod('email')}
-            >
-              Email
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={authMethod === 'google'}
-              className={authMethod === 'google' ? 'active' : ''}
-              onClick={() => onChangeAuthMethod('google')}
-            >
-              Google
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={authMethod === 'phone'}
-              className={authMethod === 'phone' ? 'active' : ''}
-              onClick={() => onChangeAuthMethod('phone')}
-            >
-              Phone
-            </button>
-          </div>
-
-          {apiOnline === false && (
-            <div className="alert alert-error login-api-banner" role="alert">
-              Backend is not running. Open a second terminal and run:{' '}
-              <code>cd backend</code> then <code>npm run dev</code> (port 5000).
+        <aside className="login-brand">
+          <div className="login-brand-inner">
+            <div className="login-brand-wordmark">
+              <span className="login-brand-s">S</span>uCAR
             </div>
-          )}
+            <p className="login-brand-tagline">
+              Book pickup, drive-in, or delivery<br />car wash — all in one place.
+            </p>
+            <ul className="login-brand-features">
+              <li>Find nearby washes instantly</li>
+              <li>Track your driver in real time</li>
+              <li>Manage vehicles &amp; bookings</li>
+            </ul>
+          </div>
+        </aside>
 
-          {error && (
-            <div className="alert alert-error" role="alert">
-              {error}
+        <div className="login-panel">
+          <div className="login-card">
+            <div className="login-card-header">
+              <span className="auth-greeting"><span className="auth-greeting__dot" /> Good to see you</span>
+              <h2>Welcome back</h2>
+              <p>Sign in to pick up right where you left off.</p>
             </div>
-          )}
 
-          {authMethod === 'email' && (
-            <form onSubmit={onSubmit} className="login-form">
-              <div className="form-field">
-                <label htmlFor="login-email">Email</label>
-                <input
-                  id="login-email"
-                  className="input"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => onChangeEmail(e.target.value)}
-                  autoComplete="email"
-                  required
-                />
-              </div>
-              <div className="form-field">
-                <label htmlFor="login-password">Password</label>
-                <div className="password-field">
-                  <input
-                    id="login-password"
-                    className="input"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => onChangePassword(e.target.value)}
-                    autoComplete="current-password"
-                    required
-                  />
-                  <button
-                    type="button"
-                    className="password-field-toggle"
-                    onClick={() => setShowPassword((p) => !p)}
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  >
-                    <EyeIcon open={showPassword} />
-                  </button>
-                </div>
-              </div>
-              <button type="submit" disabled={loading} className="su-cta su-cta--primary su-cta--block login-submit">
-                {loading ? (
-                  <>
-                    <LoadingSpinner size="sm" />
-                    Signing in…
-                  </>
-                ) : (
-                  'Sign in'
-                )}
+            <div className="segmented-control login-tabs" role="tablist">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={authMethod === 'email'}
+                className={authMethod === 'email' ? 'active' : ''}
+                onClick={() => onChangeAuthMethod('email')}
+              >
+                Email
               </button>
-            </form>
-          )}
+              <button
+                type="button"
+                role="tab"
+                aria-selected={authMethod === 'google'}
+                className={authMethod === 'google' ? 'active' : ''}
+                onClick={() => onChangeAuthMethod('google')}
+              >
+                Google
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={authMethod === 'phone'}
+                className={authMethod === 'phone' ? 'active' : ''}
+                onClick={() => onChangeAuthMethod('phone')}
+              >
+                Phone
+              </button>
+            </div>
 
-          {authMethod === 'google' && (
-            <div className="login-alt-panel">
-              {googleClientId ? (
-                <GoogleLoginButton
-                  role="client"
+            {apiOnline === false && (
+              <div className="alert alert-error login-api-banner" role="alert">
+                Backend is not running. Open a second terminal and run:{' '}
+                <code>cd backend</code> then <code>npm run dev</code> (port 5000).
+              </div>
+            )}
+
+            {error && (
+              <div className="alert alert-error" role="alert">
+                {error}
+              </div>
+            )}
+
+            {authMethod === 'email' && (
+              <form onSubmit={onSubmit} className="login-form">
+                <div className="form-field">
+                  <label htmlFor="login-email">Email</label>
+                  <div className="input-affix">
+                    <span className="input-affix__icon"><MailIcon /></span>
+                    <input
+                      id="login-email"
+                      className="input"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => onChangeEmail(e.target.value)}
+                      autoComplete="email"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="form-field">
+                  <label htmlFor="login-password">Password</label>
+                  <div className="input-affix">
+                    <span className="input-affix__icon"><LockIcon /></span>
+                    <input
+                      id="login-password"
+                      className="input"
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => onChangePassword(e.target.value)}
+                      autoComplete="current-password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="input-affix__toggle"
+                      onClick={() => setShowPassword((p) => !p)}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      <EyeIcon open={showPassword} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="login-row">
+                  <label className="login-remember">
+                    <input
+                      type="checkbox"
+                      checked={remember}
+                      onChange={(e) => setRemember(e.target.checked)}
+                    />
+                    <span>Remember me</span>
+                  </label>
+                  <button type="button" className="login-forgot">Forgot password?</button>
+                </div>
+
+                <button type="submit" disabled={loading} className="login-submit">
+                  {loading ? (
+                    <>
+                      <LoadingSpinner size="sm" />
+                      Signing in…
+                    </>
+                  ) : (
+                    <>
+                      <span>Sign in</span>
+                      <ArrowIcon />
+                    </>
+                  )}
+                </button>
+              </form>
+            )}
+
+            {authMethod === 'google' && (
+              <div className="login-alt-panel">
+                {googleClientId ? (
+                  <GoogleLoginButton
+                    role="client"
+                    onSuccess={() => {}}
+                    onError={(err) => onChildError(err)}
+                  />
+                ) : (
+                  <p className="login-alt-hint">
+                    Google sign-in is not configured. Use email or phone, or set{' '}
+                    <code>VITE_GOOGLE_CLIENT_ID</code> in your environment.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {authMethod === 'phone' && (
+              <div className="login-alt-panel">
+                <PhoneLogin
+                  mode="login"
                   onSuccess={() => {}}
                   onError={(err) => onChildError(err)}
                 />
-              ) : (
-                <p className="login-alt-hint">
-                  Google sign-in is not configured. Use email or phone, or set{' '}
-                  <code>VITE_GOOGLE_CLIENT_ID</code> in your environment.
-                </p>
-              )}
-            </div>
-          )}
+              </div>
+            )}
 
-          {authMethod === 'phone' && (
-            <div className="login-alt-panel">
-              <PhoneLogin
-                mode="login"
-                onSuccess={() => {}}
-                onError={(err) => onChildError(err)}
-              />
-            </div>
-          )}
+            <p className="login-footer">
+              <span>New here? <Link to="/register">Create an account</Link></span>
+            </p>
 
-          <p className="login-footer">
-            New here? <Link to="/register">Create an account</Link>
-          </p>
-
-          {import.meta.env.DEV && (
-            <div className="login-dev-hints" style={{ marginTop: 16, fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-              <strong>Test accounts</strong>
-              <br />
-              Admin: admin@sucar.com / admin123
-              <br />
-              Client: john.mwansa@email.com / client123
-              <br />
-              Driver: james.mulenga@driver.com / driver123
-              <br />
-              Car wash: sparkle@carwash.com / carwash123
-            </div>
-          )}
+            {import.meta.env.DEV && (
+              <div className="login-testaccounts">
+                <strong>Test accounts</strong>
+                <ul>
+                  {TEST_ACCOUNTS.map((a) => (
+                    <li key={a.role}>
+                      <span className="login-test-dot" style={{ background: a.color }} />
+                      {a.role}: {a.cred}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-      </div>
-      <AuthBackdrop />
     </div>
   );
 });

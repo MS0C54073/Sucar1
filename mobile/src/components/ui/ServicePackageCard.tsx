@@ -9,6 +9,7 @@ interface ServicePackageCardProps {
   price: number;
   icon: keyof typeof Ionicons.glyphMap;
   iconColor: string;
+  iconBg?: string;
   onPress: () => void;
 }
 
@@ -18,11 +19,12 @@ const ServicePackageCard = ({
   price,
   icon,
   iconColor,
+  iconBg,
   onPress,
 }: ServicePackageCardProps) => (
   <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.88}>
-    <View style={[styles.iconWrap, { backgroundColor: `${iconColor}18` }]}>
-      <Ionicons name={icon} size={26} color={iconColor} />
+    <View style={[styles.iconWrap, { backgroundColor: iconBg || `${iconColor}18` }]}>
+      <Ionicons name={icon} size={28} color={iconColor} />
     </View>
     <Text style={styles.title}>{title}</Text>
     <Text style={styles.desc} numberOfLines={2}>
@@ -31,7 +33,7 @@ const ServicePackageCard = ({
     <View style={styles.footer}>
       <Text style={styles.price}>K{price}</Text>
       <View style={styles.arrow}>
-        <Ionicons name="chevron-forward" size={18} color="#FFF" />
+        <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
       </View>
     </View>
   </TouchableOpacity>
@@ -39,35 +41,57 @@ const ServicePackageCard = ({
 
 const styles = StyleSheet.create({
   card: {
-    width: 140,
+    width: 158,
     backgroundColor: ClientColors.surface,
-    borderRadius: 16,
-    padding: 14,
-    marginRight: 12,
-    borderWidth: 1,
-    borderColor: ClientColors.border,
+    borderRadius: 20,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    marginRight: 14,
+    alignItems: 'flex-start',
     shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowRadius: 14,
+    elevation: 4,
   },
   iconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
   },
-  title: { fontSize: 14, fontWeight: '700', color: ClientColors.text },
-  desc: { fontSize: 11, color: ClientColors.textSecondary, marginTop: 4, minHeight: 32 },
-  footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 },
-  price: { fontSize: 16, fontWeight: '800', color: ClientColors.primary },
+  title: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: ClientColors.text,
+    marginBottom: 4,
+  },
+  desc: {
+    fontSize: 12,
+    color: ClientColors.textSecondary,
+    lineHeight: 17,
+    minHeight: 34,
+    marginBottom: 12,
+  },
+  footer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingHorizontal: 2,
+  },
+  price: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: ClientColors.accent,
+  },
   arrow: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: ClientColors.primary,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: ClientColors.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },

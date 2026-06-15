@@ -15,6 +15,8 @@ export const ClientColors = {
   primaryDark: '#6D28D9',
   primaryLight: '#DDD6FE',
   accent: '#EC4899',
+  accentDark: '#DB2777',
+  accentLight: '#FBCFE8',
   /** Soft brand tint for icon chips/thumbnails (legacy key name) */
   greenLight: '#EDE9FE',
   background: '#F8FAFC',
@@ -25,7 +27,7 @@ export const ClientColors = {
   border: '#E2E8F0',
   purple: '#7C3AED',
   purpleLight: '#EDE9FE',
-  tabActive: '#7C3AED',
+  tabActive: '#EC4899',
   tabInactive: '#94A3B8',
   success: '#22C55E',
   error: '#EF4444',
@@ -41,11 +43,21 @@ export const DriverColors = {
   tabActive: '#6D28D9',
 };
 
+/** Header & avatar gradients — purple → pink mix from reference mockup */
+export const BrandGradients = {
+  header: ['#4C1D95', '#7C3AED', '#9333EA'] as const,
+  headerLocations: [0, 0.5, 1] as const,
+  avatar: ['#7C3AED', '#EC4899'] as const,
+  /** Driver identity — deeper violet, no pink (distinct from client) */
+  headerDriver: ['#2E1065', '#4C1D95', '#6D28D9'] as const,
+  avatarDriver: ['#6D28D9', '#A855F7'] as const,
+};
+
 export const CATEGORIES = [
   { id: 'all', label: 'All', icon: 'grid-outline' as const },
   { id: 'exterior', label: 'Exterior', icon: 'water-outline' as const },
-  { id: 'full', label: 'Full detail', icon: 'car-sport-outline' as const },
-  { id: 'interior', label: 'Interior', icon: 'sparkles-outline' as const },
+  { id: 'interior', label: 'Interior', icon: 'car-outline' as const },
+  { id: 'premium', label: 'Premium', icon: 'sparkles-outline' as const },
 ];
 
 export type AuthAppearance = 'dark' | 'light';
@@ -121,7 +133,7 @@ export const getAuthTheme = (appearance: AuthAppearance): AuthThemePalette =>
   AuthThemes[appearance];
 
 export const POPULAR_SERVICES = [
-  { id: 'standard', title: 'Standard Wash', desc: 'Exterior wash & dry', price: 15, icon: 'water-outline' as const, color: '#7C3AED' },
-  { id: 'deluxe', title: 'Deluxe Wash', desc: 'Exterior + interior', price: 30, icon: 'sparkles-outline' as const, color: '#EC4899' },
-  { id: 'detail', title: 'Detailing', desc: 'Premium full care', price: 55, icon: 'diamond-outline' as const, color: '#9333EA' },
+  { id: 'standard', title: 'Standard Wash', desc: 'Exterior wash & dry', price: 15, icon: 'water-outline' as const, color: '#7C3AED', bg: '#EDE9FE' },
+  { id: 'deluxe', title: 'Deluxe Wash', desc: 'Exterior + interior', price: 30, icon: 'sparkles-outline' as const, color: '#EC4899', bg: '#FCE7F3' },
+  { id: 'detail', title: 'Detailing', desc: 'Premium full care', price: 55, icon: 'diamond-outline' as const, color: '#9333EA', bg: '#EDE9FE' },
 ];

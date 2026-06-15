@@ -13,6 +13,7 @@ import ConfirmBookingScreen from '../screens/client/ConfirmBookingScreen';
 import MyBookingsScreen from '../screens/client/MyBookingsScreen';
 import VehicleListScreen from '../screens/client/VehicleListScreen';
 import BookingDetailScreen from '../screens/BookingDetailScreen';
+import SettingsScreen from '../screens/SettingsScreen';
 import { Colors, Typography } from '../constants/theme';
 import { ClientColors, DriverColors } from '../constants/sucarTheme';
 
@@ -54,6 +55,7 @@ const RootNavigator = () => {
             component={BookingDetailScreen}
             options={{ title: 'Job details', headerBackTitle: 'Back' }}
           />
+          <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
         </>
       ) : (
         <>
@@ -93,6 +95,7 @@ const RootNavigator = () => {
               },
             })}
           />
+          <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
         </>
       )}
     </Stack.Navigator>

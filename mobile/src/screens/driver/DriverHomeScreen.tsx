@@ -8,17 +8,18 @@ import {
   Switch,
   TouchableOpacity,
   Alert,
+  StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, DrawerActions } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { apiClient } from '../../utils/api';
 import JobRequestCard, { JobRequestData } from '../../components/ui/JobRequestCard';
 import EarningsRow from '../../components/ui/EarningsRow';
-import ScreenTopBar from '../../components/layout/ScreenTopBar';
-import { DriverColors, AppLayout } from '../../constants/sucarTheme';
+import SuCarLogo from '../../components/brand/SuCarLogo';
+import { DriverColors, BrandGradients, AppLayout } from '../../constants/sucarTheme';
 import { useUnreadNotifications } from '../../hooks/useUnreadNotifications';
 
 const DriverHomeScreen = () => {
@@ -33,6 +34,7 @@ const DriverHomeScreen = () => {
 
   const firstName = user?.name?.split(' ')[0] || 'Driver';
   const C = DriverColors;
+  const insets = useSafeAreaInsets();
 
   const fetchData = useCallback(async () => {
     try {
@@ -101,8 +103,8 @@ const DriverHomeScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScreenTopBar variant="driver" notificationCount={unreadCount} />
+    <SafeAreaView style={styles.safe} edges={['left', 'right']}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -117,22 +119,53 @@ const DriverHomeScreen = () => {
           />
         }
       >
-        <LinearGradient colors={[C.primary, C.primaryDark]} style={styles.hero}>
+        <LinearGradient
+          colors={[...BrandGradients.headerDriver]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.hero, { paddingTop: insets.top + 8 }]}
+        >
+          <View style={styles.topRow}>
+            <TouchableOpacity
+              onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+              hitSlop={12}
+              style={styles.iconBtn}
+            >
+              <Ionicons name="menu" size={26} color="#FFFFFF" />
+            </TouchableOpacity>
+            <SuCarLogo size={22} suffix=" Driver" />
+            <TouchableOpacity hitSlop={12} style={styles.iconBtn}>
+              <Ionicons name="notifications-outline" size={24} color="#FFFFFF" />
+              {unreadCount > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeTxt}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
+
           <View style={styles.profileRow}>
-            <View style={styles.avatar}>
-              <Ionicons name="car" size={22} color={C.primary} />
-            </View>
+            <LinearGradient
+              colors={[...BrandGradients.avatarDriver]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.avatar}
+            >
+              <Ionicons name="car-sport" size={22} color="#FFFFFF" />
+            </LinearGradient>
             <View style={styles.profileText}>
               <Text style={styles.hello}>Hello, {firstName}!</Text>
-              <Text style={styles.tagline}>Driver · Ready for jobs in Lusaka</Text>
+              <Text style={styles.tagline}>Ready for jobs in Lusaka</Text>
             </View>
             <View style={styles.onlineWrap}>
-              <Text style={[styles.onlineLbl, online && styles.onlineOn]}>Online</Text>
+              <Text style={[styles.onlineLbl, online && styles.onlineOn]}>
+                {online ? 'Online' : 'Offline'}
+              </Text>
               <Switch
                 value={online}
                 onValueChange={setOnline}
-                trackColor={{ false: '#CBD5E1', true: '#86EFAC' }}
-                thumbColor={online ? C.success : '#F1F5F9'}
+                trackColor={{ false: 'rgba(255,255,255,0.25)', true: '#86EFAC' }}
+                thumbColor={online ? '#16A34A' : '#F1F5F9'}
               />
             </View>
           </View>
@@ -190,21 +223,39 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: DriverColors.background },
   hero: {
     paddingHorizontal: AppLayout.screenPadding,
-    paddingTop: 16,
-    paddingBottom: 18,
+    paddingBottom: 20,
   },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 18,
+  },
+  iconBtn: { padding: 4, position: 'relative' },
+  badge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    backgroundColor: DriverColors.accent,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  badgeTxt: { color: '#FFF', fontSize: 9, fontWeight: '700' },
   profileRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   avatar: {
     width: AppLayout.heroAvatarSize,
     height: AppLayout.heroAvatarSize,
     borderRadius: AppLayout.heroAvatarSize / 2,
-    backgroundColor: '#FFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   profileText: { flex: 1 },
   hello: { fontSize: 18, fontWeight: '700', color: '#FFF' },
-  tagline: { fontSize: 12, color: DriverColors.primaryLight, marginTop: 2 },
+  tagline: { fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
   onlineWrap: { alignItems: 'flex-end' },
   onlineLbl: { fontSize: 11, color: 'rgba(255,255,255,0.7)', marginBottom: 4, fontWeight: '600' },
   onlineOn: { color: '#BBF7D0' },

@@ -39,11 +39,9 @@ export const TabBarIcon = ({
   size: number;
   variant: TabVariant;
 }) => {
-  const C = variant === 'driver' ? DriverColors : ClientColors;
   const [on, off] = iconMap[routeName] || ['ellipse', 'ellipse-outline'];
   return (
     <View style={focused ? styles.activeWrap : undefined}>
-      {focused && <View style={[styles.activeBar, { backgroundColor: C.tabActive }]} />}
       <Ionicons
         name={(focused ? on : off) as keyof typeof Ionicons.glyphMap}
         size={size}
@@ -55,11 +53,4 @@ export const TabBarIcon = ({
 
 const styles = StyleSheet.create({
   activeWrap: { alignItems: 'center' },
-  activeBar: {
-    position: 'absolute',
-    top: -8,
-    width: 24,
-    height: 3,
-    borderRadius: 2,
-  },
 });
