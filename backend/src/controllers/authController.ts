@@ -490,3 +490,54 @@ export const verifyOTP = asyncHandler(async (req: Request, res: Response) => {
     },
   });
 });
+
+/**
+ * @desc    Change the authenticated user's password
+ * @route   POST /api/auth/change-password
+ * @access  Private
+ */
+export const changePassword = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+  if (!req.user?.id) throw new UnauthorizedError('User not authenticated');
+
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    throw new BadRequestError('currentPassword and newPassword are required');
+  }
+
+  if (typeof newPassword !== 'string' || newPassword.length < 6) {
+    throw new BadRequestError('New password must be at least 6 characters');
+  }
+
+  if (currentPassword === newPassword) {
+    throw new BadRequestError('New password must be different from the current password');
+  }
+
+  // Fetch the stored hash
+  const { data: row, error: fetchError } = await (await import('../config/supabase')).supabase
+    .from('users')
+    .select('password, password_hash')
+    .eq('id', req.user.id)
+    .single();
+
+  if (fetchError || !row) throw new UnauthorizedError('User not found');
+
+  const stored = row.password || row.password_hash;
+  if (!stored) throw new BadRequestError('Cannot change password for accounts authenticated via Google or phone');
+
+  const match = await DBService.comparePassword(currentPassword, stored);
+  if (!match) throw new UnauthorizedError('Current password is incorrect');
+
+  // Hash the new password and persist
+  const bcrypt = await import('bcryptjs');
+  const hashed = await bcrypt.hash(newPassword, 10);
+
+  const { error: updateError } = await (await import('../config/supabase')).supabase
+    .from('users')
+    .update({ password: hashed })
+    .eq('id', req.user.id);
+
+  if (updateError) throw new InternalServerError('Failed to update password');
+
+  res.json({ success: true, message: 'Password changed successfully' });
+});

@@ -19,10 +19,12 @@ import JobRequestCard, { JobRequestData } from '../../components/ui/JobRequestCa
 import EarningsRow from '../../components/ui/EarningsRow';
 import ScreenTopBar from '../../components/layout/ScreenTopBar';
 import { DriverColors, AppLayout } from '../../constants/sucarTheme';
+import { useUnreadNotifications } from '../../hooks/useUnreadNotifications';
 
 const DriverHomeScreen = () => {
   const navigation = useNavigation<any>();
   const { user } = useAuth();
+  const unreadCount = useUnreadNotifications();
   const [online, setOnline] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [accepting, setAccepting] = useState(false);
@@ -100,7 +102,7 @@ const DriverHomeScreen = () => {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScreenTopBar variant="driver" notificationCount={3} />
+      <ScreenTopBar variant="driver" notificationCount={unreadCount} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}

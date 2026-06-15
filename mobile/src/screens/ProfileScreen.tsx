@@ -9,6 +9,7 @@ import {
   TextInput,
   Modal,
   Switch,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -17,6 +18,7 @@ import { useAuth } from '../context/AuthContext';
 import GradientBackground from '../components/common/GradientBackground';
 import { useTheme } from '../context/ThemeContext';
 import { Typography, Spacing, BorderRadius, Shadows } from '../constants/theme';
+import { apiClient } from '../utils/api';
 
 const ProfileScreen = () => {
   const navigation = useNavigation();
@@ -28,6 +30,54 @@ const ProfileScreen = () => {
   const [editField, setEditField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+
+  // Change password modal state
+  const [pwModalVisible, setPwModalVisible] = useState(false);
+  const [currentPw, setCurrentPw] = useState('');
+  const [newPw, setNewPw] = useState('');
+  const [confirmPw, setConfirmPw] = useState('');
+  const [showCurrentPw, setShowCurrentPw] = useState(false);
+  const [showNewPw, setShowNewPw] = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
+  const [pwSaving, setPwSaving] = useState(false);
+
+  const openChangePassword = () => {
+    setCurrentPw('');
+    setNewPw('');
+    setConfirmPw('');
+    setShowCurrentPw(false);
+    setShowNewPw(false);
+    setShowConfirmPw(false);
+    setPwModalVisible(true);
+  };
+
+  const handleChangePassword = async () => {
+    if (!currentPw || !newPw || !confirmPw) {
+      Alert.alert('Missing fields', 'Please fill in all password fields.');
+      return;
+    }
+    if (newPw.length < 6) {
+      Alert.alert('Too short', 'New password must be at least 6 characters.');
+      return;
+    }
+    if (newPw !== confirmPw) {
+      Alert.alert('Mismatch', 'New password and confirmation do not match.');
+      return;
+    }
+    setPwSaving(true);
+    try {
+      await apiClient.post('/auth/change-password', {
+        currentPassword: currentPw,
+        newPassword: newPw,
+      });
+      setPwModalVisible(false);
+      Alert.alert('Success', 'Your password has been updated.');
+    } catch (err: any) {
+      Alert.alert('Failed', err?.message || 'Could not change password. Check your current password.');
+    } finally {
+      setPwSaving(false);
+    }
+  };
 
   const handleLogout = async () => {
     Alert.alert(
@@ -120,7 +170,7 @@ const ProfileScreen = () => {
     {
       icon: 'lock-closed-outline' as const,
       label: 'Change Password',
-      onPress: () => Alert.alert('Coming Soon', 'Password change feature will be available soon'),
+      onPress: openChangePassword,
       showArrow: true,
     },
     {
@@ -206,6 +256,95 @@ const ProfileScreen = () => {
             <Text style={styles.logoutText}>Logout</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Change Password Modal */}
+        <Modal
+          visible={pwModalVisible}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setPwModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Change Password</Text>
+                <TouchableOpacity onPress={() => setPwModalVisible(false)}>
+                  <Ionicons name="close" size={24} color={C.textPrimary} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Current password */}
+              <Text style={styles.pwLabel}>Current password</Text>
+              <View style={styles.pwRow}>
+                <TextInput
+                  style={styles.pwInput}
+                  value={currentPw}
+                  onChangeText={setCurrentPw}
+                  secureTextEntry={!showCurrentPw}
+                  placeholder="Enter current password"
+                  placeholderTextColor={C.gray400}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity onPress={() => setShowCurrentPw((v) => !v)} hitSlop={8}>
+                  <Ionicons name={showCurrentPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={C.gray400} />
+                </TouchableOpacity>
+              </View>
+
+              {/* New password */}
+              <Text style={styles.pwLabel}>New password</Text>
+              <View style={styles.pwRow}>
+                <TextInput
+                  style={styles.pwInput}
+                  value={newPw}
+                  onChangeText={setNewPw}
+                  secureTextEntry={!showNewPw}
+                  placeholder="At least 6 characters"
+                  placeholderTextColor={C.gray400}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity onPress={() => setShowNewPw((v) => !v)} hitSlop={8}>
+                  <Ionicons name={showNewPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={C.gray400} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Confirm new password */}
+              <Text style={styles.pwLabel}>Confirm new password</Text>
+              <View style={[styles.pwRow, { marginBottom: Spacing.lg }]}>
+                <TextInput
+                  style={styles.pwInput}
+                  value={confirmPw}
+                  onChangeText={setConfirmPw}
+                  secureTextEntry={!showConfirmPw}
+                  placeholder="Repeat new password"
+                  placeholderTextColor={C.gray400}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity onPress={() => setShowConfirmPw((v) => !v)} hitSlop={8}>
+                  <Ionicons name={showConfirmPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={C.gray400} />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.cancelButton]}
+                  onPress={() => setPwModalVisible(false)}
+                  disabled={pwSaving}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.saveButton, pwSaving && { opacity: 0.6 }]}
+                  onPress={handleChangePassword}
+                  disabled={pwSaving}
+                >
+                  {pwSaving
+                    ? <ActivityIndicator size="small" color={C.white} />
+                    : <Text style={styles.saveButtonText}>Update</Text>}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
 
         {/* Edit Modal */}
         <Modal
@@ -440,6 +579,29 @@ function createStyles(Colors: any) {
   saveButtonText: {
     color: Colors.white,
     fontWeight: Typography.semibold,
+  },
+  pwLabel: {
+    fontSize: Typography.sm,
+    fontWeight: Typography.semibold,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.xs,
+    marginTop: Spacing.sm,
+  },
+  pwRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
+    marginBottom: Spacing.sm,
+    backgroundColor: Colors.background,
+  },
+  pwInput: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    fontSize: Typography.base,
+    color: Colors.textPrimary,
   },
   });
 }

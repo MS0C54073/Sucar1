@@ -1,6 +1,6 @@
 import express from 'express';
 import { body } from 'express-validator';
-import { register, login, getMe, updateProfile, googleLogin, sendOTP, verifyOTP } from '../controllers/authController';
+import { register, login, getMe, updateProfile, googleLogin, sendOTP, verifyOTP, changePassword } from '../controllers/authController';
 import { protect } from '../middleware/auth';
 import { authLimiter, otpLimiter } from '../middleware/rateLimit';
 
@@ -30,5 +30,6 @@ router.post('/phone/send-code', otpLimiter, sendOTP);
 router.post('/phone/verify', otpLimiter, verifyOTP);
 router.get('/me', protect, getMe);
 router.put('/profile', protect, updateProfile);
+router.post('/change-password', protect, changePassword);
 
 export default router;

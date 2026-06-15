@@ -22,6 +22,7 @@ import QuickBookBlock from '../../components/ui/QuickBookBlock';
 import ScreenTopBar from '../../components/layout/ScreenTopBar';
 import { ClientColors, POPULAR_SERVICES, AppLayout } from '../../constants/sucarTheme';
 import { useUserLocation, distanceKm, parseWashCoords } from '../../hooks/useUserLocation';
+import { useUnreadNotifications } from '../../hooks/useUnreadNotifications';
 
 const ClientHomeScreen = () => {
   const navigation = useNavigation<any>();
@@ -34,6 +35,7 @@ const ClientHomeScreen = () => {
 
   const firstName = user?.name?.split(' ')[0] || 'there';
   const { coords: userCoords } = useUserLocation();
+  const unreadCount = useUnreadNotifications();
 
   const fetchWashes = async () => {
     try {
@@ -75,7 +77,7 @@ const ClientHomeScreen = () => {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScreenTopBar variant="client" notificationCount={3} />
+      <ScreenTopBar variant="client" notificationCount={unreadCount} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
