@@ -18,6 +18,7 @@ import DriverHero from '../components/layout/DriverHero';
 import ThemeToggle from '../components/layout/ThemeToggle';
 import { NavItem } from '../components/layout/BottomNav';
 import JobSearchAutocomplete from '../components/search/JobSearchAutocomplete';
+import Icon from '../components/icons/Icon';
 import { parseCoordinates, Coordinates } from '../services/mappingService';
 import '../components/search/SearchAutocomplete.css';
 import './DriverHome.css';
@@ -150,7 +151,7 @@ const DriverHome = () => {
       <div className="sucar-job-grid">
         <div>
           <div className="sucar-job-detail">
-            <div className="sucar-job-detail-icon">👤</div>
+            <div className="sucar-job-detail-icon"><Icon name="user" size={18} /></div>
             <div>
               <strong>{booking.clientId?.name || booking.clientName || 'Customer'}</strong>
               <p>{booking.pickupLocation || 'Pickup location'}</p>
@@ -204,25 +205,25 @@ const DriverHome = () => {
       </div>
       <div className="sucar-stats-row">
         <div className="sucar-stat-card">
-          <div className="sucar-stat-icon">💳</div>
+          <div className="sucar-stat-icon"><Icon name="creditCard" size={20} /></div>
           <div className="sucar-stat-value">$162.80</div>
           <div className="sucar-stat-label">Total</div>
         </div>
         <div className="sucar-stat-card">
-          <div className="sucar-stat-icon">💼</div>
+          <div className="sucar-stat-icon"><Icon name="briefcase" size={20} /></div>
           <div className="sucar-stat-value">6</div>
           <div className="sucar-stat-label">Jobs done</div>
         </div>
         <div className="sucar-stat-card">
-          <div className="sucar-stat-icon">⏱</div>
+          <div className="sucar-stat-icon"><Icon name="clock" size={20} /></div>
           <div className="sucar-stat-value">5h 45m</div>
           <div className="sucar-stat-label">Online</div>
         </div>
       </div>
       <div className="sucar-card-panel sucar-incentive">
-        <span>⭐</span>
+        <span><Icon name="star" size={18} /></span>
         <p>Keep up the great work! You&apos;re in the top 20% of detailers today.</p>
-        <span>›</span>
+        <span><Icon name="chevronRight" size={16} /></span>
       </div>
     </>
   );
@@ -279,12 +280,12 @@ const DriverHome = () => {
       </div>
       {!bookings?.length && (
         <div className="driver-map-empty-overlay" role="status">
-          <EmptyState icon="🗺️" title="No jobs on map" description="Go online to receive nearby requests" />
+          <EmptyState icon={<Icon name="map" size={28} />} title="No jobs on map" description="Go online to receive nearby requests" />
         </div>
       )}
       {bookings && bookings.length > 0 && filteredJobs.length === 0 && jobSearchQuery.trim() && (
         <div className="driver-map-empty-overlay" role="status">
-          <EmptyState icon="🔍" title="No matching jobs" description="Try another name or location" />
+          <EmptyState icon={<Icon name="search" size={28} />} title="No matching jobs" description="Try another name or location" />
         </div>
       )}
       {filteredJobs.length > 0 && (

@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import LoadingSpinner from '../LoadingSpinner';
+import Icon from '../icons/Icon';
 import ConfirmDialog from '../ConfirmDialog';
 import './IncidentDetail.css';
 
@@ -179,17 +180,17 @@ const IncidentDetail = () => {
     <div className="incident-detail">
       <div className="incident-detail-header">
         <button className="btn btn-secondary" onClick={() => navigate('/admin/incidents')}>
-          ← Back to Incidents
+          <Icon name="arrowLeft" size={16} /> Back to Incidents
         </button>
         <div className="header-actions">
           {canEscalate && (
             <button className="btn btn-warning" onClick={handleEscalate}>
-              ⚠️ Escalate
+              <Icon name="alertTriangle" size={15} /> Escalate
             </button>
           )}
           {canResolve && (
             <button className="btn btn-success" onClick={handleResolve}>
-              ✓ Resolve
+              <Icon name="check" size={15} /> Resolve
             </button>
           )}
         </div>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { getCurrentPosition, Coordinates } from '../services/locationService';
 import { searchLocations, reverseGeocode, GeocodingResult } from '../services/geocodingService';
 import MapView from './MapView';
+import Icon from './icons/Icon';
 import './LocationPicker.css';
 
 interface LocationPickerProps {
@@ -128,7 +129,7 @@ const LocationPicker = ({
             }}
           />
           {isSearching && (
-            <span className="location-picker-spinner">⏳</span>
+            <span className="location-picker-spinner"><Icon name="clock" size={16} /></span>
           )}
           
           {/* Autocomplete Results */}
@@ -140,7 +141,7 @@ const LocationPicker = ({
                   className="location-picker-result-item"
                   onClick={() => handleResultSelect(result)}
                 >
-                  <span className="result-icon">📍</span>
+                  <span className="result-icon"><Icon name="mapPin" size={16} /></span>
                   <div className="result-content">
                     <div className="result-name">{result.placeName}</div>
                     {result.context && result.context.length > 0 && (
@@ -158,7 +159,7 @@ const LocationPicker = ({
           onClick={handleUseCurrentLocation}
           title="Use current location"
         >
-          📍 Current
+          <Icon name="mapPin" size={15} /> Current
         </button>
       </div>
       {coordinates && showMapPreview && (

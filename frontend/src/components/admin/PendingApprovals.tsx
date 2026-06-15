@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../services/api';
 import LoadingSpinner from '../LoadingSpinner';
 import EmptyState from '../EmptyState';
+import Icon from '../icons/Icon';
 import ConfirmDialog from '../ConfirmDialog';
 import './PendingApprovals.css';
 
@@ -137,7 +138,7 @@ const PendingApprovals = () => {
 
         {!pendingUsers || pendingUsers.length === 0 ? (
           <EmptyState
-            icon="✅"
+            icon={<Icon name="checkCircle" size={28} />}
             title="No pending approvals"
             description="All user creation requests have been processed"
           />
@@ -238,14 +239,14 @@ const PendingApprovals = () => {
                     onClick={() => handleApprove(user)}
                     disabled={approveMutation.isPending || rejectMutation.isPending}
                   >
-                    ✓ Approve
+                    <Icon name="check" size={15} /> Approve
                   </button>
                   <button
                     className="btn btn-danger"
                     onClick={() => handleReject(user)}
                     disabled={approveMutation.isPending || rejectMutation.isPending}
                   >
-                    ✗ Reject
+                    <Icon name="x" size={15} /> Reject
                   </button>
                 </div>
               </div>

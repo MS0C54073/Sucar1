@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../services/api';
 import LoadingSpinner from '../LoadingSpinner';
+import Icon from '../icons/Icon';
 import { formatKwacha, parsePrice, Coordinates } from '../../services/mappingService';
 import './CarWashDetailPanel.css';
 
@@ -64,7 +65,7 @@ const CarWashDetailPanel = ({
           {carWash.location && <p className="carwash-detail-loc">{carWash.location}</p>}
         </div>
         <button type="button" className="carwash-detail-close" onClick={onClose} aria-label="Close">
-          ✕
+          <Icon name="x" size={16} />
         </button>
       </div>
 
@@ -75,11 +76,11 @@ const CarWashDetailPanel = ({
           onClick={handleRoute}
           disabled={!carWash.coords && !onRoute}
         >
-          <span aria-hidden>🧭</span>
+          <span aria-hidden><Icon name="navigation" size={16} /></span>
           Route
         </button>
         <button type="button" className="carwash-detail-action carwash-detail-action--view" onClick={handleView}>
-          <span aria-hidden>👁</span>
+          <span aria-hidden><Icon name="eye" size={16} /></span>
           View
         </button>
         <button
@@ -87,7 +88,7 @@ const CarWashDetailPanel = ({
           className="carwash-detail-action carwash-detail-action--book"
           onClick={() => onBook(carWash.id)}
         >
-          <span aria-hidden>📅</span>
+          <span aria-hidden><Icon name="calendar" size={16} /></span>
           Book
         </button>
       </div>

@@ -8,6 +8,7 @@ import { Coordinates } from '../services/locationService';
 import LoadingSpinner from '../components/LoadingSpinner';
 import EmptyState from '../components/EmptyState';
 import { useToast } from '../components/ToastContainer';
+import Icon from '../components/icons/Icon';
 import './BookService.css';
 
 type BookLocationState = { carWashId?: string; serviceId?: string; servicePreset?: string };
@@ -181,7 +182,7 @@ const BookService = () => {
     <div className="book-service sucar-page">
       <header className="book-header">
         <button className="back-button" onClick={() => navigate('/client')}>
-          ← Back
+          <Icon name="arrowLeft" size={16} /> Back
         </button>
         <div className="header-content">
           <h1>Book Car Wash Service</h1>
@@ -229,14 +230,14 @@ const BookService = () => {
                   setStep(2);
                 }}
               >
-                <div className="type-icon">🚗</div>
+                <div className="type-icon"><Icon name="truck" size={26} /></div>
                 <div className="type-content">
                   <h3>Pickup & Delivery</h3>
                   <p>We'll pick up your vehicle and deliver it back to you</p>
                   <ul className="type-features">
-                    <li>✓ Driver picks up from your location</li>
-                    <li>✓ Vehicle delivered to car wash</li>
-                    <li>✓ Clean vehicle returned to you</li>
+                    <li><Icon name="check" size={14} />Driver picks up from your location</li>
+                    <li><Icon name="check" size={14} />Vehicle delivered to car wash</li>
+                    <li><Icon name="check" size={14} />Clean vehicle returned to you</li>
                   </ul>
                 </div>
               </div>
@@ -247,14 +248,14 @@ const BookService = () => {
                   setStep(2);
                 }}
               >
-                <div className="type-icon">🏢</div>
+                <div className="type-icon"><Icon name="building" size={26} /></div>
                 <div className="type-content">
                   <h3>Drive-In Service</h3>
                   <p>Drive to the car wash and wait for your service</p>
                   <ul className="type-features">
-                    <li>✓ Drive directly to car wash</li>
-                    <li>✓ Real-time queue updates</li>
-                    <li>✓ Estimated wait time</li>
+                    <li><Icon name="check" size={14} />Drive directly to car wash</li>
+                    <li><Icon name="check" size={14} />Real-time queue updates</li>
+                    <li><Icon name="check" size={14} />Estimated wait time</li>
                   </ul>
                 </div>
               </div>
@@ -265,13 +266,13 @@ const BookService = () => {
         {step === 2 && (
           <div className="step-content">
             <div className="step-header">
-              <button className="back-btn" onClick={() => setStep(1)}>← Back</button>
+              <button className="back-btn" onClick={() => setStep(1)}><Icon name="arrowLeft" size={16} /> Back</button>
               <h2>Select Car Wash</h2>
               <p className="step-description">Choose a car wash provider near you</p>
             </div>
             {!carWashes || carWashes.length === 0 ? (
               <EmptyState
-                icon="🧼"
+                icon={<Icon name="droplets" size={28} />}
                 title="No car washes available"
                 description="Please check back later or contact support"
               />
@@ -295,16 +296,16 @@ const BookService = () => {
                         />
                       </div>
                     ) : (
-                      <div className="card-icon">🧼</div>
+                      <div className="card-icon"><Icon name="droplets" size={22} /></div>
                     )}
                     <div className="card-content">
                       <h3>{cw.carWashName || cw.name}</h3>
-                      <p className="card-location">📍 {cw.location}</p>
+                      <p className="card-location"><Icon name="mapPin" size={14} /> {cw.location}</p>
                       {cw.washingBays && (
                         <p className="card-detail">Washing Bays: {cw.washingBays}</p>
                       )}
                     </div>
-                    <div className="card-arrow">→</div>
+                    <div className="card-arrow"><Icon name="chevronRight" size={18} /></div>
                   </div>
                 ))}
               </div>
@@ -315,7 +316,7 @@ const BookService = () => {
         {step === 3 && (
           <div className="step-content">
             <div className="step-header">
-              <button className="back-btn" onClick={() => setStep(2)}>← Back</button>
+              <button className="back-btn" onClick={() => setStep(2)}><Icon name="arrowLeft" size={16} /> Back</button>
               <h2>Choose Service</h2>
               <p className="step-description">
                 Select a service from {selectedCarWash?.carWashName || selectedCarWash?.name}
@@ -323,7 +324,7 @@ const BookService = () => {
             </div>
             {!services || services.length === 0 ? (
               <EmptyState
-                icon="🔧"
+                icon={<Icon name="sparkles" size={28} />}
                 title="No services available"
                 description="This car wash hasn't added services yet"
               />
@@ -338,7 +339,7 @@ const BookService = () => {
                       setStep(4);
                     }}
                   >
-                    <div className="card-icon">✨</div>
+                    <div className="card-icon"><Icon name="sparkles" size={22} /></div>
                     <div className="card-content">
                       <h3>{service.name}</h3>
                       {service.description && (
@@ -346,7 +347,7 @@ const BookService = () => {
                       )}
                       <p className="price">K{parseFloat(service.price || 0).toFixed(2)}</p>
                     </div>
-                    <div className="card-arrow">→</div>
+                    <div className="card-arrow"><Icon name="chevronRight" size={18} /></div>
                   </div>
                 ))}
               </div>
@@ -357,13 +358,13 @@ const BookService = () => {
         {step === 4 && (
           <div className="step-content">
             <div className="step-header">
-              <button className="back-btn" onClick={() => setStep(3)}>← Back</button>
+              <button className="back-btn" onClick={() => setStep(3)}><Icon name="arrowLeft" size={16} /> Back</button>
               <h2>Select Vehicle</h2>
               <p className="step-description">Choose the vehicle you want to wash</p>
             </div>
             {!vehicles || vehicles.length === 0 ? (
               <EmptyState
-                icon="🚗"
+                icon={<Icon name="car" size={28} />}
                 title="No vehicles found"
                 description="Add a vehicle to continue with your booking"
                 action={{
@@ -389,13 +390,13 @@ const BookService = () => {
                       }
                     }}
                   >
-                    <div className="card-icon">🚗</div>
+                    <div className="card-icon"><Icon name="car" size={22} /></div>
                     <div className="card-content">
                       <h3>{vehicle.make} {vehicle.model}</h3>
                       <p className="card-detail">Plate: {vehicle.plateNo}</p>
                       <p className="card-detail">Color: {vehicle.color}</p>
                     </div>
-                    <div className="card-arrow">→</div>
+                    <div className="card-arrow"><Icon name="chevronRight" size={18} /></div>
                   </div>
                 ))}
               </div>
@@ -406,7 +407,7 @@ const BookService = () => {
         {step === 5 && bookingType === 'pickup_delivery' && (
           <div className="step-content">
             <div className="step-header">
-              <button className="back-btn" onClick={() => setStep(4)}>← Back</button>
+              <button className="back-btn" onClick={() => setStep(4)}><Icon name="arrowLeft" size={16} /> Back</button>
               <h2>Pickup Details</h2>
               <p className="step-description">Provide pickup location and preferences</p>
             </div>

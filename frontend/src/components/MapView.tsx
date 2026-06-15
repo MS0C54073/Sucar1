@@ -33,10 +33,23 @@ import {
 } from '../utils/mapLayerSafety';
 import api from '../services/api';
 import LoadingSpinner from './LoadingSpinner';
+import Icon from './icons/Icon';
 import './MapView.css';
 
 const CARWASH_SOURCE_ID = 'sucar-carwashes-source';
 const CARWASH_HIT_LAYER_ID = 'sucar-carwashes-hit';
+
+// Inline white SVG glyphs for map markers (no emoji — clean, professional).
+const svgGlyph = (inner: string) =>
+  `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`;
+const MARKER_SVG: Record<string, string> = {
+  booking: svgGlyph('<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"/><path d="M9 11h6"/><path d="M9 15h4"/>'),
+  carwash: svgGlyph('<path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 4.7 7 3c-.29 1.7-1.14 3.13-2.29 4.06S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05Z"/><path d="M12.56 6.6A11 11 0 0 0 14 3c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6 6 0 0 1-11.9 1"/>'),
+  driver: svgGlyph('<path d="M5 13l1.5-4.5A2 2 0 0 1 8.4 7h7.2a2 2 0 0 1 1.9 1.5L19 13"/><path d="M3 17h18v-3a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v3Z"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/>'),
+  user: svgGlyph('<path d="M20 10c0 4.4-8 12-8 12s-8-7.6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>'),
+  pickup: svgGlyph('<path d="M20 10c0 4.4-8 12-8 12s-8-7.6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>'),
+  destination: svgGlyph('<path d="M5 21V4"/><path d="M5 4h12l-2 4 2 4H5"/>'),
+};
 
 interface Booking {
   id: string;
@@ -743,7 +756,7 @@ const MapView = ({
 
     const pin = document.createElement('div');
     pin.className = 'map-marker-carwash-pin';
-    pin.innerHTML = '<span class="marker-icon">🧼</span>';
+    pin.innerHTML = `<span class="marker-icon">${MARKER_SVG.carwash}</span>`;
 
     const label = document.createElement('span');
     label.className = 'map-marker-hover-label';
@@ -821,17 +834,8 @@ const MapView = ({
   ): HTMLElement => {
     const el = document.createElement('div');
     el.className = `map-marker map-marker-${type} ${isActive ? 'active' : ''}`;
-    
-    const icons: Record<string, string> = {
-      booking: '📋',
-      carwash: '🧼',
-      driver: '🚗',
-      user: '📍',
-      pickup: '📍',
-      destination: '🏁',
-    };
-    
-    el.innerHTML = `<div class="marker-icon">${icons[type] || '📍'}</div>`;
+
+    el.innerHTML = `<div class="marker-icon">${MARKER_SVG[type] || MARKER_SVG.user}</div>`;
     return el;
   };
 
@@ -866,14 +870,14 @@ const MapView = ({
       {mapError && !backgroundMode && (
         <div className="map-error-overlay">
           <div className="map-error-message">
-            <span>⚠️ {mapError}</span>
+            <span><Icon name="alertTriangle" size={15} /> {mapError}</span>
           </div>
         </div>
       )}
       {locationError && !backgroundMode && (
         <div className="map-error-overlay">
           <div className="map-error-message">
-            <span>⚠️ {locationError}</span>
+            <span><Icon name="alertTriangle" size={15} /> {locationError}</span>
           </div>
         </div>
       )}

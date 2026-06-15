@@ -9,6 +9,7 @@ import { getChatPath } from '../../utils/chatPaths';
 import QueueDisplay from '../queue/QueueDisplay';
 import OperatorQueueStrip from '../carwash/OperatorQueueStrip';
 import QueueEstimate from './QueueEstimate';
+import Icon from '../icons/Icon';
 import { useToast } from '../ToastContainer';
 import ReviewModal from '../reviews/ReviewModal';
 import StarRating from '../reviews/StarRating';
@@ -261,7 +262,7 @@ const BookingCard = ({ booking, onStatusUpdate }: BookingCardProps) => {
           {/* Payment pending banner */}
           {['wash_completed', 'delivered_to_client', 'delivered'].includes(booking.status) && booking.paymentStatus === 'pending' && (
             <div className="status-notice warning" style={{ marginBottom: 12 }}>
-              <span>💳 Payment pending — driver or car wash must confirm after client pays.</span>
+              <span><Icon name="creditCard" size={15} /> Payment pending — driver or car wash must confirm after client pays.</span>
             </div>
           )}
           <div className="booking-info-grid">
@@ -497,7 +498,7 @@ const BookingCard = ({ booking, onStatusUpdate }: BookingCardProps) => {
 
           {user?.role === 'driver' && booking.status === 'picked_up_pending_confirmation' && (
             <div className="status-notice warning">
-              <span>⏳ Waiting for client to confirm pickup...</span>
+              <span><Icon name="clock" size={15} /> Waiting for client to confirm pickup...</span>
             </div>
           )}
 
@@ -641,7 +642,7 @@ const BookingCard = ({ booking, onStatusUpdate }: BookingCardProps) => {
                 className="action-btn chat-btn"
                 onClick={() => setShowChat(true)}
               >
-                💬 Chat {unreadCount > 0 && <span className="unread-badge">{unreadCount}</span>}
+                <Icon name="messageCircle" size={15} /> Chat {unreadCount > 0 && <span className="unread-badge">{unreadCount}</span>}
               </button>
               {user?.role === 'client' && (
                 <button

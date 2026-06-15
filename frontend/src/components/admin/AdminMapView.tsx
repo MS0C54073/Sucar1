@@ -5,6 +5,7 @@ import { useBookings } from '../../hooks/useBookings';
 import MapView from '../MapView';
 import api from '../../services/api';
 import LoadingSpinner from '../LoadingSpinner';
+import Icon from '../icons/Icon';
 import { getCurrentPosition } from '../../services/locationService';
 import { getMapboxToken } from '../../config/mapbox';
 import { calculateRouteSegment } from '../../services/mappingService';
@@ -233,15 +234,15 @@ const AdminMapView = () => {
 
       <div className="admin-map-legend">
         <div className="legend-item">
-          <span className="legend-icon">📋</span>
+          <span className="legend-icon"><Icon name="clipboard" size={16} /></span>
           <span className="legend-label">Bookings</span>
         </div>
         <div className="legend-item">
-          <span className="legend-icon">🧼</span>
+          <span className="legend-icon"><Icon name="droplets" size={16} /></span>
           <span className="legend-label">Car Washes</span>
         </div>
         <div className="legend-item">
-          <span className="legend-icon">🚗</span>
+          <span className="legend-icon"><Icon name="car" size={16} /></span>
           <span className="legend-label">Drivers</span>
         </div>
       </div>
@@ -265,7 +266,7 @@ const AdminMapView = () => {
               <div>
                 <h3>{cwName}</h3>
                 {selectedCarWash.location && (
-                  <p className="admin-cw-panel-loc">📍 {selectedCarWash.location}</p>
+                  <p className="admin-cw-panel-loc"><Icon name="mapPin" size={14} /> {selectedCarWash.location}</p>
                 )}
               </div>
               <button
@@ -274,7 +275,7 @@ const AdminMapView = () => {
                 onClick={handleClosePanel}
                 aria-label="Close"
               >
-                ✕
+                <Icon name="x" size={16} />
               </button>
             </div>
 
@@ -302,13 +303,13 @@ const AdminMapView = () => {
             {/* Route info */}
             {routeInfo && (
               <div className="admin-cw-panel-route-info">
-                <span>🗺 {routeInfo.distanceKm.toFixed(1)} km</span>
-                <span>⏱ {Math.round(routeInfo.durationMin)} min</span>
+                <span><Icon name="map" size={14} /> {routeInfo.distanceKm.toFixed(1)} km</span>
+                <span><Icon name="clock" size={14} /> {Math.round(routeInfo.durationMin)} min</span>
               </div>
             )}
 
             {routeError && (
-              <p className="admin-cw-panel-error">⚠ {routeError}</p>
+              <p className="admin-cw-panel-error"><Icon name="alertTriangle" size={14} /> {routeError}</p>
             )}
 
             {/* Actions */}
@@ -320,7 +321,7 @@ const AdminMapView = () => {
                   onClick={handleGetDirections}
                   disabled={routeLoading}
                 >
-                  {routeLoading ? 'Getting directions…' : '🧭 Get Directions'}
+                  {routeLoading ? 'Getting directions…' : <><Icon name="navigation" size={15} /> Get Directions</>}
                 </button>
               ) : (
                 <button

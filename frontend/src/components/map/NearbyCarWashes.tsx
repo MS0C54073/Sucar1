@@ -10,6 +10,7 @@ import api from '../../services/api';
 import useLiveLocation from '../../hooks/useLiveLocation';
 import MapView from '../MapView';
 import LoadingSpinner from '../LoadingSpinner';
+import Icon from '../icons/Icon';
 import './NearbyCarWashes.css';
 
 interface CarWash {
@@ -152,7 +153,7 @@ const NearbyCarWashes: React.FC<NearbyCarWashesProps> = ({
             disabled={gpsLoading}
             title="Use your current location"
           >
-            {gpsLoading ? '📍 Getting location...' : '📍 Use My Location'}
+            <Icon name="mapPin" size={15} /> {gpsLoading ? 'Getting location...' : 'Use My Location'}
           </button>
 
           <div className="view-toggle">
@@ -161,14 +162,14 @@ const NearbyCarWashes: React.FC<NearbyCarWashesProps> = ({
               onClick={() => setListView(false)}
               title="Map view"
             >
-              🗺️ Map
+              <Icon name="map" size={15} /> Map
             </button>
             <button
               className={`toggle-btn ${listView ? 'active' : ''}`}
               onClick={() => setListView(true)}
               title="List view"
             >
-              📋 List
+              <Icon name="clipboard" size={15} /> List
             </button>
           </div>
         </div>
@@ -199,7 +200,7 @@ const NearbyCarWashes: React.FC<NearbyCarWashesProps> = ({
 
             {userLocation && (
               <div className="location-indicator">
-                🔵 {userLocation.lat.toFixed(2)}°, {userLocation.lng.toFixed(2)}°
+                <Icon name="mapPin" size={13} /> {userLocation.lat.toFixed(2)}°, {userLocation.lng.toFixed(2)}°
               </div>
             )}
           </div>
@@ -207,7 +208,7 @@ const NearbyCarWashes: React.FC<NearbyCarWashesProps> = ({
 
         {gpsError && (
           <div className="error-banner">
-            <span>⚠️ {gpsError}</span>
+            <span><Icon name="alertTriangle" size={14} /> {gpsError}</span>
           </div>
         )}
       </div>
@@ -221,7 +222,7 @@ const NearbyCarWashes: React.FC<NearbyCarWashesProps> = ({
         <div className="error-container">
           <div className="error-message">
             <span>
-              ❌ {error instanceof Error ? error.message : 'Failed to fetch nearby car washes'}
+              <Icon name="alertCircle" size={14} /> {error instanceof Error ? error.message : 'Failed to fetch nearby car washes'}
             </span>
             <button onClick={() => refetch()} className="retry-button">
               Retry
@@ -235,7 +236,7 @@ const NearbyCarWashes: React.FC<NearbyCarWashesProps> = ({
         </div>
       ) : !nearbyCarWashes || nearbyCarWashes.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">🧼</div>
+          <div className="empty-icon"><Icon name="droplets" size={32} /></div>
           <p>No car washes found within {radiusKm} km</p>
           <p className="empty-hint">Try increasing the radius</p>
         </div>

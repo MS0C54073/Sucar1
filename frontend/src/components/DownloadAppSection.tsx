@@ -1,4 +1,5 @@
 import React from 'react';
+import Icon from './icons/Icon';
 import './DownloadAppSection.css';
 
 interface DownloadAppSectionProps {
@@ -30,7 +31,7 @@ const DownloadAppSection: React.FC<DownloadAppSectionProps> = ({
         {variant === 'default' && (
           <div className="download-app-header">
             <div className="download-app-icon-wrapper">
-              <div className="download-app-icon">📱</div>
+              <div className="download-app-icon"><Icon name="smartphone" size={36} /></div>
             </div>
             <h2 className="download-app-title">{title}</h2>
             <p className="download-app-description">{description}</p>

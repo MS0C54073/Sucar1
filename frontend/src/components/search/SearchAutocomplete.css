@@ -87,6 +87,15 @@
   caret-color: #f8fafc !important;
 }
 
+/* Placeholder must lighten in dark, otherwise it vanishes on the dark field */
+[data-theme='dark'] .sucar-floating-search__input::placeholder,
+[data-app-skin='driver'] .sucar-floating-search__input::placeholder {
+  color: #94a3b8 !important;
+}
+[data-app-skin='driver'][data-theme='light'] .sucar-floating-search__input::placeholder {
+  color: #64748b !important;
+}
+
 [data-app-skin='driver'][data-theme='light'] .sucar-floating-search__input {
   color: #0f172a !important;
   -webkit-text-fill-color: #0f172a !important;
@@ -180,6 +189,13 @@
   font-size: 13px;
   color: #64748b;
   text-align: center;
+}
+
+[data-theme='dark'] .sucar-search-ac__empty,
+[data-theme='dark'] .sucar-search-ac__loading,
+[data-app-skin='driver'] .sucar-search-ac__empty,
+[data-app-skin='driver'] .sucar-search-ac__loading {
+  color: #94a3b8;
 }
 
 @media (max-width: 640px) {

@@ -5,7 +5,8 @@ import PageLayout from '../components/PageLayout';
 import GoogleLoginButton from '../components/auth/GoogleLoginButton';
 import PhoneLogin from '../components/auth/PhoneLogin';
 import ThemeToggle from '../components/ThemeToggle';
-import AuthMapBackground from '../components/auth/AuthMapBackground';
+import AuthBackdrop from '../components/auth/AuthBackdrop';
+import ClientAppPrompt from '../components/auth/ClientAppPrompt';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import '../components/auth/AuthMapBackground.css';
@@ -71,8 +72,9 @@ const RegisterContent = memo(({
 
           <div className="register-card">
           <div className="register-card-header">
-            <h2>Create account</h2>
-            <p>Quick setup — only what we need for your role</p>
+            <span className="auth-greeting"><span className="auth-greeting__dot" /> Join SuCAR</span>
+            <h2>Create your account</h2>
+            <p>First, tell us how you will use SuCAR.</p>
           </div>
 
           <div className="segmented-control register-tabs">
@@ -99,6 +101,10 @@ const RegisterContent = memo(({
             </button>
           </div>
 
+          {role === 'client' ? (
+            <ClientAppPrompt onChooseRole={onChangeRole} />
+          ) : (
+          <>
           <div className="segmented-control register-tabs register-tabs--sm">
             <button
               type="button"
@@ -376,11 +382,13 @@ const RegisterContent = memo(({
           <p className="register-footer">
             Already have an account? <Link to="/login">Sign in</Link>
           </p>
+          </>
+          )}
           </div>
         </div>
       </div>
       </div>
-      <AuthMapBackground />
+      <AuthBackdrop />
     </div>
   );
 });

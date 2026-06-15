@@ -1,3 +1,4 @@
+import Icon from '../icons/Icon';
 import './MapSearchInput.css';
 
 interface MapSearchInputProps {
@@ -17,7 +18,7 @@ const MapSearchInput = ({
   return (
     <div className="map-float-search map-float-search--client" role="search">
       <span className="map-float-search-icon" aria-hidden>
-        🔍
+        <Icon name="search" size={17} />
       </span>
       <input
         type="text"
@@ -39,7 +40,7 @@ const MapSearchInput = ({
           onClick={() => (onClear ? onClear() : onChange(''))}
           aria-label="Clear search"
         >
-          ✕
+          <Icon name="x" size={15} />
         </button>
       ) : null}
     </div>

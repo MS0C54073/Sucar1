@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import LoadingSpinner from '../LoadingSpinner';
+import Icon from '../icons/Icon';
 import './ChatWindow.css';
 
 interface Message {
@@ -94,7 +95,7 @@ const ChatWindow = ({
         <div className="receiver-info">
           {fullPage && onClose && (
             <button type="button" className="chat-back-btn" onClick={onClose} aria-label="Back">
-              ←
+              <Icon name="arrowLeft" size={18} />
             </button>
           )}
           <div className="avatar">{receiverName.charAt(0)}</div>

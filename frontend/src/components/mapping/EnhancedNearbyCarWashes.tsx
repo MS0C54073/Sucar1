@@ -29,6 +29,7 @@ import { useToast } from '../ToastContainer';
 import api from '../../services/api';
 import LoadingSpinner from '../LoadingSpinner';
 import LocationPicker from '../LocationPicker';
+import Icon from '../icons/Icon';
 import './EnhancedNearbyCarWashes.css';
 
 interface CarWash {
@@ -473,7 +474,7 @@ const EnhancedNearbyCarWashes = ({
               setTimeout(() => setShowAutocomplete(false), 200);
             }}
           />
-          <span className="search-icon">🔍</span>
+          <span className="search-icon"><Icon name="search" size={17} /></span>
           
           {/* Autocomplete Dropdown */}
           {showAutocomplete && autocompleteResults.length > 0 && (
@@ -492,7 +493,7 @@ const EnhancedNearbyCarWashes = ({
                     }
                   }}
                 >
-                  <span className="autocomplete-icon">🧼</span>
+                  <span className="autocomplete-icon"><Icon name="droplets" size={16} /></span>
                   <div className="autocomplete-content">
                     <div className="autocomplete-name">
                       {carWash.carWashName || carWash.name || 'Car Wash'}
@@ -525,7 +526,7 @@ const EnhancedNearbyCarWashes = ({
       {/* Results */}
       {!searchLocation ? (
         <div className="no-location-message">
-          <p>📍 Please select a location to see nearby car washes</p>
+          <p><Icon name="mapPin" size={15} /> Please select a location to see nearby car washes</p>
         </div>
       ) : nearbyCarWashes.length === 0 ? (
         <div className="no-results">
@@ -556,14 +557,14 @@ const EnhancedNearbyCarWashes = ({
                       />
                     </div>
                   ) : (
-                    <div className="carwash-icon">🧼</div>
+                    <div className="carwash-icon"><Icon name="droplets" size={20} /></div>
                   )}
                   <div className="carwash-info">
                     <h4 className="carwash-name">
                       {carWash.carWashName || carWash.name || 'Car Wash'}
                     </h4>
                     <p className="carwash-location">
-                      📍 {carWash.location || 'Location not specified'}
+                      <Icon name="mapPin" size={13} /> {carWash.location || 'Location not specified'}
                     </p>
                     <p className="carwash-distance">
                       {formatDistance(carWash.distance)} away
@@ -647,7 +648,7 @@ const EnhancedNearbyCarWashes = ({
                   {selectedCarWash.carWashName || selectedCarWash.name}
                 </p>
                 <p className="modal-distance">
-                  📍 {formatDistance(selectedCarWash.distance)} away
+                  <Icon name="mapPin" size={13} /> {formatDistance(selectedCarWash.distance)} away
                 </p>
               </div>
 
@@ -789,7 +790,7 @@ const EnhancedNearbyCarWashes = ({
       {pendingBooking && searchLocation && (
         <div className="pending-booking-prompt">
           <div className="pending-booking-header">
-            <h4>📋 Booking Summary</h4>
+            <h4><Icon name="clipboard" size={16} /> Booking Summary</h4>
             <button
               className="close-pending-btn"
               onClick={handleRejectBooking}

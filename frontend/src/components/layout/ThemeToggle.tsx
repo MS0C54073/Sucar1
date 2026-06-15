@@ -1,4 +1,5 @@
 import { useTheme } from '../../context/ThemeContext';
+import Icon from '../icons/Icon';
 import './ThemeToggle.css';
 
 type ThemeToggleProps = {
@@ -45,7 +46,7 @@ const ThemeToggle = ({ className = '', variant = 'icon' }: ThemeToggleProps) => 
       aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
       title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
     >
-      {theme === 'light' ? '🌙' : '☀️'}
+      <Icon name={theme === 'light' ? 'moon' : 'sun'} size={18} />
     </button>
   );
 };

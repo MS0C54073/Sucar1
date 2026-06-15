@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../services/api';
 import LoadingSpinner from '../LoadingSpinner';
 import EmptyState from '../EmptyState';
+import Icon from '../icons/Icon';
 import ConfirmDialog from '../ConfirmDialog';
 import './ManageDrivers.css';
 
@@ -81,7 +82,7 @@ const ManageDrivers = () => {
 
         <div className="filters-bar">
           <div className="search-box">
-            <span className="search-icon">🔍</span>
+            <span className="search-icon"><Icon name="search" size={16} /></span>
             <input
               type="text"
               placeholder="Search drivers by name, email, or phone..."
@@ -94,7 +95,7 @@ const ManageDrivers = () => {
 
         {!filteredDrivers || filteredDrivers.length === 0 ? (
           <EmptyState
-            icon="🚗"
+            icon={<Icon name="car" size={28} />}
             title="No drivers found"
             description={searchTerm ? 'Try adjusting your search' : 'No drivers registered yet'}
           />

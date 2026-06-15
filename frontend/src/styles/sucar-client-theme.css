@@ -74,6 +74,19 @@ html[data-app-skin='light'] body::before {
   opacity: 1;
 }
 
+/* Dark client skin: input text + placeholder must lighten or they vanish on
+   the dark search field. */
+[data-app-skin='light'][data-theme='dark'] .sucar-floating-search__input {
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  caret-color: #f8fafc !important;
+}
+
+[data-app-skin='light'][data-theme='dark'] .sucar-floating-search__input::placeholder {
+  color: #94a3b8 !important;
+  opacity: 1;
+}
+
 [data-app-skin='light'] .sucar-link {
   color: var(--color-primary-600);
   font-weight: var(--font-semibold);

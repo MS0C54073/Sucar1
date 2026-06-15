@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import Icon from './icons/Icon';
 
 const CompactToggle = ({ className = '' }: { className?: string }) => {
   const [compact, setCompact] = useState<boolean>(() => localStorage.getItem('compactUI') === '1');
@@ -17,8 +18,9 @@ const CompactToggle = ({ className = '' }: { className?: string }) => {
       className={`icon-btn ${className}`}
       title={compact ? 'Disable compact/mobile layout' : 'Enable compact/mobile layout'}
       onClick={() => setCompact(!compact)}
+      aria-label={compact ? 'Disable compact layout' : 'Enable compact layout'}
     >
-      📱
+      <Icon name="smartphone" size={18} />
     </button>
   );
 };

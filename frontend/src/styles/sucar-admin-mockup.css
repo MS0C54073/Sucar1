@@ -3,11 +3,11 @@
  * Remaps design-system variables so ALL admin child pages inherit dark surfaces.
  */
 .admin-dashboard.admin-mockup {
-  /* Brand */
-  --adm-accent: #00c896;
-  --adm-accent-hover: #00b085;
-  --adm-accent-muted: rgba(0, 200, 150, 0.14);
-  --adm-accent-border: rgba(0, 200, 150, 0.35);
+  /* Brand — professional neutral slate (replaces the old teal-green) */
+  --adm-accent: #8b95ab;
+  --adm-accent-hover: #a6afc2;
+  --adm-accent-muted: rgba(139, 149, 171, 0.16);
+  --adm-accent-border: rgba(139, 149, 171, 0.38);
 
   /* Surfaces */
   --adm-bg: #0c0c14;

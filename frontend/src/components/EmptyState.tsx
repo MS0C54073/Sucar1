@@ -1,7 +1,9 @@
+import type { ReactNode } from 'react';
 import './EmptyState.css';
 
 interface EmptyStateProps {
-  icon?: string;
+  /** Accepts a string/emoji (legacy) or an icon element (preferred). */
+  icon?: ReactNode;
   title: string;
   description?: string;
   action?: {

@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useToast } from '../components/ToastContainer';
+import Icon, { type IconName } from '../components/icons/Icon';
 import './Payment.css';
 
 const MAX_PROOF_BYTES = 2 * 1024 * 1024;
@@ -130,19 +131,19 @@ const Payment = () => {
     };
   }, []);
 
-  const paymentMethods = [
-    { value: 'cash', label: 'Cash Payment', icon: '💵', description: 'Pay with cash on delivery' },
-    { value: 'card', label: 'Card Payment', icon: '💳', description: 'Credit or debit card' },
+  const paymentMethods: { value: string; label: string; icon: IconName; description: string }[] = [
+    { value: 'cash', label: 'Cash Payment', icon: 'wallet', description: 'Pay with cash on delivery' },
+    { value: 'card', label: 'Card Payment', icon: 'creditCard', description: 'Credit or debit card' },
     {
       value: 'mobile_money',
       label: 'Mobile Money',
-      icon: '📱',
+      icon: 'smartphone',
       description: 'Pay using Mobile Money (e.g., Airtel, MTN)',
     },
     {
       value: 'bank_transfer',
       label: 'Bank Transfer',
-      icon: '🏦',
+      icon: 'building',
       description: 'Direct bank transfer',
     },
   ];
@@ -159,7 +160,7 @@ const Payment = () => {
     <div className="payment-page">
       <header className="payment-header">
         <button type="button" className="back-button" onClick={() => navigate('/client')}>
-          ← Back
+          <Icon name="arrowLeft" size={16} /> Back
         </button>
         <div className="header-content">
           <h1>Complete Payment</h1>
@@ -216,12 +217,12 @@ const Payment = () => {
                     onChange={(e) => setPaymentMethod(e.target.value)}
                     className="method-radio"
                   />
-                  <div className="method-icon">{method.icon}</div>
+                  <div className="method-icon"><Icon name={method.icon} size={22} /></div>
                   <div className="method-content">
                     <div className="method-label">{method.label}</div>
                     <div className="method-description">{method.description}</div>
                   </div>
-                  <div className="method-check">✓</div>
+                  <div className="method-check"><Icon name="check" size={16} /></div>
                 </label>
               ))}
             </div>
@@ -262,7 +263,7 @@ const Payment = () => {
 
             {paymentMethod === 'cash' && (
               <div className="payment-info">
-                <div className="info-icon">ℹ️</div>
+                <div className="info-icon"><Icon name="info" size={18} /></div>
                 <div className="info-content">
                   <strong>Cash Payment</strong>
                   <p>Pay the driver or car wash in cash. You can optionally upload proof below.</p>
@@ -286,7 +287,7 @@ const Payment = () => {
                   <>
                     <span>Submit payment & receipt</span>
                     <span className="btn-arrow" aria-hidden>
-                      →
+                      <Icon name="arrowRight" size={16} />
                     </span>
                   </>
                 )}
@@ -308,7 +309,7 @@ const Payment = () => {
 
         {confirmed && (
           <div className="payment-success">
-            <div className="success-icon">✓</div>
+            <div className="success-icon"><Icon name="checkCircle" size={28} /></div>
             <h3>Payment confirmed</h3>
             <p>Your payment has been confirmed. Thank you.</p>
             <div className="post-actions">

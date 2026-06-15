@@ -5,6 +5,7 @@ import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import LoadingSpinner from '../LoadingSpinner';
 import EmptyState from '../EmptyState';
+import Icon, { type IconName } from '../icons/Icon';
 import { getChatPath } from '../../utils/chatPaths';
 import './NotificationCenter.css';
 
@@ -111,20 +112,20 @@ const NotificationCenter = () => {
     return `priority-${priority}`;
   };
 
-  const getTypeIcon = (type: string) => {
+  const getTypeIcon = (type: string): IconName => {
     switch (type) {
       case 'booking_update':
-        return '📋';
+        return 'clipboard';
       case 'payment':
-        return '💳';
+        return 'creditCard';
       case 'system':
-        return '⚙️';
+        return 'settings';
       case 'promotion':
-        return '🎉';
+        return 'partyPopper';
       case 'message':
-        return '💬';
+        return 'messageCircle';
       default:
-        return '🔔';
+        return 'bell';
     }
   };
 
@@ -135,7 +136,7 @@ const NotificationCenter = () => {
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Notifications"
       >
-        <span className="bell-icon">🔔</span>
+        <span className="bell-icon"><Icon name="bell" size={20} /></span>
         {unreadCount > 0 && (
           <span className="notification-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
         )}
@@ -160,7 +161,7 @@ const NotificationCenter = () => {
                 onClick={() => setIsOpen(false)}
                 aria-label="Close"
               >
-                ✕
+                <Icon name="x" size={16} />
               </button>
             </div>
 
@@ -192,7 +193,7 @@ const NotificationCenter = () => {
                 </div>
               ) : !notifications || notifications.length === 0 ? (
                 <EmptyState
-                  icon="🔔"
+                  icon={<Icon name="bell" size={28} />}
                   title="No notifications"
                   description={
                     filter === 'unread'
@@ -208,7 +209,7 @@ const NotificationCenter = () => {
                       }`}
                     onClick={() => handleNotificationClick(notification)}
                   >
-                    <div className="notification-icon">{getTypeIcon(notification.type)}</div>
+                    <div className="notification-icon"><Icon name={getTypeIcon(notification.type)} size={18} /></div>
                     <div className="notification-content">
                       <div className="notification-title-row">
                         <h4 className="notification-title">{notification.title}</h4>

@@ -5,6 +5,7 @@ import api from '../../services/api';
 import { useBookings } from '../../hooks/useBookings';
 import OperatorWeekCalendar from './OperatorWeekCalendar';
 import OperatorStaffPanel from './OperatorStaffPanel';
+import Icon from '../icons/Icon';
 import './OperatorWeekCalendar.css';
 import './OperatorStaffPanel.css';
 import '../carwash/CarWashHome.css';
@@ -62,31 +63,31 @@ const CarWashHome = () => {
             <div className="stat-card-op">
               <div className="stat-header-op">
                 <span>Today&apos;s Bookings</span>
-                <span className="stat-ic">📅</span>
+                <span className="stat-ic"><Icon name="calendar" size={18} /></span>
               </div>
               <div className="value">{data?.totalBookings ?? 0}</div>
               <div className="stat-sub-op">
-                <span className="up">↗ Active day</span>
+                <span className="up"><Icon name="arrowUpRight" size={13} /> Active day</span>
               </div>
             </div>
             <div className="stat-card-op">
               <div className="stat-header-op">
                 <span>Revenue</span>
-                <span className="stat-ic">💰</span>
+                <span className="stat-ic"><Icon name="wallet" size={18} /></span>
               </div>
               <div className="value highlight-val">K{(data?.totalRevenue ?? 0).toLocaleString()}</div>
             </div>
             <div className="stat-card-op">
               <div className="stat-header-op">
                 <span>Pending</span>
-                <span className="stat-ic">⏳</span>
+                <span className="stat-ic"><Icon name="clock" size={18} /></span>
               </div>
               <div className="value">{data?.pendingBookings ?? 0}</div>
             </div>
             <div className="stat-card-op">
               <div className="stat-header-op">
                 <span>In Progress</span>
-                <span className="stat-ic">🔄</span>
+                <span className="stat-ic"><Icon name="refresh" size={18} /></span>
               </div>
               <div className="value">{data?.inProgressBookings ?? 0}</div>
             </div>

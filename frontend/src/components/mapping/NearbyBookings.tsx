@@ -8,6 +8,7 @@ import { useMemo, useState } from 'react';
 import { getCurrentPosition, Coordinates } from '../../services/locationService';
 import { findNearby, parseCoordinates, formatDistance, formatTime, calculateRouteSegment } from '../../services/mappingService';
 import LoadingSpinner from '../LoadingSpinner';
+import Icon from '../icons/Icon';
 import './NearbyBookings.css';
 
 interface Booking {
@@ -109,7 +110,7 @@ const NearbyBookings = ({ bookings }: NearbyBookingsProps) => {
         <div className="nearby-list">
           {nearbyBookings.map((booking) => (
             <div key={booking.id} className="nearby-item">
-              <div className="nearby-item-icon">📋</div>
+              <div className="nearby-item-icon"><Icon name="clipboard" size={20} /></div>
               <div className="nearby-item-content">
                 <div className="nearby-item-name">
                   {booking.vehicleId 
@@ -121,10 +122,10 @@ const NearbyBookings = ({ bookings }: NearbyBookingsProps) => {
                 </div>
                 <div className="nearby-item-meta">
                   <span className="nearby-item-distance">
-                    📍 {formatDistance(booking.distance)}
+                    <Icon name="mapPin" size={13} /> {formatDistance(booking.distance)}
                   </span>
                   <span className="nearby-item-time">
-                    ⏱️ {formatTime(booking.estimatedTime)}
+                    <Icon name="clock" size={13} /> {formatTime(booking.estimatedTime)}
                   </span>
                 </div>
                 {booking.clientId && (

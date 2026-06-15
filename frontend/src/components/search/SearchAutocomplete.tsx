@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import Icon from '../icons/Icon';
 import './SearchAutocomplete.css';
 
 export type SearchAutocompleteVariant = 'hero' | 'map';
@@ -129,7 +130,7 @@ const SearchAutocomplete = ({
     >
       <div className="sucar-floating-search">
         <span className="sucar-floating-search__icon" aria-hidden>
-          🔍
+          <Icon name="search" size={18} />
         </span>
         <input
           ref={inputRef}
@@ -166,7 +167,7 @@ const SearchAutocomplete = ({
             }}
             aria-label="Clear search"
           >
-            ✕
+            <Icon name="x" size={15} />
           </button>
         ) : null}
       </div>

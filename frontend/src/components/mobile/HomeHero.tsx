@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import Icon from '../icons/Icon';
 import './HomeHero.css';
 
 const HomeHero = () => {
@@ -50,12 +51,12 @@ const HomeHero = () => {
         </div>
         {!user && (
           <button className="btn btn-text learn-more" onClick={() => navigate('/#features')}>
-            Learn More →
+            Learn More <Icon name="arrowRight" size={16} />
           </button>
         )}
       </div>
       <div className="hero-visual">
-        <div className="hero-illustration">🚗✨</div>
+        <div className="hero-illustration"><Icon name="car" size={64} /></div>
       </div>
     </section>
   );

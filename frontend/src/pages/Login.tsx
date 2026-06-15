@@ -7,7 +7,7 @@ import PageLayout from '../components/PageLayout';
 import GoogleLoginButton from '../components/auth/GoogleLoginButton';
 import PhoneLogin from '../components/auth/PhoneLogin';
 import ThemeToggle from '../components/ThemeToggle';
-import AuthMapBackground from '../components/auth/AuthMapBackground';
+import AuthBackdrop from '../components/auth/AuthBackdrop';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import '../components/auth/AuthMapBackground.css';
 import './Login.css';
@@ -90,8 +90,9 @@ const LoginContent = memo(({
         <div className="login-card">
           <div className="login-card-header">
             <img src="/images/Sucarcar.jpeg" alt="SuCar" className="login-card-logo" />
-            <h2>Sign in</h2>
-            <p>Welcome back — choose how you&apos;d like to continue</p>
+            <span className="auth-greeting"><span className="auth-greeting__dot" /> Good to see you</span>
+            <h2>Welcome back</h2>
+            <p>Sign in to pick up right where you left off.</p>
           </div>
 
           <div className="segmented-control login-tabs" role="tablist">
@@ -235,7 +236,7 @@ const LoginContent = memo(({
         </div>
       </div>
       </div>
-      <AuthMapBackground />
+      <AuthBackdrop />
     </div>
   );
 });

@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import api from '../../services/api';
 import LoadingSpinner from '../LoadingSpinner';
 import EmptyState from '../EmptyState';
+import Icon from '../icons/Icon';
 import './ManageCarWashes.css';
 
 const ManageCarWashes = () => {
@@ -49,7 +50,7 @@ const ManageCarWashes = () => {
 
         {!filteredCarWashes || filteredCarWashes.length === 0 ? (
           <EmptyState
-            icon="🧼"
+            icon={<Icon name="droplets" size={28} />}
             title="No car wash providers found"
             description={searchTerm ? 'Try adjusting your search' : 'No car wash providers registered yet'}
           />

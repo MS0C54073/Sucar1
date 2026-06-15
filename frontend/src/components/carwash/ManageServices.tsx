@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import { useToast } from '../ToastContainer';
 import LoadingSpinner from '../LoadingSpinner';
+import Icon from '../icons/Icon';
 import { servicePackages, ServicePackage } from '../../data/servicePackages';
 import './ManageServices.css';
 
@@ -183,8 +184,8 @@ const ManageServices = () => {
           <div className="service-form-container">
             <div className="form-header">
               <h2>{editingService ? 'Edit Service' : 'Add New Service'}</h2>
-              <button className="close-btn" onClick={handleCancel} type="button">
-                ✕
+              <button className="close-btn" onClick={handleCancel} type="button" aria-label="Close">
+                <Icon name="x" size={16} />
               </button>
             </div>
 
@@ -199,7 +200,7 @@ const ManageServices = () => {
                     setFormData({ name: '', description: '', price: '', isActive: true });
                   }}
                 >
-                  ✏️ Manual Entry
+                  <Icon name="pencil" size={15} /> Manual Entry
                 </button>
                 <button
                   type="button"
@@ -209,7 +210,7 @@ const ManageServices = () => {
                     setFormData({ name: '', description: '', price: '', isActive: true });
                   }}
                 >
-                  📦 From Package
+                  <Icon name="package" size={15} /> From Package
                 </button>
               </div>
             )}
@@ -236,7 +237,7 @@ const ManageServices = () => {
                     onClick={handleGenerateFromPackage}
                     disabled={!selectedPackage}
                   >
-                    🔄 Generate
+                    <Icon name="refresh" size={15} /> Generate
                   </button>
                 </div>
               )}
@@ -307,7 +308,7 @@ const ManageServices = () => {
                     </>
                   ) : (
                     <>
-                      <span>✓</span>
+                      <Icon name="check" size={16} />
                       <span>{editingService ? 'Update Service' : 'Add Service'}</span>
                     </>
                   )}

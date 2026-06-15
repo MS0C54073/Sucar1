@@ -4,6 +4,7 @@ import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import EmptyState from '../components/EmptyState';
+import Icon from '../components/icons/Icon';
 import { getChatPath } from '../utils/chatPaths';
 import './MessagesInbox.css';
 
@@ -40,7 +41,7 @@ const MessagesInbox = () => {
     <div className="messages-inbox">
       <header className="messages-inbox__header">
         <button type="button" className="messages-inbox__back" onClick={goBack}>
-          ← Back
+          <Icon name="arrowLeft" size={16} /> Back
         </button>
         <h1>Messages</h1>
       </header>
@@ -52,7 +53,7 @@ const MessagesInbox = () => {
           </div>
         ) : !conversations?.length ? (
           <EmptyState
-            icon="💬"
+            icon={<Icon name="messageCircle" size={28} />}
             title="No conversations yet"
             description="Open chat from a booking card to message your driver or car wash."
             action={{ label: 'View bookings', onClick: goBack }}

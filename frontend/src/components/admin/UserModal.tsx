@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Icon from '../icons/Icon';
 import './UserModal.css';
 
 interface User {
@@ -42,8 +43,8 @@ const UserModal: React.FC<UserModalProps> = ({ user, onClose, onSave }) => {
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>{user ? 'Edit User' : 'Add User'}</h2>
-          <button className="modal-close" onClick={onClose}>
-            ✕
+          <button className="modal-close" onClick={onClose} aria-label="Close">
+            <Icon name="x" size={16} />
           </button>
         </div>
 

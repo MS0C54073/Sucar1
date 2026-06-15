@@ -38,7 +38,7 @@ function buildItems(
   const washItems: SearchAutocompleteItem[] = carWashes.map((w) => ({
     id: `wash:${w.id}`,
     label: w.name,
-    subtitle: w.location ? `📍 ${w.location}` : 'Car wash in Lusaka',
+    subtitle: w.location ? w.location : 'Car wash in Lusaka',
   }));
 
   return [...serviceItems, ...washItems];

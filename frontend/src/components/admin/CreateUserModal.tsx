@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../ToastContainer';
 import api from '../../services/api';
+import Icon from '../icons/Icon';
 import './CreateUserModal.css';
 
 interface CreateUserModalProps {
@@ -129,12 +130,12 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ onClose, onSuccess })
       <div className="modal-content create-user-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>Create New User</h2>
-          <button className="modal-close" onClick={onClose}>✕</button>
+          <button className="modal-close" onClick={onClose} aria-label="Close"><Icon name="x" size={16} /></button>
         </div>
 
         {isSubAdmin && (
           <div className="approval-notice">
-            <span className="notice-icon">⏳</span>
+            <span className="notice-icon"><Icon name="clock" size={16} /></span>
             <div>
               <strong>Approval Required</strong>
               <p>This user will require admin approval before they can access the system.</p>

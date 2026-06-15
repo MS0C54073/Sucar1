@@ -14,6 +14,7 @@ import useLiveLocation from '../../hooks/useLiveLocation';
 import useMapboxDirections from '../../hooks/useMapboxDirections';
 import MapView from '../MapView';
 import LoadingSpinner from '../LoadingSpinner';
+import Icon from '../icons/Icon';
 import TurnByTurnDirections from './TurnByTurnDirections';
 import './LiveTrackingMap.css';
 
@@ -211,7 +212,7 @@ const LiveTrackingMap: React.FC<LiveTrackingMapProps> = ({
     <div className="live-tracking-container">
       {/* Header */}
       <div className="tracking-header">
-        <h3 className="tracking-title">📍 Live Tracking</h3>
+        <h3 className="tracking-title"><Icon name="mapPin" size={17} /> Live Tracking</h3>
         <div className="header-buttons">
           {userRole === 'client' && counterpartyLocation && (
             <button 
@@ -219,12 +220,12 @@ const LiveTrackingMap: React.FC<LiveTrackingMapProps> = ({
               onClick={() => setShowDirections(!showDirections)}
               title={showDirections ? 'Hide directions' : 'Show directions'}
             >
-              🧭 {showDirections ? 'Hide' : 'Directions'}
+              <Icon name="navigation" size={14} /> {showDirections ? 'Hide' : 'Directions'}
             </button>
           )}
           {onClose && (
-            <button className="close-button" onClick={onClose} title="Close tracking">
-              ✕
+            <button className="close-button" onClick={onClose} title="Close tracking" aria-label="Close">
+              <Icon name="x" size={16} />
             </button>
           )}
         </div>
@@ -244,7 +245,7 @@ const LiveTrackingMap: React.FC<LiveTrackingMapProps> = ({
           </div>
         ) : (
           <div className="status-badge error">
-            <span>⚠️</span>
+            <span><Icon name="alertTriangle" size={14} /></span>
             Location unavailable
           </div>
         )}
@@ -260,7 +261,7 @@ const LiveTrackingMap: React.FC<LiveTrackingMapProps> = ({
         ) : counterpartyLocation === null && userRole !== 'carwash' ? (
           <div className="error-overlay">
             <div className="error-message">
-              <span>⚠️ Counterparty location not available</span>
+              <span><Icon name="alertTriangle" size={14} /> Counterparty location not available</span>
               <p className="error-hint">They may not have location sharing enabled</p>
             </div>
           </div>
@@ -335,7 +336,7 @@ const LiveTrackingMap: React.FC<LiveTrackingMapProps> = ({
 
       {/* Auto-refresh indicator */}
       <div className="auto-refresh-hint">
-        🔄 Real-time updates every 5 seconds
+        <Icon name="refresh" size={14} /> Real-time updates every 5 seconds
       </div>
     </div>
   );

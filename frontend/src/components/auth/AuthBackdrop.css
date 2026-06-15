@@ -1,0 +1,261 @@
+/* ============================================================
+   Auth backdrop + shared frosted-glass form redesign.
+   Scoped to .login-card / .register-card so other app forms are untouched.
+   ============================================================ */
+
+/* ---------- Full-screen frosted photo backdrop (suka9) ---------- */
+.auth-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.auth-backdrop__photo {
+  position: absolute;
+  inset: -60px;
+  background: url('/images/suka9.png') center / cover no-repeat;
+  filter: blur(38px) saturate(1.08);
+  transform: scale(1.06);
+}
+.auth-backdrop__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(6, 16, 34, 0.82) 0%,
+    rgba(10, 32, 76, 0.6) 45%,
+    rgba(6, 14, 30, 0.84) 100%
+  );
+}
+[data-theme='dark'] .auth-backdrop__scrim {
+  background: linear-gradient(
+    135deg,
+    rgba(2, 8, 20, 0.9) 0%,
+    rgba(6, 22, 54, 0.72) 45%,
+    rgba(0, 0, 0, 0.9) 100%
+  );
+}
+
+/* ============================================================
+   Frosted-glass card + secondary depth (suka10)
+   ============================================================ */
+.auth-screen .login-card,
+.auth-screen .register-card {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(24px) saturate(1.25);
+  -webkit-backdrop-filter: blur(24px) saturate(1.25);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 26px;
+  box-shadow: 0 24px 70px rgba(6, 18, 45, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  overflow: hidden;
+}
+[data-theme='dark'] .auth-screen .login-card,
+[data-theme='dark'] .auth-screen .register-card {
+  background: rgba(17, 26, 45, 0.78);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* suka10 — faint secondary depth layer behind the form */
+.login-card::before,
+.register-card::before {
+  content: '';
+  position: absolute;
+  inset: -40px;
+  z-index: -1;
+  background: url('/images/suka10.png') center / cover no-repeat;
+  opacity: 0.05;
+  filter: blur(2px);
+  pointer-events: none;
+}
+[data-theme='dark'] .login-card::before,
+[data-theme='dark'] .register-card::before {
+  opacity: 0.08;
+}
+
+/* Theme toggle sits over the dark backdrop (not the card) — keep it light in
+   both themes so it stays visible. */
+.login-panel-top .theme-toggle-btn,
+.register-shell-top .theme-toggle-btn {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.1);
+}
+.login-panel-top .theme-toggle-btn:hover,
+.register-shell-top .theme-toggle-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.65);
+}
+
+/* Brand accent hairline at the very top of the card */
+.login-card::after,
+.register-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--sucar-blue, #1e73d8), #34c6f4);
+  z-index: 1;
+}
+
+/* ============================================================
+   Inputs — warmer, more intentional (scoped to auth cards)
+   ============================================================ */
+.login-card .input,
+.register-card .input {
+  height: 48px;
+  border-radius: 14px;
+  border: 1.5px solid rgba(15, 27, 45, 0.12);
+  background: rgba(255, 255, 255, 0.65);
+  padding: 0 15px;
+  font-size: 15px;
+  color: var(--text-primary, #0f1b2d);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+.login-card .input.input-sm,
+.register-card .input.input-sm {
+  height: 44px;
+  font-size: 14px;
+}
+.login-card .input::placeholder,
+.register-card .input::placeholder {
+  color: rgba(15, 27, 45, 0.4);
+}
+.login-card .input:hover,
+.register-card .input:hover {
+  border-color: rgba(15, 27, 45, 0.22);
+}
+.login-card .input:focus,
+.register-card .input:focus {
+  outline: none;
+  border-color: var(--sucar-blue, #1e73d8);
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(30, 115, 216, 0.16);
+}
+[data-theme='dark'] .login-card .input,
+[data-theme='dark'] .register-card .input {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #eef4fb;
+}
+[data-theme='dark'] .login-card .input::placeholder,
+[data-theme='dark'] .register-card .input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+[data-theme='dark'] .login-card .input:focus,
+[data-theme='dark'] .register-card .input:focus {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #4aa3ee;
+  box-shadow: 0 0 0 4px rgba(52, 198, 244, 0.18);
+}
+
+/* Labels */
+.login-card .form-field label,
+.register-card .form-field label {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--text-secondary);
+  margin-bottom: 7px;
+}
+
+/* Segmented control — softer, pill-like */
+.login-card .segmented-control,
+.register-card .segmented-control {
+  background: rgba(15, 27, 45, 0.05);
+  border: 1px solid rgba(15, 27, 45, 0.08);
+  border-radius: 14px;
+  padding: 4px;
+  gap: 4px;
+}
+[data-theme='dark'] .login-card .segmented-control,
+[data-theme='dark'] .register-card .segmented-control {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+.login-card .segmented-control button,
+.register-card .segmented-control button {
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-secondary);
+  transition: all 0.22s ease;
+}
+.login-card .segmented-control button.active,
+.register-card .segmented-control button.active {
+  background: var(--sucar-blue, #1e73d8);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(30, 115, 216, 0.35);
+}
+/* Hover (non-active) — stays clearly readable in both themes */
+.login-card .segmented-control button:hover:not(.active),
+.register-card .segmented-control button:hover:not(.active) {
+  background: rgba(15, 27, 45, 0.07);
+  color: var(--text-primary);
+}
+[data-theme='dark'] .login-card .segmented-control button:hover:not(.active),
+[data-theme='dark'] .register-card .segmented-control button:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+/* Active stays white on hover too */
+.login-card .segmented-control button.active:hover,
+.register-card .segmented-control button.active:hover {
+  background: var(--su-primary, #1e73d8);
+  color: #fff;
+}
+.login-card .segmented-control button:focus-visible,
+.register-card .segmented-control button:focus-visible {
+  outline: 2px solid var(--sucar-blue, #1e73d8);
+  outline-offset: 2px;
+}
+
+/* Warmer header treatment */
+.auth-greeting {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 100px;
+  background: color-mix(in srgb, var(--sucar-blue, #1e73d8) 12%, transparent);
+  color: var(--sucar-blue, #1e73d8);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin-bottom: 14px;
+}
+[data-theme='dark'] .auth-greeting {
+  background: color-mix(in srgb, #4aa3ee 16%, transparent);
+  color: #7db8f5;
+}
+.auth-greeting__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #12a70a;
+}
+
+/* Password toggle nicer hit area */
+.login-card .password-field-toggle,
+.register-card .password-field-toggle {
+  border-radius: 10px;
+  color: var(--text-secondary);
+}
+.login-card .password-field-toggle:hover,
+.register-card .password-field-toggle:hover {
+  background: rgba(15, 27, 45, 0.05);
+  color: var(--sucar-blue, #1e73d8);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-card .input,
+  .register-card .input,
+  .login-card .segmented-control button,
+  .register-card .segmented-control button {
+    transition: none;
+  }
+}

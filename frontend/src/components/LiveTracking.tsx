@@ -9,6 +9,7 @@ import { watchPosition, clearWatch, Coordinates } from '../services/locationServ
 import { parseCoordinates, calculateRouteSegment, formatDistance, formatTime } from '../services/mappingService';
 import MapView from './MapView';
 import LoadingSpinner from './LoadingSpinner';
+import Icon from './icons/Icon';
 import PaymentReviewModal from './payment/PaymentReviewModal';
 import {
   getAllowedManualStatuses,
@@ -297,7 +298,7 @@ const LiveTracking = ({ bookingId, onClose }: LiveTrackingProps) => {
             <div className="info-item">
               <span className="info-label">Driver Location</span>
               <span className="info-value">
-                📍 {driverLocation.lat.toFixed(6)}, {driverLocation.lng.toFixed(6)}
+                <Icon name="mapPin" size={14} /> {driverLocation.lat.toFixed(6)}, {driverLocation.lng.toFixed(6)}
               </span>
             </div>
           </div>

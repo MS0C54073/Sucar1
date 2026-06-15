@@ -6,6 +6,7 @@ import api from '../services/api';
 import { useToast } from '../components/ToastContainer';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ThemeToggle from '../components/layout/ThemeToggle';
+import Icon from '../components/icons/Icon';
 import './Profile.css';
 
 const Profile = () => {
@@ -166,7 +167,7 @@ const Profile = () => {
             <header className="profile-header">
                 <div className="header-left">
                     <button className="btn btn-secondary" onClick={handleBackClick}>
-                        ← Back
+                        <Icon name="arrowLeft" size={16} /> Back
                     </button>
                     <h1>My Profile</h1>
                 </div>
@@ -309,7 +310,7 @@ const Profile = () => {
                                                 </div>
                                             ) : (
                                                 <label className="carwash-picture-upload-placeholder">
-                                                    <div className="upload-icon">📷</div>
+                                                    <div className="upload-icon"><Icon name="camera" size={24} /></div>
                                                     <span>Upload Car Wash Picture</span>
                                                     <input 
                                                         type="file" 
