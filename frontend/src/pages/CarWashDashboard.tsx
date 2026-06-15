@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import CarWashHome from '../components/carwash/CarWashHome';
 import CarWashBookings from '../components/carwash/CarWashBookings';
 import ManageServices from '../components/carwash/ManageServices';
 import Profile from './Profile';
 import DashboardSkeleton from '../components/skeletons/DashboardSkeleton';
-import ThemeToggle from '../components/layout/ThemeToggle';
 import { NavIcon, type NavIconName } from '../components/icons/NavIcon';
 import BrandLogo from '../components/BrandLogo';
 import '../styles/sucar-operator.css';
@@ -21,7 +19,6 @@ const NAV: { id: string; label: string; icon: NavIconName }[] = [
 
 const CarWashDashboard = () => {
   const { user } = useAuth();
-  const { theme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -68,7 +65,7 @@ const CarWashDashboard = () => {
   return (
     <div
       className="carwash-dashboard-operator"
-      data-operator-theme={theme}
+      data-operator-theme="light"
     >
       <aside className="operator-sidebar">
         <div className="operator-brand">
@@ -101,7 +98,6 @@ const CarWashDashboard = () => {
             {NAV.find((n) => n.id === activeTab)?.label || 'Dashboard'}
           </h1>
           <div className="operator-topbar__actions">
-            <ThemeToggle variant="segmented" className="operator-theme-toggle" />
             <span className="operator-topbar__date">{today}</span>
           </div>
         </header>

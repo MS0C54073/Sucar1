@@ -1,14 +1,16 @@
 /* Operator (car wash) dashboard — sucar_operator_dashboard.html */
 
 .carwash-dashboard-operator {
-  --op-bg: #f5f4f0;
+  /* Matches the admin console light theme: clean light surfaces, white
+     sidebar, professional neutral slate accent. */
+  --op-bg: #f4f6fa;
   --op-card: #ffffff;
-  --op-sidebar: #18191f;
-  --op-green: #1d9e75;
-  --op-green-l: #e1f5ee;
-  --op-text: #18191f;
-  --op-text2: #6b7280;
-  --op-border: rgba(0, 0, 0, 0.07);
+  --op-sidebar: #ffffff;
+  --op-green: #475569;
+  --op-green-l: rgba(71, 85, 105, 0.1);
+  --op-text: #1a2333;
+  --op-text2: #5a6678;
+  --op-border: rgba(15, 27, 45, 0.08);
   display: flex;
   min-height: 100vh;
   background: var(--op-bg);
@@ -19,6 +21,7 @@
   width: 220px;
   min-height: 100vh;
   background: var(--op-sidebar);
+  border-right: 1px solid var(--op-border);
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -54,6 +57,7 @@
   border: 1px solid var(--op-border);
   border-radius: 14px;
   padding: 16px 18px;
+  box-shadow: 0 1px 3px rgba(15, 27, 45, 0.06), 0 1px 2px rgba(15, 27, 45, 0.03);
 }
 
 .carwash-dashboard-operator .stat-card-op .value {
@@ -151,7 +155,7 @@
   color: var(--op-text2);
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  background: #fafaf8;
+  background: rgba(15, 27, 45, 0.04);
 }
 
 .carwash-dashboard-operator .book-table td {
@@ -272,7 +276,8 @@
   width: 32px;
   height: 32px;
   border-radius: 9px;
-  background: #1d9e75;
+  background: var(--op-green);
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -280,37 +285,37 @@
 }
 
 .carwash-dashboard-operator .operator-brand__text {
-  color: #fff;
+  color: var(--op-text);
   font-weight: 700;
   font-size: 16px;
 }
 
 .carwash-dashboard-operator .operator-brand .brand-logo__text {
-  color: #fff;
+  color: var(--op-text);
   font-size: 16px;
 }
 
 .carwash-dashboard-operator .operator-brand__accent {
-  color: #9fe1cb;
+  color: var(--op-green);
 }
 
 .carwash-dashboard-operator .operator-sidebar-user {
   margin: 0 12px 16px;
   padding: 10px 12px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(15, 27, 45, 0.04);
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--op-border);
 }
 
 .carwash-dashboard-operator .operator-sidebar-user__name {
   font-size: 12px;
   font-weight: 600;
-  color: #fff;
+  color: var(--op-text);
 }
 
 .carwash-dashboard-operator .operator-sidebar-user__role {
   font-size: 10px;
-  color: #9fe1cb;
+  color: var(--op-text2);
   margin-top: 2px;
 }
 
@@ -335,18 +340,19 @@
   font-size: 13px;
   font-weight: 500;
   background: transparent;
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--op-text2);
   transition: background 0.15s ease, color 0.15s ease;
 }
 
 .carwash-dashboard-operator .operator-nav__item:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.85);
+  background: rgba(15, 27, 45, 0.05);
+  color: var(--op-text);
 }
 
 .carwash-dashboard-operator .operator-nav__item--active {
-  background: rgba(29, 158, 117, 0.2);
-  color: #9fe1cb;
+  background: var(--op-green-l);
+  color: var(--op-green);
+  font-weight: 600;
 }
 
 .carwash-dashboard-operator .operator-topbar__title {
@@ -383,41 +389,43 @@
 }
 
 .carwash-dashboard-operator .operator-theme-toggle .theme-segmented-btn.active {
-  background: #1d9e75;
+  background: var(--op-green);
   color: #fff;
 }
 
 /* ─── Theme tokens scoped to operator dashboard ─── */
 .carwash-dashboard-operator[data-operator-theme='light'] {
-  --op-bg: #f5f4f0;
+  --op-bg: #f4f6fa;
   --op-card: #ffffff;
-  --op-text: #18191f;
-  --op-text2: #6b7280;
-  --op-border: rgba(0, 0, 0, 0.08);
-  --op-green: #1d9e75;
-  --op-green-l: #e8f5ef;
+  --op-sidebar: #ffffff;
+  --op-text: #1a2333;
+  --op-text2: #5a6678;
+  --op-border: rgba(15, 27, 45, 0.08);
+  --op-green: #475569;
+  --op-green-l: rgba(71, 85, 105, 0.1);
   --bg-primary: #ffffff;
-  --bg-secondary: #f8f9fa;
-  --bg-tertiary: #f0f1f3;
-  --text-primary: #18191f;
-  --text-secondary: #6b7280;
-  --text-tertiary: #9ca3af;
-  --border-primary: rgba(0, 0, 0, 0.08);
-  --border-secondary: rgba(0, 0, 0, 0.12);
-  --color-primary-600: #1d9e75;
-  --color-primary-700: #178a66;
-  --color-primary-50: #e8f5ef;
-  --color-primary-100: #d1ebe0;
+  --bg-secondary: #f4f6fa;
+  --bg-tertiary: #f1f4f9;
+  --text-primary: #1a2333;
+  --text-secondary: #5a6678;
+  --text-tertiary: #8a93a6;
+  --border-primary: rgba(15, 27, 45, 0.08);
+  --border-secondary: rgba(15, 27, 45, 0.12);
+  --color-primary-600: #475569;
+  --color-primary-700: #334155;
+  --color-primary-50: rgba(71, 85, 105, 0.1);
+  --color-primary-100: rgba(71, 85, 105, 0.16);
 }
 
 .carwash-dashboard-operator[data-operator-theme='dark'] {
   --op-bg: #0f1419;
   --op-card: #1a2332;
+  --op-sidebar: #161e2b;
   --op-text: #f1f5f9;
   --op-text2: #94a3b8;
   --op-border: rgba(255, 255, 255, 0.08);
-  --op-green: #34d399;
-  --op-green-l: rgba(52, 211, 153, 0.12);
+  --op-green: #8b95ab;
+  --op-green-l: rgba(139, 149, 171, 0.16);
   --bg-primary: #1a2332;
   --bg-secondary: #151b26;
   --bg-tertiary: #243044;
@@ -438,6 +446,18 @@
 
 .carwash-dashboard-operator[data-operator-theme='dark'] .operator-topbar {
   background: var(--op-card);
+}
+
+/* Dark sidebar interactions (base uses light tints that vanish on dark) */
+.carwash-dashboard-operator[data-operator-theme='dark'] .operator-sidebar-user {
+  background: rgba(255, 255, 255, 0.05);
+}
+.carwash-dashboard-operator[data-operator-theme='dark'] .operator-nav__item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #f1f5f9;
+}
+.carwash-dashboard-operator[data-operator-theme='dark'] .book-table th {
+  background: rgba(255, 255, 255, 0.04);
 }
 
 /* Booking cards inside operator — readable, aligned */
