@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
   onlineOn: { color: '#BBF7D0' },
   avail: {
     fontSize: 12,
-    color: '#E0F2FE',
+    color: '#DDD6FE',
     marginTop: 12,
     fontWeight: '500',
   },

@@ -9,13 +9,14 @@ export const AppLayout = {
   heroAvatarSize: 44,
 };
 
-/** Base light shell (client + driver tabs) */
+/** Base light shell (client + driver tabs) — purple brand identity */
 export const ClientColors = {
-  primary: '#0D9488',
-  primaryDark: '#0F766E',
-  primaryLight: '#5EEAD4',
-  accent: '#F97316',
-  greenLight: '#CCFBF1',
+  primary: '#7C3AED',
+  primaryDark: '#6D28D9',
+  primaryLight: '#DDD6FE',
+  accent: '#EC4899',
+  /** Soft brand tint for icon chips/thumbnails (legacy key name) */
+  greenLight: '#EDE9FE',
   background: '#F8FAFC',
   surface: '#FFFFFF',
   text: '#0F172A',
@@ -24,20 +25,20 @@ export const ClientColors = {
   border: '#E2E8F0',
   purple: '#7C3AED',
   purpleLight: '#EDE9FE',
-  tabActive: '#0D9488',
+  tabActive: '#7C3AED',
   tabInactive: '#94A3B8',
   success: '#22C55E',
   error: '#EF4444',
 };
 
-/** Driver: same layout/sizing as client; blue accent for role-specific UI */
+/** Driver: same layout/sizing as client; deeper violet to distinguish the role */
 export const DriverColors = {
   ...ClientColors,
-  primary: '#2563EB',
-  primaryDark: '#1D4ED8',
-  primaryLight: '#93C5FD',
-  greenLight: '#DBEAFE',
-  tabActive: '#2563EB',
+  primary: '#6D28D9',
+  primaryDark: '#5B21B6',
+  primaryLight: '#C4B5FD',
+  greenLight: '#EDE9FE',
+  tabActive: '#6D28D9',
 };
 
 export const CATEGORIES = [
@@ -72,39 +73,39 @@ export type AuthThemePalette = {
 
 export const AuthThemes: Record<AuthAppearance, AuthThemePalette> = {
   dark: {
-    background: '#0B162C',
-    sheet: '#152238',
-    inputBg: '#0B162C',
-    inputBorder: 'rgba(0, 200, 150, 0.22)',
-    primary: '#00C896',
+    background: '#1A0B2E',
+    sheet: '#241040',
+    inputBg: '#1A0B2E',
+    inputBorder: 'rgba(124, 58, 237, 0.3)',
+    primary: '#A855F7',
     text: '#FFFFFF',
-    textMuted: '#94A3B8',
-    textDim: '#64748B',
-    divider: 'rgba(148, 163, 184, 0.35)',
-    googleBg: '#0B162C',
-    googleBorder: 'rgba(148, 163, 184, 0.25)',
-    logoBorder: '#00C896',
-    logoRing: 'rgba(0, 200, 150, 0.15)',
-    logoInner: '#152238',
+    textMuted: '#A99CC4',
+    textDim: '#7C708F',
+    divider: 'rgba(168, 139, 209, 0.28)',
+    googleBg: '#1A0B2E',
+    googleBorder: 'rgba(168, 139, 209, 0.25)',
+    logoBorder: '#A855F7',
+    logoRing: 'rgba(168, 85, 247, 0.18)',
+    logoInner: '#241040',
     toggleBg: 'rgba(255, 255, 255, 0.1)',
     roleTrack: 'rgba(255, 255, 255, 0.06)',
-    roleActiveText: '#0B162C',
+    roleActiveText: '#1A0B2E',
     statusBar: 'light-content',
   },
   light: {
-    background: '#E8F5F2',
+    background: '#F3EEFF',
     sheet: '#FFFFFF',
     inputBg: '#FFFFFF',
     inputBorder: '#E2E8F0',
-    primary: '#00C896',
+    primary: '#7C3AED',
     text: '#0F172A',
     textMuted: '#64748B',
     textDim: '#94A3B8',
     divider: '#E2E8F0',
     googleBg: '#FFFFFF',
     googleBorder: '#E2E8F0',
-    logoBorder: '#00C896',
-    logoRing: 'rgba(0, 200, 150, 0.12)',
+    logoBorder: '#7C3AED',
+    logoRing: 'rgba(124, 58, 237, 0.12)',
     logoInner: '#FFFFFF',
     toggleBg: 'rgba(255, 255, 255, 0.92)',
     roleTrack: '#F1F5F9',
@@ -120,7 +121,7 @@ export const getAuthTheme = (appearance: AuthAppearance): AuthThemePalette =>
   AuthThemes[appearance];
 
 export const POPULAR_SERVICES = [
-  { id: 'standard', title: 'Standard Wash', desc: 'Exterior wash & dry', price: 15, icon: 'water-outline' as const, color: '#0D9488' },
-  { id: 'deluxe', title: 'Deluxe Wash', desc: 'Exterior + interior', price: 30, icon: 'sparkles-outline' as const, color: '#F97316' },
-  { id: 'detail', title: 'Detailing', desc: 'Premium full care', price: 55, icon: 'diamond-outline' as const, color: '#0D9488' },
+  { id: 'standard', title: 'Standard Wash', desc: 'Exterior wash & dry', price: 15, icon: 'water-outline' as const, color: '#7C3AED' },
+  { id: 'deluxe', title: 'Deluxe Wash', desc: 'Exterior + interior', price: 30, icon: 'sparkles-outline' as const, color: '#EC4899' },
+  { id: 'detail', title: 'Detailing', desc: 'Premium full care', price: 55, icon: 'diamond-outline' as const, color: '#9333EA' },
 ];

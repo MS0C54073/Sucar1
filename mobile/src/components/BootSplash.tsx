@@ -5,7 +5,7 @@ import { Colors, Typography } from '../constants/theme';
 
 const BootSplash = () => (
   <View style={[styles.container, isDriverApp() && styles.containerDriver]}>
-    <ActivityIndicator size="large" color={isDriverApp() ? Colors.info : Colors.white} />
+    <ActivityIndicator size="large" color={isDriverApp() ? Colors.primaryLight : Colors.white} />
     <Text style={[styles.text, isDriverApp() && styles.textDriver]}>Loading {getAppDisplayName()}…</Text>
   </View>
 );
@@ -19,7 +19,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   containerDriver: {
-    backgroundColor: '#0f1419',
+    backgroundColor: '#1A0B2E',
   },
   text: {
     color: Colors.white,
@@ -27,7 +27,7 @@ const styles = StyleSheet.create({
     fontWeight: Typography.medium,
   },
   textDriver: {
-    color: Colors.gray300,
+    color: Colors.primaryLight,
   },
 });
 

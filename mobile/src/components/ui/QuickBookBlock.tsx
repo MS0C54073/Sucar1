@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: ClientColors.border,
   },
-  map: { height: 160, backgroundColor: '#E0F2FE' },
+  map: { height: 160, backgroundColor: '#EDE9FE' },
   mapFallback: { flex: 1, alignItems: 'center', justifyContent: 'center', height: 160 },
   mapHint: { fontSize: 11, color: ClientColors.textSecondary, marginTop: 6 },
   card: {

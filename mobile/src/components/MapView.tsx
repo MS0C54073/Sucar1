@@ -94,7 +94,7 @@ const CustomMapView: React.FC<MapViewProps> = ({
       markers.push({
         lat: pickupLocation.lat,
         lng: pickupLocation.lng,
-        color: '#3b82f6',
+        color: '#7C3AED',
         title: 'Pickup Location',
         description: 'Vehicle pickup point',
       });
@@ -103,7 +103,7 @@ const CustomMapView: React.FC<MapViewProps> = ({
       markers.push({
         lat: destinationLocation.lat,
         lng: destinationLocation.lng,
-        color: '#10b981',
+        color: '#EC4899',
         title: 'Destination',
         description: 'Car wash location',
       });
@@ -194,7 +194,7 @@ const CustomMapView: React.FC<MapViewProps> = ({
             'line-cap': 'round'
           },
           paint: {
-            'line-color': '#3b82f6',
+            'line-color': '#7C3AED',
             'line-width': 4,
             'line-opacity': 0.7
           }

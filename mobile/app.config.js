@@ -10,13 +10,13 @@ const variants = {
     name: 'SuCAR',
     slug: 'sucar-client',
     package: 'com.sucar.client',
-    splash: '#1D9E75',
+    splash: '#7C3AED',
   },
   driver: {
     name: 'SuCAR Driver',
     slug: 'sucar-driver',
     package: 'com.sucar.driver',
-    splash: '#0f1419',
+    splash: '#2E1065',
   },
 };
 

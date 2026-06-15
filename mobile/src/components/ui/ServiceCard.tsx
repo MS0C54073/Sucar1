@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 4 },
   desc: { fontSize: 13, color: '#6B7280', lineHeight: 18, marginBottom: 10, minHeight: 36 },
-  price: { fontSize: 15, fontWeight: '700', color: '#0056D2' },
+  price: { fontSize: 15, fontWeight: '700', color: '#EC4899' },
 });
 
 export default ServiceCard;

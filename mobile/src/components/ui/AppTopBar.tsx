@@ -37,7 +37,7 @@ const AppTopBar = ({
         </TouchableOpacity>
       ) : (
         <View style={styles.avatar}>
-          <Ionicons name="person" size={20} color={light ? '#0056D2' : '#3B82F6'} />
+          <Ionicons name="person" size={20} color={light ? '#7C3AED' : '#6D28D9'} />
         </View>
       )}
 
@@ -47,7 +47,7 @@ const AppTopBar = ({
           SuCAR{variant === 'driver' ? '' : ''}
         </Text>
         {variant === 'client' && (
-          <Ionicons name="sparkles" size={14} color="#93C5FD" style={styles.sparkle} />
+          <Ionicons name="sparkles" size={14} color="#C4B5FD" style={styles.sparkle} />
         )}
       </View>
 
