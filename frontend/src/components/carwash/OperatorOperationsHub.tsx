@@ -154,8 +154,10 @@ const OperatorOperationsHub = () => {
       </header>
 
       <div className="ops-hub__grid">
-        <section className="ops-panel" aria-labelledby="ops-bays-title">
-          <h3 id="ops-bays-title">Washing bays</h3>
+        <section className="ops-panel ops-panel--bays" aria-labelledby="ops-bays-title">
+          <h3 id="ops-bays-title">
+            <span className="ops-panel__icon">🏭</span> Washing bays
+          </h3>
           {!data?.bays?.length ? (
             <p className="ops-panel__empty">No bays configured.</p>
           ) : (
@@ -164,8 +166,9 @@ const OperatorOperationsHub = () => {
                 <li key={bay.id} className={`ops-bay-card ops-bay-card--${bay.status}`}>
                   <div className="ops-bay-card__head">
                     <span className="ops-bay-card__name">{bay.name || `Bay ${bay.bayNumber}`}</span>
-                    <span className={`ops-bay-card__status ops-status--${bay.status}`}>
-                      {bay.status}
+                    <span className={`ops-bay-card__badge ops-badge--${bay.status}`}>
+                      <span className="ops-badge__dot" />
+                      {bay.status === 'available' ? 'Available' : bay.status === 'occupied' ? 'In use' : bay.status}
                     </span>
                   </div>
                   {bay.operationalStatus && bay.status === 'occupied' ? (
@@ -219,8 +222,10 @@ const OperatorOperationsHub = () => {
           )}
         </section>
 
-        <section className="ops-panel" aria-labelledby="ops-queue-title">
-          <h3 id="ops-queue-title">Live queue</h3>
+        <section className="ops-panel ops-panel--queue" aria-labelledby="ops-queue-title">
+          <h3 id="ops-queue-title">
+            <span className="ops-panel__icon">🚗</span> Live queue
+          </h3>
           {!waitingQueue.length ? (
             <p className="ops-panel__empty">No vehicles waiting. Check in from Bookings.</p>
           ) : (
@@ -247,8 +252,10 @@ const OperatorOperationsHub = () => {
           )}
         </section>
 
-        <section className="ops-panel" aria-labelledby="ops-payments-title">
-          <h3 id="ops-payments-title">Payment verification</h3>
+        <section className="ops-panel ops-panel--payments" aria-labelledby="ops-payments-title">
+          <h3 id="ops-payments-title">
+            <span className="ops-panel__icon">💳</span> Payments
+          </h3>
           {!data?.pendingPayments?.length ? (
             <p className="ops-panel__empty">No pending payments to review.</p>
           ) : (
@@ -284,8 +291,10 @@ const OperatorOperationsHub = () => {
           )}
         </section>
 
-        <section className="ops-panel" aria-labelledby="ops-activity-title">
-          <h3 id="ops-activity-title">Operator activity</h3>
+        <section className="ops-panel ops-panel--activity" aria-labelledby="ops-activity-title">
+          <h3 id="ops-activity-title">
+            <span className="ops-panel__icon">📊</span> Operator activity
+          </h3>
           <ul className="ops-activity-stats">
             <li>
               <span>Active sessions</span>
