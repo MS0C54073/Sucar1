@@ -16,6 +16,13 @@ interface MapViewProps {
   height?: number;
   showRoute?: boolean;
   onMapReady?: () => void;
+  /**
+   * When false (the default for previews embedded in a ScrollView), the map
+   * does not capture touch gestures, so the surrounding list/page scrolls
+   * smoothly when the user drags over the map. Set true for a full-screen,
+   * pannable map.
+   */
+  interactive?: boolean;
 }
 
 /**
@@ -31,6 +38,7 @@ const CustomMapView: React.FC<MapViewProps> = ({
   height = 300,
   showRoute = false,
   onMapReady,
+  interactive = false,
 }) => {
   const webViewRef = useRef<WebView>(null);
   const [mapReady, setMapReady] = useState(false);
@@ -38,7 +46,7 @@ const CustomMapView: React.FC<MapViewProps> = ({
 
   useEffect(() => {
     generateMapHTML();
-  }, [pickupLocation, destinationLocation, height]);
+  }, [pickupLocation, destinationLocation, height, interactive]);
 
   const generateMapHTML = () => {
     const mapboxToken = getMapboxAccessToken();
@@ -123,7 +131,7 @@ const CustomMapView: React.FC<MapViewProps> = ({
       style: 'mapbox://styles/mapbox/streets-v12',
       center: [${centerLng}, ${centerLat}],
       zoom: ${zoom},
-      interactive: true,
+      interactive: ${interactive ? 'true' : 'false'},
       attributionControl: false
     });
 
@@ -242,6 +250,8 @@ const CustomMapView: React.FC<MapViewProps> = ({
         domStorageEnabled={true}
         startInLoadingState={true}
         scalesPageToFit={true}
+        scrollEnabled={interactive}
+        pointerEvents={interactive ? 'auto' : 'none'}
       />
     </View>
   );

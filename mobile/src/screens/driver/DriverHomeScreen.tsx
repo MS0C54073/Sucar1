@@ -121,7 +121,7 @@ const DriverHomeScreen = () => {
               <Ionicons name="car" size={22} color={C.primary} />
             </View>
             <View style={styles.profileText}>
-              <Text style={styles.hello}>Hello, {firstName}! 👋</Text>
+              <Text style={styles.hello}>Hello, {firstName}!</Text>
               <Text style={styles.tagline}>Driver · Ready for jobs in Lusaka</Text>
             </View>
             <View style={styles.onlineWrap}>

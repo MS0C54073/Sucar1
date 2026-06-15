@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import type { AuthThemePalette } from '../../constants/sucarTheme';
 
 export type SignInRole = 'client' | 'driver';
@@ -14,7 +15,9 @@ const AuthRolePills = ({ colors, value, onChange }: AuthRolePillsProps) => (
   <View style={[styles.row, { backgroundColor: colors.roleTrack }]}>
     {(['client', 'driver'] as SignInRole[]).map((role) => {
       const active = value === role;
-      const label = role === 'client' ? '👤 Client' : '🚗 Driver';
+      const label = role === 'client' ? 'Client' : 'Driver';
+      const icon = role === 'client' ? 'person' : 'car-sport';
+      const textColor = active ? colors.roleActiveText : colors.textMuted;
       return (
         <TouchableOpacity
           key={role}
@@ -22,11 +25,12 @@ const AuthRolePills = ({ colors, value, onChange }: AuthRolePillsProps) => (
           onPress={() => onChange(role)}
           activeOpacity={0.85}
         >
+          <Ionicons name={icon as any} size={16} color={textColor} />
           <Text
             style={[
               styles.pillText,
-              { color: colors.textMuted },
-              active && { color: colors.roleActiveText, fontWeight: '700' },
+              { color: textColor },
+              active && { fontWeight: '700' },
             ]}
           >
             {label}
@@ -46,9 +50,12 @@ const styles = StyleSheet.create({
   },
   pill: {
     flex: 1,
+    flexDirection: 'row',
+    gap: 6,
     paddingVertical: 10,
     borderRadius: 10,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   pillText: { fontSize: 14, fontWeight: '600' },
 });

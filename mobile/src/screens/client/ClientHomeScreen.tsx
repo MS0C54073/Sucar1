@@ -4,12 +4,12 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  SafeAreaView,
   RefreshControl,
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -74,7 +74,7 @@ const ClientHomeScreen = () => {
       : 'Nearby';
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={['top']}>
       <ScreenTopBar variant="client" notificationCount={3} />
 
       <ScrollView
@@ -96,8 +96,8 @@ const ClientHomeScreen = () => {
               <Ionicons name="person" size={22} color={ClientColors.primary} />
             </View>
             <View>
-              <Text style={styles.hello}>Hello, {firstName}! ✨</Text>
-              <Text style={styles.tagline}>Let's get your car sparkling clean!</Text>
+              <Text style={styles.hello}>Hello, {firstName}!</Text>
+              <Text style={styles.tagline}>Let's get your car sparkling clean</Text>
             </View>
           </View>
           <View style={styles.search}>

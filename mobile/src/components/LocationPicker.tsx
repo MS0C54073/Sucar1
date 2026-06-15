@@ -9,6 +9,7 @@ import {
   Alert,
   ScrollView,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { getCurrentPosition, Coordinates } from '../services/locationService';
 import { searchLocations, reverseGeocode, GeocodingResult } from '../services/geocodingService';
 
@@ -158,7 +159,10 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
           {isGettingLocation ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
-            <Text style={styles.currentButtonText}>📍 Current</Text>
+            <View style={styles.currentButtonInner}>
+              <Ionicons name="locate" size={15} color="#fff" />
+              <Text style={styles.currentButtonText}>Current</Text>
+            </View>
           )}
         </TouchableOpacity>
       </View>
@@ -176,7 +180,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
               style={styles.resultItem}
               onPress={() => handleResultSelect(item)}
             >
-              <Text style={styles.resultIcon}>📍</Text>
+              <Ionicons name="location-outline" size={18} color="#64748B" style={styles.resultIcon} />
               <View style={styles.resultContent}>
                 <Text style={styles.resultName}>{item.placeName}</Text>
                 {item.context && item.context.length > 0 && (
@@ -241,6 +245,11 @@ const styles = StyleSheet.create({
   },
   currentButtonDisabled: {
     opacity: 0.6,
+  },
+  currentButtonInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   currentButtonText: {
     color: '#fff',

@@ -26,9 +26,10 @@ const CarWashCard = ({ wash, onPress }: CarWashCardProps) => {
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.9}>
       <View style={styles.img}>
-        <Text style={styles.emoji}>🚿</Text>
+        <Ionicons name="water" size={34} color={ClientColors.primary} />
         <View style={styles.badge}>
-          <Text style={styles.badgeText}>⭐ {wash.rating?.toFixed(1) || '4.8'}</Text>
+          <Ionicons name="star" size={9} color="#FFF" />
+          <Text style={styles.badgeText}>{wash.rating?.toFixed(1) || '4.8'}</Text>
         </View>
       </View>
       <View style={styles.body}>
@@ -65,17 +66,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  emoji: { fontSize: 36 },
   badge: {
     position: 'absolute',
     top: 8,
     right: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
     backgroundColor: ClientColors.primary,
     paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingVertical: 3,
     borderRadius: 20,
   },
-  badgeText: { color: '#FFF', fontSize: 9, fontWeight: '600' },
+  badgeText: { color: '#FFF', fontSize: 9, fontWeight: '700' },
   body: { paddingVertical: 10, paddingHorizontal: 12 },
   title: { fontSize: 13, fontWeight: '600', color: ClientColors.text },
   meta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },

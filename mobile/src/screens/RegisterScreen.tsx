@@ -13,6 +13,7 @@ import {
   Dimensions,
 } from 'react-native';
 import * as Animatable from 'react-native-animatable';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -154,7 +155,7 @@ const RegisterScreen = () => {
           <MovingCar delay={0} top={18} color="#ffd166" />
           <MovingCar delay={700} top={58} color="#06d6a0" />
           <TouchableOpacity onPress={toggle} style={styles.themeToggle}>
-            <Text style={{ color: theme.colors.textPrimary }}>{theme.name === 'light' ? '🌤' : '🌙'}</Text>
+            <Ionicons name={theme.name === 'light' ? 'moon-outline' : 'sunny-outline'} size={18} color={theme.colors.textPrimary} />
           </TouchableOpacity>
           <View style={styles.imageContainer}>
             <Image 

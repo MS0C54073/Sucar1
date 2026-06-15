@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   StatusBar,
+  ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -98,6 +99,13 @@ const LoginScreen = () => {
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+        >
         <View style={styles.hero}>
           <AuthThemeToggle colors={C} style={styles.themeToggle} />
 
@@ -209,6 +217,7 @@ const LoginScreen = () => {
 
           {__DEV__ && <Text style={styles.devHint}>{DEV_HINTS[signInRole]}</Text>}
         </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </View>
   );
@@ -218,6 +227,7 @@ const createStyles = (C: AuthThemePalette) =>
   StyleSheet.create({
     root: { flex: 1, backgroundColor: C.background },
     flex: { flex: 1 },
+    scrollContent: { flexGrow: 1 },
     hero: {
       flex: 1,
       alignItems: 'center',
