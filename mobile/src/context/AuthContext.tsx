@@ -17,6 +17,8 @@ interface AuthContextType {
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: (idToken: string, role?: string) => Promise<void>;
+  sendPhoneCode: (phone: string) => Promise<{ devCode?: string }>;
+  loginWithPhone: (phone: string, code: string, name?: string) => Promise<void>;
   register: (userData: any) => Promise<void>;
   logout: () => Promise<void>;
   loading: boolean;
@@ -212,6 +214,70 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   /**
+   * Request an SMS verification code for phone-OTP sign-in.
+   * In development the backend returns the code so it can be auto-filled.
+   */
+  const sendPhoneCode = async (phone: string): Promise<{ devCode?: string }> => {
+    try {
+      const response = await apiClient.post('/auth/phone/send-code', { phone });
+      if (!response.data.success) {
+        throw new Error(response.data.message || 'Could not send the verification code');
+      }
+      return { devCode: response.data.code };
+    } catch (error: any) {
+      if (error.code === 'ECONNREFUSED' || error.message?.includes('Network Error')) {
+        throw new Error('Cannot connect to server. Please check your connection and that the backend is running.');
+      }
+      throw new Error(error.response?.data?.message || error.message || 'Could not send the verification code');
+    }
+  };
+
+  /**
+   * Verify a phone OTP and sign in. New accounts are created with this app
+   * variant's role (client / driver); `name` is only used for first-time sign-up.
+   * Persists the token + user so the session survives app restarts.
+   */
+  const loginWithPhone = async (phone: string, code: string, name?: string) => {
+    try {
+      const response = await apiClient.post('/auth/phone/verify', {
+        phone,
+        code,
+        role: getRequiredRole(),
+        name,
+      });
+
+      if (!response.data.success) {
+        throw new Error(response.data.message || 'Verification failed');
+      }
+
+      const { token: newToken, ...userData } = response.data.data;
+      if (!newToken) {
+        throw new Error('No token received from server');
+      }
+
+      const requiredRole = getRequiredRole();
+      if (userData.role !== requiredRole) {
+        throw new Error(
+          `This account is for ${userData.role}s. Please use ${getOtherAppName()} or sign in with a ${requiredRole} account in ${getAppDisplayName()}.`
+        );
+      }
+
+      setUser(userData);
+      setToken(newToken);
+      await AsyncStorage.setItem('token', newToken);
+      await AsyncStorage.setItem('user', JSON.stringify(toStoredUser(userData)));
+      apiClient.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+      axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+    } catch (error: any) {
+      console.error('❌ Phone sign-in error:', error);
+      if (error.response?.status === 401) {
+        throw new Error('Invalid or expired code. Please try again.');
+      }
+      throw new Error(error.response?.data?.message || error.message || 'Verification failed. Please try again');
+    }
+  };
+
+  /**
    * Create a new user account on the backend and, on success,
    * immediately log the user in and persist their auth state.
    */
@@ -291,7 +357,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, loginWithGoogle, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, login, loginWithGoogle, sendPhoneCode, loginWithPhone, register, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

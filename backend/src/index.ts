@@ -44,6 +44,8 @@ connectDB().then(async () => {
   await ensureReviewsSchema();
   const { ensureFavoritesSchema } = await import('./services/favoritesService');
   await ensureFavoritesSchema();
+  const { ensurePhoneVerificationSchema } = await import('./services/phoneVerificationService');
+  await ensurePhoneVerificationSchema();
 }).catch((error) => {
   console.error('Database setup error:', error);
 });

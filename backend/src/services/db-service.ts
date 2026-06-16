@@ -208,54 +208,34 @@ export class DBService {
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + expiresInMinutes);
 
-    // First, try to update existing user
-    const { data: existingUser } = await supabase
-      .from('users')
-      .select('id')
-      .eq('phone', phone)
-      .maybeSingle();
+    // Store keyed by phone (works for first-time users who have no `users` row
+    // yet). One row per phone; a resend overwrites the previous code.
+    const { error } = await supabase
+      .from('phone_verification_codes')
+      .upsert(
+        { phone, code, expires_at: expiresAt.toISOString() },
+        { onConflict: 'phone' }
+      );
 
-    if (existingUser) {
-      const { error } = await supabase
-        .from('users')
-        .update({
-          phone_verification_code: code,
-          phone_verification_expires: expiresAt.toISOString(),
-        })
-        .eq('id', existingUser.id);
-
-      if (error) throw error;
-      return true;
-    }
-
-    // If no user exists, we'll store it when they verify (in verifyOTP)
+    if (error) throw error;
     return true;
   }
 
   static async verifyPhoneCode(phone: string, code: string): Promise<boolean> {
     const { data, error } = await supabase
-      .from('users')
-      .select('phone_verification_code, phone_verification_expires')
+      .from('phone_verification_codes')
+      .select('code, expires_at')
       .eq('phone', phone)
       .maybeSingle();
 
     if (error || !data) return false;
 
-    // Check if code matches and hasn't expired
-    if (data.phone_verification_code === code) {
-      const expiresAt = new Date(data.phone_verification_expires);
-      if (expiresAt > new Date()) {
-        // Clear the code after verification
-        await supabase
-          .from('users')
-          .update({
-            phone_verified: true,
-            phone_verification_code: null,
-            phone_verification_expires: null,
-          })
-          .eq('phone', phone);
-        return true;
-      }
+    if (data.code === code && new Date(data.expires_at) > new Date()) {
+      // Consume the code so it cannot be replayed.
+      await supabase.from('phone_verification_codes').delete().eq('phone', phone);
+      // Mark an existing user verified (no-op for first-time sign-ups).
+      await supabase.from('users').update({ phone_verified: true }).eq('phone', phone);
+      return true;
     }
 
     return false;

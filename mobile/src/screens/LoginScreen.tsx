@@ -15,107 +15,83 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { getRequiredRole } from '../config/appVariant';
+import { getRequiredRole, getAppDisplayName } from '../config/appVariant';
 import AuthThemeToggle from '../components/auth/AuthThemeToggle';
-import AuthRolePills, { SignInRole } from '../components/auth/AuthRolePills';
 import type { AuthThemePalette } from '../constants/sucarTheme';
-import { useGoogleAuth } from '../hooks/useGoogleAuth';
 
-const DEV_HINTS: Record<SignInRole, string> = {
-  client: 'Test: john.mwansa@email.com / client123',
-  driver: 'Test: james.mulenga@driver.com / driver123',
-};
+type Step = 'phone' | 'code';
 
 const LoginScreen = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const [step, setStep] = useState<Step>('phone');
+  const [phone, setPhone] = useState('');
+  const [name, setName] = useState('');
+  const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
-  const [signInRole, setSignInRole] = useState<SignInRole>(getRequiredRole());
-  const { login } = useAuth();
-  const navigation = useNavigation();
+  const [devCode, setDevCode] = useState<string | undefined>();
+
+  const { sendPhoneCode, loginWithPhone } = useAuth();
   const insets = useSafeAreaInsets();
   const { authTheme: C } = useTheme();
   const styles = useMemo(() => createStyles(C), [C]);
-  const buildRole = getRequiredRole();
 
-  const google = useGoogleAuth({
-    role: signInRole,
-    onError: (m) => Alert.alert('Google sign-in', m),
-  });
+  const role = getRequiredRole();
+  const roleLabel = role === 'driver' ? 'Driver' : 'Client';
 
-  const onGooglePress = () => {
-    if (!google.configured) {
-      Alert.alert(
-        'Google sign-in',
-        'Not configured yet. Add EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID to mobile/.env (see GOOGLE_AUTH_SETUP.md).',
-      );
-      return;
-    }
-    google.signIn();
+  // Normalize to E.164-ish for Zambia: strip spaces, map leading 0 to +260.
+  const normalizePhone = (raw: string) => {
+    let p = raw.replace(/[^\d+]/g, '');
+    if (p.startsWith('0')) p = `+260${p.slice(1)}`;
+    else if (!p.startsWith('+')) p = `+${p}`;
+    return p;
   };
 
-  const onRoleChange = (role: SignInRole) => {
-    if (role !== buildRole) {
-      Alert.alert(
-        'Different app',
-        role === 'driver'
-          ? 'Driver accounts use the SuCAR Driver app. Install that build or sign in as Client here.'
-          : 'Client accounts use the SuCAR Client app. Install that build or sign in as Driver here.',
-        [{ text: 'OK' }],
-      );
+  const onSendCode = async () => {
+    const p = normalizePhone(phone);
+    if (p.replace(/\D/g, '').length < 10) {
+      Alert.alert('Invalid number', 'Please enter a valid phone number.');
       return;
     }
-    setSignInRole(role);
-  };
-
-  const handleLogin = async () => {
-    if (!email.trim() || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
-      return;
-    }
-
     setLoading(true);
     try {
-      await login(email.trim(), password);
-    } catch (error: any) {
-      let errorMessage =
-        error?.message || error?.toString() || 'Login failed. Please try again.';
-      errorMessage = errorMessage.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
-
-      if (
-        errorMessage.includes('Cannot connect to server') ||
-        errorMessage.includes('ECONNREFUSED') ||
-        errorMessage.includes('Network Error') ||
-        errorMessage.includes('Network request failed')
-      ) {
-        Alert.alert(
-          'Connection Error',
-          'Cannot connect to backend server. Start the backend (npm run dev in /backend) and try again.',
-          [{ text: 'OK' }],
-        );
-      } else {
-        Alert.alert('Login Failed', errorMessage);
-      }
-      console.error('Login error:', error);
+      const { devCode } = await sendPhoneCode(p);
+      setPhone(p);
+      setDevCode(devCode);
+      if (devCode) setCode(devCode); // dev convenience: prefill the returned code
+      setStep('code');
+    } catch (e: any) {
+      Alert.alert('Could not send code', e?.message || 'Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const roleLabel = signInRole === 'client' ? 'Client' : 'Driver';
+  const onVerify = async () => {
+    if (code.trim().length < 4) {
+      Alert.alert('Enter the code', 'Type the verification code we sent you.');
+      return;
+    }
+    setLoading(true);
+    try {
+      await loginWithPhone(phone, code.trim(), name.trim() || undefined);
+    } catch (e: any) {
+      const msg = e?.message || 'Verification failed.';
+      if (/name/i.test(msg)) {
+        Alert.alert('One more thing', 'Looks like this is your first time. Please add your full name, then verify again.');
+        setStep('phone');
+      } else {
+        Alert.alert('Verification failed', msg);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
       <StatusBar barStyle={C.statusBar} backgroundColor={C.background} />
-
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
           style={styles.flex}
           contentContainerStyle={styles.scrollContent}
@@ -123,120 +99,122 @@ const LoginScreen = () => {
           showsVerticalScrollIndicator={false}
           bounces={false}
         >
-        <View style={styles.hero}>
-          <AuthThemeToggle colors={C} style={styles.themeToggle} />
-
-          <View style={styles.logoFrame}>
-            <View style={[styles.logoInner, { backgroundColor: C.logoInner }]}>
-              <Image
-                source={require('../../assets/Sucarcar.jpeg')}
-                style={styles.logoImage}
-                resizeMode="contain"
-              />
+          <View style={styles.hero}>
+            <AuthThemeToggle colors={C} style={styles.themeToggle} />
+            <View style={styles.logoFrame}>
+              <View style={[styles.logoInner, { backgroundColor: C.logoInner }]}>
+                <Image source={require('../../assets/Sucarcar.jpeg')} style={styles.logoImage} resizeMode="contain" />
+              </View>
             </View>
-          </View>
-          <Text style={styles.brand}>SuCAR</Text>
-          <Text style={styles.tagline}>Book your car wash, on demand</Text>
-        </View>
-
-        <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 20) }]}>
-          <AuthRolePills colors={C} value={signInRole} onChange={onRoleChange} />
-
-          <Text style={styles.welcome}>Welcome back</Text>
-          <Text style={styles.signingAs}>
-            Signing in as <Text style={styles.signingAsAccent}>{roleLabel}</Text>
-          </Text>
-
-          <View style={styles.field}>
-            <Ionicons name="mail-outline" size={20} color={C.textDim} style={styles.fieldIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Email address"
-              placeholderTextColor={C.textDim}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
+            <Text style={styles.brand}>SuCAR</Text>
+            <Text style={styles.tagline}>{getAppDisplayName()}</Text>
           </View>
 
-          <View style={styles.field}>
-            <Ionicons name="lock-closed-outline" size={20} color={C.textDim} style={styles.fieldIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              placeholderTextColor={C.textDim}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}
-              autoCapitalize="none"
-            />
-            <TouchableOpacity
-              onPress={() => setShowPassword((v) => !v)}
-              hitSlop={12}
-              style={styles.eyeBtn}
-            >
-              <Ionicons
-                name={showPassword ? 'eye-outline' : 'eye-off-outline'}
-                size={20}
-                color={C.textDim}
-              />
-            </TouchableOpacity>
-          </View>
+          <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 20) }]}>
+            {step === 'phone' ? (
+              <>
+                <Text style={styles.welcome}>Enter your phone</Text>
+                <Text style={styles.signingAs}>
+                  We'll text you a code to sign in as <Text style={styles.signingAsAccent}>{roleLabel}</Text>
+                </Text>
 
-          <TouchableOpacity onPress={() => Alert.alert('Forgot password', 'Coming soon.')} style={styles.forgotWrap}>
-            <Text style={styles.forgot}>Forgot password?</Text>
-          </TouchableOpacity>
+                <View style={styles.field}>
+                  <Ionicons name="call-outline" size={20} color={C.textDim} style={styles.fieldIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="e.g. 0977 123 456"
+                    placeholderTextColor={C.textDim}
+                    value={phone}
+                    onChangeText={setPhone}
+                    keyboardType="phone-pad"
+                    autoFocus
+                  />
+                </View>
 
-          <TouchableOpacity
-            style={[styles.loginBtn, loading && styles.loginBtnDisabled]}
-            onPress={handleLogin}
-            disabled={loading}
-            activeOpacity={0.85}
-          >
-            {loading ? (
-              <ActivityIndicator color="#FFF" />
+                <View style={styles.field}>
+                  <Ionicons name="person-outline" size={20} color={C.textDim} style={styles.fieldIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Full name (first time only)"
+                    placeholderTextColor={C.textDim}
+                    value={name}
+                    onChangeText={setName}
+                    autoCapitalize="words"
+                  />
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.primaryBtn, loading && styles.primaryBtnDisabled]}
+                  onPress={onSendCode}
+                  disabled={loading}
+                  activeOpacity={0.85}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#FFF" />
+                  ) : (
+                    <>
+                      <Text style={styles.primaryBtnText}>Send code</Text>
+                      <Ionicons name="arrow-forward" size={20} color="#FFF" />
+                    </>
+                  )}
+                </TouchableOpacity>
+
+                <Text style={styles.hint}>
+                  By continuing you agree to receive a one time SMS verification code.
+                </Text>
+              </>
             ) : (
               <>
-                <Text style={styles.loginBtnText}>Log in</Text>
-                <Ionicons name="arrow-forward" size={20} color="#FFF" />
+                <Text style={styles.welcome}>Enter the code</Text>
+                <Text style={styles.signingAs}>
+                  Sent to <Text style={styles.signingAsAccent}>{phone}</Text>
+                </Text>
+
+                <View style={styles.field}>
+                  <Ionicons name="keypad-outline" size={20} color={C.textDim} style={styles.fieldIcon} />
+                  <TextInput
+                    style={[styles.input, styles.codeInput]}
+                    placeholder="6 digit code"
+                    placeholderTextColor={C.textDim}
+                    value={code}
+                    onChangeText={setCode}
+                    keyboardType="number-pad"
+                    maxLength={6}
+                    autoFocus
+                  />
+                </View>
+
+                {!!devCode && (
+                  <Text style={styles.devHint}>Dev code: {devCode}</Text>
+                )}
+
+                <TouchableOpacity
+                  style={[styles.primaryBtn, loading && styles.primaryBtnDisabled]}
+                  onPress={onVerify}
+                  disabled={loading}
+                  activeOpacity={0.85}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#FFF" />
+                  ) : (
+                    <>
+                      <Text style={styles.primaryBtnText}>Verify and continue</Text>
+                      <Ionicons name="checkmark" size={20} color="#FFF" />
+                    </>
+                  )}
+                </TouchableOpacity>
+
+                <View style={styles.codeActions}>
+                  <TouchableOpacity onPress={() => { setStep('phone'); setCode(''); }} hitSlop={8}>
+                    <Text style={styles.linkText}>Change number</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={onSendCode} disabled={loading} hitSlop={8}>
+                    <Text style={styles.linkText}>Resend code</Text>
+                  </TouchableOpacity>
+                </View>
               </>
             )}
-          </TouchableOpacity>
-
-          <View style={styles.dividerRow}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or</Text>
-            <View style={styles.dividerLine} />
           </View>
-
-          <TouchableOpacity
-            style={[styles.googleBtn, google.loading && { opacity: 0.6 }]}
-            onPress={onGooglePress}
-            disabled={google.loading}
-            activeOpacity={0.8}
-          >
-            <View style={styles.googleMark}>
-              <Text style={styles.googleG}>G</Text>
-            </View>
-            <Text style={styles.googleLabel}>
-              {google.loading ? 'Signing in…' : 'Continue with Google'}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => (navigation as any).navigate('Register', { role: signInRole })}
-            style={styles.footer}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.footerText}>
-              No account? <Text style={styles.footerLink}>Create one</Text>
-            </Text>
-          </TouchableOpacity>
-
-          {__DEV__ && <Text style={styles.devHint}>{DEV_HINTS[signInRole]}</Text>}
-        </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
@@ -253,7 +231,7 @@ const createStyles = (C: AuthThemePalette) =>
       alignItems: 'center',
       justifyContent: 'center',
       paddingHorizontal: 32,
-      minHeight: 180,
+      minHeight: 200,
     },
     themeToggle: { position: 'absolute', top: 8, right: 20 },
     logoFrame: {
@@ -276,38 +254,17 @@ const createStyles = (C: AuthThemePalette) =>
       overflow: 'hidden',
     },
     logoImage: { width: 48, height: 48 },
-    brand: {
-      fontSize: 32,
-      fontWeight: '800',
-      color: C.text,
-      letterSpacing: 0.5,
-      marginBottom: 8,
-    },
-    tagline: {
-      fontSize: 15,
-      color: C.textMuted,
-      textAlign: 'center',
-      lineHeight: 22,
-      maxWidth: 280,
-    },
+    brand: { fontSize: 32, fontWeight: '800', color: C.text, letterSpacing: 0.5, marginBottom: 8 },
+    tagline: { fontSize: 15, color: C.textMuted, textAlign: 'center', lineHeight: 22, maxWidth: 280 },
     sheet: {
       backgroundColor: C.sheet,
       borderTopLeftRadius: 28,
       borderTopRightRadius: 28,
       paddingHorizontal: 24,
-      paddingTop: 22,
+      paddingTop: 24,
     },
-    welcome: {
-      fontSize: 22,
-      fontWeight: '700',
-      color: C.text,
-      marginBottom: 4,
-    },
-    signingAs: {
-      fontSize: 14,
-      color: C.textMuted,
-      marginBottom: 18,
-    },
+    welcome: { fontSize: 22, fontWeight: '700', color: C.text, marginBottom: 4 },
+    signingAs: { fontSize: 14, color: C.textMuted, marginBottom: 20 },
     signingAsAccent: { color: C.primary, fontWeight: '700' },
     field: {
       flexDirection: 'row',
@@ -320,17 +277,9 @@ const createStyles = (C: AuthThemePalette) =>
       minHeight: 52,
     },
     fieldIcon: { marginLeft: 14 },
-    input: {
-      flex: 1,
-      paddingVertical: 14,
-      paddingHorizontal: 12,
-      fontSize: 16,
-      color: C.text,
-    },
-    eyeBtn: { paddingRight: 14, paddingLeft: 4 },
-    forgotWrap: { alignSelf: 'flex-end', marginBottom: 20, marginTop: 2 },
-    forgot: { fontSize: 14, fontWeight: '600', color: C.primary },
-    loginBtn: {
+    input: { flex: 1, paddingVertical: 14, paddingHorizontal: 12, fontSize: 16, color: C.text },
+    codeInput: { letterSpacing: 8, fontSize: 20, fontWeight: '700' },
+    primaryBtn: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
@@ -338,49 +287,15 @@ const createStyles = (C: AuthThemePalette) =>
       backgroundColor: C.primary,
       borderRadius: 12,
       minHeight: 52,
-      marginBottom: 22,
+      marginTop: 6,
+      marginBottom: 14,
     },
-    loginBtnDisabled: { opacity: 0.65 },
-    loginBtnText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
-    dividerRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: 18,
-      gap: 12,
-    },
-    dividerLine: { flex: 1, height: 1, backgroundColor: C.divider },
-    dividerText: { fontSize: 13, color: C.textDim },
-    googleBtn: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: C.googleBg,
-      borderWidth: 1,
-      borderColor: C.googleBorder,
-      borderRadius: 12,
-      minHeight: 52,
-      gap: 10,
-      marginBottom: 24,
-    },
-    googleMark: {
-      width: 22,
-      height: 22,
-      borderRadius: 11,
-      backgroundColor: '#FFF',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    googleG: { fontSize: 14, fontWeight: '800', color: '#4285F4' },
-    googleLabel: { fontSize: 16, fontWeight: '600', color: C.text },
-    footer: { alignItems: 'center' },
-    footerText: { fontSize: 15, color: C.textMuted },
-    footerLink: { color: C.primary, fontWeight: '700' },
-    devHint: {
-      marginTop: 16,
-      fontSize: 11,
-      color: C.textDim,
-      textAlign: 'center',
-    },
+    primaryBtnDisabled: { opacity: 0.65 },
+    primaryBtnText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
+    hint: { fontSize: 12, color: C.textDim, textAlign: 'center', lineHeight: 18 },
+    devHint: { fontSize: 12, color: C.textDim, textAlign: 'center', marginBottom: 12 },
+    codeActions: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
+    linkText: { fontSize: 14, fontWeight: '600', color: C.primary },
   });
 
 export default LoginScreen;
