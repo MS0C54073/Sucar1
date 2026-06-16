@@ -15,6 +15,17 @@ const DEFAULT_ADMIN = {
  */
 export async function ensureDefaultAdmin(): Promise<void> {
   try {
+    // SECURITY: never seed a known-password admin in production. A default
+    // admin@sucar.com / admin123 in prod is a full account-takeover risk.
+    // Create the first admin via a controlled one-off script instead.
+    if (process.env.NODE_ENV === 'production' && process.env.ALLOW_DEFAULT_ADMIN !== 'true') {
+      console.warn(
+        '[security] Skipping default-admin seeding in production. ' +
+          'Provision the first admin out-of-band (or set ALLOW_DEFAULT_ADMIN=true to override).'
+      );
+      return;
+    }
+
     const { data: existing, error: fetchError } = await supabase
       .from('users')
       .select('id, email, password, is_active')

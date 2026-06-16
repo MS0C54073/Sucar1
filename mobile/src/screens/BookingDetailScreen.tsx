@@ -21,6 +21,7 @@ import { ClientColors } from '../constants/sucarTheme';
 import { useTheme } from '../context/ThemeContext';
 import TrackingDriverCard, { isActiveBooking } from '../components/ui/TrackingDriverCard';
 import { isDriverApp } from '../config/appVariant';
+import { openDriverNavigation } from '../utils/navigation';
 
 /**
  * Detailed view for a single booking.
@@ -176,6 +177,9 @@ const BookingDetailScreen = () => {
   }
 
   const canCancel = ['pending', 'accepted'].includes(booking.status);
+  const driverView = isDriverApp();
+  const navTarget = pickupCoordinates || destinationCoordinates;
+  const navLabel = pickupCoordinates ? 'Pickup' : 'Car wash';
   const clientView = user?.role === 'client' && !isDriverApp();
   const tracking = clientView && isActiveBooking(booking.status);
   const needsPickupConfirm = clientView && booking.status === 'picked_up_pending_confirmation';
@@ -241,6 +245,20 @@ const BookingDetailScreen = () => {
                 {getStatusLabel(booking.status)}
               </Text>
             </View>
+          </Animatable.View>
+        )}
+
+        {/* Driver: hand off to Google Maps / Waze for the actual drive */}
+        {driverView && navTarget && (
+          <Animatable.View animation="fadeInUp" duration={400} useNativeDriver style={styles.actions}>
+            <TouchableOpacity
+              style={styles.navBtn}
+              onPress={() => openDriverNavigation(navTarget, navLabel)}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="navigate" size={20} color={Colors.white} />
+              <Text style={styles.cancelButtonText}>Navigate to {navLabel}</Text>
+            </TouchableOpacity>
           </Animatable.View>
         )}
 
@@ -477,6 +495,15 @@ const styles = StyleSheet.create({
   cancelButton: {
     flexDirection: 'row',
     backgroundColor: Colors.error,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+  },
+  navBtn: {
+    flexDirection: 'row',
+    backgroundColor: '#6D28D9',
     padding: Spacing.md,
     borderRadius: BorderRadius.md,
     alignItems: 'center',

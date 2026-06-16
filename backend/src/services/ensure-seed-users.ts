@@ -189,6 +189,13 @@ function buildInsertRow(account: SeedAccount, hashedPassword: string): Record<st
  * Ensures seed test accounts exist and can log in (bcrypt password, active, approved).
  */
 export async function ensureSeedUsers(): Promise<void> {
+  // SECURITY: these are known-password test fixtures. Never seed them in
+  // production — they would be live, guessable accounts.
+  if (process.env.NODE_ENV === 'production' && process.env.ALLOW_SEED_USERS !== 'true') {
+    console.warn('[security] Skipping seed-user creation in production.');
+    return;
+  }
+
   let repaired = 0;
   let created = 0;
 
