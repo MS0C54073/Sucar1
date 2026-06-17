@@ -5,7 +5,6 @@ import { isDriverApp, getRequiredRole } from '../config/appVariant';
 import BootSplash from '../components/BootSplash';
 import WrongRoleScreen from '../components/WrongRoleScreen';
 import LoginScreen from '../screens/LoginScreen';
-import RegisterScreen from '../screens/RegisterScreen';
 import ClientDrawer from './ClientDrawer';
 import DriverDrawer from './DriverDrawer';
 import BookingScreen from '../screens/client/BookingScreen';
@@ -39,10 +38,7 @@ const RootNavigator = () => {
       }}
     >
       {!user ? (
-        <>
-          <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="Register" component={RegisterScreen} options={{ headerShown: false }} />
-        </>
+        <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
       ) : user.role !== requiredRole ? (
         <Stack.Screen name="WrongRole" options={{ headerShown: false }}>
           {() => <WrongRoleScreen actualRole={user.role} />}
