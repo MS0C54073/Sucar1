@@ -9,7 +9,7 @@ import {
 import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
 import { Coordinates } from '../services/locationService';
-import { getMapboxAccessToken } from '../config/mapbox';
+import { useMapbox } from '../context/MapboxContext';
 
 interface MapViewProps {
   pickupLocation?: Coordinates;
@@ -45,23 +45,24 @@ const CustomMapView: React.FC<MapViewProps> = ({
   const [mapReady, setMapReady] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
   const [mapHtml, setMapHtml] = useState('');
-
-  const hasToken = getMapboxAccessToken().length > 0;
+  const { token: mapboxToken, loading: tokenLoading, error: tokenError } = useMapbox();
 
   useEffect(() => {
-    generateMapHTML();
-  }, [pickupLocation, destinationLocation, height, interactive]);
+    setMapReady(false);
+    setLoadFailed(false);
+    if (!mapboxToken) return;
+    generateMapHTML(mapboxToken);
+  }, [pickupLocation, destinationLocation, height, interactive, mapboxToken]);
 
   // Never spin forever: if the map hasn't reported ready within a few seconds
   // (slow tiles, network, bad token), fall back to the static preview.
   useEffect(() => {
-    if (!hasToken || mapReady) return;
+    if (!mapboxToken || mapReady) return;
     const t = setTimeout(() => setLoadFailed(true), 7000);
     return () => clearTimeout(t);
-  }, [hasToken, mapReady, mapHtml]);
+  }, [mapboxToken, mapReady, mapHtml]);
 
-  const generateMapHTML = () => {
-    const mapboxToken = getMapboxAccessToken();
+  const generateMapHTML = (token: string) => {
     const locations: Coordinates[] = [];
     if (pickupLocation) locations.push(pickupLocation);
     if (destinationLocation) locations.push(destinationLocation);
@@ -247,14 +248,25 @@ const CustomMapView: React.FC<MapViewProps> = ({
     }
   };
 
-  // Static placeholder when no token is configured or the map can't load —
-  // avoids an indefinite "Loading map..." spinner and keeps the layout clean.
-  if (!hasToken || loadFailed) {
+  // Loading or missing token — show placeholder instead of a blank/broken map.
+  if (tokenLoading) {
+    return (
+      <View style={[styles.container, { height }, styles.placeholder]}>
+        <ActivityIndicator size="small" color="#7C3AED" />
+        <Text style={styles.placeholderTitle}>Loading map…</Text>
+      </View>
+    );
+  }
+
+  if (!mapboxToken || loadFailed) {
     const coord = pickupLocation || destinationLocation;
     return (
       <View style={[styles.container, { height }, styles.placeholder]}>
         <Ionicons name="map-outline" size={28} color="#64748B" />
         <Text style={styles.placeholderTitle}>Map preview</Text>
+        {tokenError ? (
+          <Text style={styles.placeholderHint}>{tokenError}</Text>
+        ) : null}
         {coord ? (
           <Text style={styles.placeholderCoord}>
             {coord.lat.toFixed(4)}, {coord.lng.toFixed(4)}
@@ -270,7 +282,7 @@ const CustomMapView: React.FC<MapViewProps> = ({
     <View style={[styles.container, { height }]}>
       {!mapReady && (
         <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#667eea" />
+          <ActivityIndicator size="large" color="#7C3AED" />
           <Text style={styles.loadingText}>Loading map...</Text>
         </View>
       )}
@@ -281,6 +293,8 @@ const CustomMapView: React.FC<MapViewProps> = ({
         onMessage={handleMessage}
         javaScriptEnabled={true}
         domStorageEnabled={true}
+        originWhitelist={['*']}
+        mixedContentMode="always"
         startInLoadingState={true}
         scalesPageToFit={true}
         scrollEnabled={interactive}
@@ -333,6 +347,13 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontSize: 11,
     color: '#94A3B8',
+  },
+  placeholderHint: {
+    marginTop: 4,
+    fontSize: 10,
+    color: '#94A3B8',
+    textAlign: 'center',
+    paddingHorizontal: 12,
   },
 });
 

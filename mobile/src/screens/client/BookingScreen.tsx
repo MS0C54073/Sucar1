@@ -146,7 +146,12 @@ const BookingScreen = () => {
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
-      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.contentContainer}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
         <View style={styles.form}>
           <Animatable.View animation="fadeInDown" duration={700} useNativeDriver style={styles.header}>
             <Ionicons name="calendar-outline" size={28} color={theme.colors.primary} />

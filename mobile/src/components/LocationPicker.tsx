@@ -12,6 +12,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { getCurrentPosition, Coordinates } from '../services/locationService';
 import { searchLocations, reverseGeocode, GeocodingResult } from '../services/geocodingService';
+import { useMapbox } from '../context/MapboxContext';
+import { ClientColors } from '../constants/sucarTheme';
 
 interface LocationPickerProps {
   onLocationSelect: (location: string, coordinates: Coordinates) => void;
@@ -38,6 +40,8 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   const [isSearching, setIsSearching] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const { token: mapboxToken, loading: tokenLoading } = useMapbox();
 
   useEffect(() => {
     if (initialLocation) {
@@ -59,24 +63,39 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       });
   }, []);
 
-  // Search locations with debounce
+  // Search locations with debounce — re-runs when token becomes available
   useEffect(() => {
     if (!location || location.length < 2) {
       setSearchResults([]);
       setShowResults(false);
+      setSearchError(null);
       return;
     }
 
+    if (tokenLoading) return;
+
     const timeoutId = setTimeout(async () => {
       setIsSearching(true);
-      const results = await searchLocations(location, userLocation || undefined);
-      setSearchResults(results);
-      setShowResults(true);
-      setIsSearching(false);
-    }, 300); // 300ms debounce
+      setSearchError(null);
+      try {
+        const results = await searchLocations(location, userLocation || undefined);
+        setSearchResults(results);
+        setShowResults(true);
+        if (results.length === 0 && !mapboxToken) {
+          setSearchError('Location search unavailable. Start the backend server.');
+        } else if (results.length === 0) {
+          setSearchError('No locations found. Try a different search.');
+        }
+      } catch {
+        setSearchError('Search failed. Check your connection.');
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [location, userLocation]);
+  }, [location, userLocation, mapboxToken, tokenLoading]);
 
   const handleLocationChange = (text: string) => {
     setLocation(text);
@@ -113,15 +132,6 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
     }
   };
 
-  const handleManualEntry = () => {
-    // If user has typed something and there are no results, allow manual entry
-    if (location && location.length > 0 && !coordinates) {
-      // User can manually enter location without coordinates
-      // This will be handled by the parent component
-      onLocationSelect(location, coordinates || { lat: 0, lng: 0 });
-    }
-  };
-
   return (
     <View style={styles.container}>
       <View style={styles.inputGroup}>
@@ -132,21 +142,18 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
             value={location}
             onChangeText={handleLocationChange}
             onFocus={() => {
-              if (searchResults.length > 0) {
+              if (searchResults.length > 0 || location.length >= 2) {
                 setShowResults(true);
               }
             }}
             onBlur={() => {
-              // Delay to allow click on results
-              setTimeout(() => {
-                setShowResults(false);
-                handleManualEntry();
-              }, 200);
+              // Delay hide so result taps register (onPressIn also selects)
+              setTimeout(() => setShowResults(false), 250);
             }}
           />
           {isSearching && (
             <View style={styles.spinner}>
-              <ActivityIndicator size="small" color="#667eea" />
+              <ActivityIndicator size="small" color={ClientColors.primary} />
             </View>
           )}
         </View>
@@ -169,16 +176,16 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
 
       {/* Autocomplete Results */}
       {showResults && searchResults.length > 0 && (
-        <ScrollView 
+        <ScrollView
           style={styles.resultsContainer}
           nestedScrollEnabled={true}
-          keyboardShouldPersistTaps="handled"
+          keyboardShouldPersistTaps="always"
         >
           {searchResults.map((item) => (
             <TouchableOpacity
               key={item.id}
               style={styles.resultItem}
-              onPress={() => handleResultSelect(item)}
+              onPressIn={() => handleResultSelect(item)}
             >
               <Ionicons name="location-outline" size={18} color="#64748B" style={styles.resultIcon} />
               <View style={styles.resultContent}>
@@ -190,6 +197,12 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
             </TouchableOpacity>
           ))}
         </ScrollView>
+      )}
+
+      {showResults && searchResults.length === 0 && location.length >= 2 && !isSearching && searchError && (
+        <View style={styles.noResults}>
+          <Text style={styles.noResultsText}>{searchError}</Text>
+        </View>
       )}
 
       {coordinates && (
@@ -235,7 +248,7 @@ const styles = StyleSheet.create({
     top: 15,
   },
   currentButton: {
-    backgroundColor: '#667eea',
+    backgroundColor: ClientColors.primary,
     paddingHorizontal: 15,
     paddingVertical: 12,
     borderRadius: 5,
@@ -307,6 +320,19 @@ const styles = StyleSheet.create({
     color: '#999',
     marginTop: 5,
     fontStyle: 'italic',
+  },
+  noResults: {
+    marginTop: 6,
+    padding: 10,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  noResultsText: {
+    fontSize: 12,
+    color: '#64748B',
+    textAlign: 'center',
   },
 });
 

@@ -56,7 +56,10 @@ const ClientHomeScreen = () => {
     return carWashes.filter((w) => {
       const name = (w.carWashName || w.name || '').toLowerCase();
       const loc = (w.location || '').toLowerCase();
-      if (q && !name.includes(q) && !loc.includes(q)) return false;
+      const svcText = (w.services || [])
+        .map((s) => (s.name || '').toLowerCase())
+        .join(' ');
+      if (q && !name.includes(q) && !loc.includes(q) && !svcText.includes(q)) return false;
       if (category === 'all') return true;
       const svc = (w.services || []).map((s) => (s.name || '').toLowerCase()).join(' ');
       if (category === 'exterior') return svc.includes('wash') || svc.includes('exterior');
@@ -78,6 +81,8 @@ const ClientHomeScreen = () => {
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       <ScrollView
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -138,7 +143,11 @@ const ClientHomeScreen = () => {
           {loading ? (
             <ActivityIndicator color={ClientColors.primary} style={{ marginVertical: 24 }} />
           ) : filtered.length === 0 ? (
-            <Text style={styles.empty}>No car washes found. Pull to refresh.</Text>
+            <Text style={styles.empty}>
+              {searchQuery.trim()
+                ? `No car washes match "${searchQuery.trim()}".`
+                : 'No car washes found. Pull to refresh.'}
+            </Text>
           ) : (
             filtered.map((w) => <CarWashCard key={w.id} wash={w} onPress={() => openBook(w)} />)
           )}

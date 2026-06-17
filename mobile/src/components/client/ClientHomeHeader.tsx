@@ -82,6 +82,10 @@ const ClientHomeHeader = ({
           placeholderTextColor={ClientColors.textMuted}
           value={searchQuery}
           onChangeText={onSearchChange}
+          returnKeyType="search"
+          autoCorrect={false}
+          autoCapitalize="none"
+          clearButtonMode="while-editing"
         />
         <TouchableOpacity hitSlop={8}>
           <Ionicons name="options-outline" size={22} color={ClientColors.accent} />

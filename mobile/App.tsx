@@ -7,19 +7,22 @@ import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './src/context/AuthContext';
 import { ThemeProvider } from './src/context/ThemeContext';
+import { MapboxProvider } from './src/context/MapboxContext';
 import RootNavigator from './src/navigation/RootNavigator';
 
 export default function App() {
   return (
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
-        <AuthProvider>
-          <ThemeProvider>
-            <NavigationContainer>
-              <RootNavigator />
-            </NavigationContainer>
-          </ThemeProvider>
-        </AuthProvider>
+        <MapboxProvider>
+          <AuthProvider>
+            <ThemeProvider>
+              <NavigationContainer>
+                <RootNavigator />
+              </NavigationContainer>
+            </ThemeProvider>
+          </AuthProvider>
+        </MapboxProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
