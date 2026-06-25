@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import api from '../../services/api';
 import LoadingSpinner from '../LoadingSpinner';
 import EmptyState from '../EmptyState';
+import Icon from '../icons/Icon';
 import './ManageCarWashes.css';
 
 const ManageCarWashes = () => {
@@ -49,7 +50,7 @@ const ManageCarWashes = () => {
 
         {!filteredCarWashes || filteredCarWashes.length === 0 ? (
           <EmptyState
-            icon="🧼"
+            icon={<Icon name="droplets" size={28} />}
             title="No car wash providers found"
             description={searchTerm ? 'Try adjusting your search' : 'No car wash providers registered yet'}
           />
@@ -58,12 +59,12 @@ const ManageCarWashes = () => {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Name</th>
-                  <th>Car Wash Name</th>
+                  <th>Owner</th>
+                  <th>Car wash</th>
                   <th>Email</th>
                   <th>Phone</th>
                   <th>Location</th>
-                  <th>Washing Bays</th>
+                  <th className="cell-center">Bays</th>
                   <th>Status</th>
                 </tr>
               </thead>
@@ -71,11 +72,11 @@ const ManageCarWashes = () => {
                 {filteredCarWashes.map((cw: any) => (
                   <tr key={cw.id}>
                     <td>{cw.name}</td>
-                    <td>{cw.carWashName || 'N/A'}</td>
+                    <td>{cw.carWashName || '—'}</td>
                     <td>{cw.email}</td>
                     <td>{cw.phone}</td>
-                    <td>{cw.location || 'N/A'}</td>
-                    <td>{cw.washingBays || 0}</td>
+                    <td>{cw.location || '—'}</td>
+                    <td className="cell-center">{cw.washingBays || 0}</td>
                     <td>
                       <div className="status-group">
                         <span className={`status-badge ${cw.isActive ? 'status-active' : 'status-inactive'}`}>

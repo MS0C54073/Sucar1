@@ -11,6 +11,7 @@ import { getCurrentPosition, Coordinates } from '../../services/locationService'
 import { findNearby, parseCoordinates, formatDistance, calculateDistance } from '../../services/mappingService';
 import api from '../../services/api';
 import LoadingSpinner from '../LoadingSpinner';
+import Icon from '../icons/Icon';
 import './NearbyCarWashes.css';
 
 interface CarWash {
@@ -125,7 +126,7 @@ const NearbyCarWashes = () => {
                   />
                 </div>
               ) : (
-                <div className="nearby-item-icon">🧼</div>
+                <div className="nearby-item-icon"><Icon name="droplets" size={20} /></div>
               )}
               <div className="nearby-item-content">
                 <div className="nearby-item-name">
@@ -135,7 +136,7 @@ const NearbyCarWashes = () => {
                   {carWash.location || 'Location not specified'}
                 </div>
                 <div className="nearby-item-distance">
-                  📍 {formatDistance(carWash.distance)} away
+                  <Icon name="mapPin" size={13} /> {formatDistance(carWash.distance)} away
                 </div>
               </div>
             </div>

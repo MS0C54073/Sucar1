@@ -1,42 +1,61 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  ReactNode,
+} from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors as BaseColors } from '../constants/theme';
+import {
+  AuthAppearance,
+  AuthThemePalette,
+  getAuthTheme,
+} from '../constants/sucarTheme';
 
-// Build a light theme by defaulting to existing Colors
+const STORAGE_KEY = 'sucar_appearance';
+
 const light = {
-  name: 'light',
-  colors: {
-    ...BaseColors,
-  },
+  name: 'light' as const,
+  colors: { ...BaseColors },
 };
 
-// Dark-blue theme overrides a subset of colors
 const darkBlue = {
-  name: 'darkBlue',
+  name: 'darkBlue' as const,
   colors: {
     ...BaseColors,
-    primary: '#0f4c81',
-    primaryDark: '#0b3b66',
-    gradientStart: '#07203a',
-    gradientEnd: '#0f4c81',
-    headerGradientStart: '#07203a',
-    headerGradientEnd: '#0f4c81',
-    background: '#071127',
-    surface: '#0b1a2b',
-    textPrimary: '#e6eef9',
-    textSecondary: '#b6c9e1',
-    border: '#122436',
-    borderLight: '#082033',
+    primary: '#A855F7',
+    primaryDark: '#7C3AED',
+    primaryLight: '#DDD6FE',
+    accent: '#F472B6',
+    gradientStart: '#2E1065',
+    gradientEnd: '#1A0B2E',
+    headerGradientStart: '#3B0F73',
+    headerGradientEnd: '#241040',
+    background: '#1A0B2E',
+    surface: '#241040',
+    surfaceElevated: '#2E1247',
+    textPrimary: '#FFFFFF',
+    textSecondary: '#A99CC4',
+    textTertiary: '#7C708F',
+    border: '#3B2456',
+    borderLight: '#2A1840',
     white: '#ffffff',
   },
 };
 
-type ThemeMode = 'light' | 'darkBlue';
+export type ThemeMode = 'light' | 'darkBlue';
 
 type ThemeContextValue = {
   mode: ThemeMode;
+  appearance: AuthAppearance;
   theme: typeof light | typeof darkBlue;
+  authTheme: AuthThemePalette;
   toggle: () => void;
   setMode: (m: ThemeMode) => void;
+  setAppearance: (a: AuthAppearance) => void;
+  ready: boolean;
 };
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
@@ -47,15 +66,74 @@ export const useTheme = () => {
   return ctx;
 };
 
+const modeFromAppearance = (a: AuthAppearance): ThemeMode =>
+  a === 'dark' ? 'darkBlue' : 'light';
+
+const appearanceFromMode = (m: ThemeMode): AuthAppearance =>
+  m === 'darkBlue' ? 'dark' : 'light';
+
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [mode, setMode] = useState<ThemeMode>('light');
+  const [appearance, setAppearanceState] = useState<AuthAppearance>('dark');
+  const [ready, setReady] = useState(false);
 
-  const toggle = () => setMode((m) => (m === 'light' ? 'darkBlue' : 'light'));
+  useEffect(() => {
+    (async () => {
+      try {
+        const stored = await AsyncStorage.getItem(STORAGE_KEY);
+        if (stored === 'light' || stored === 'dark') {
+          setAppearanceState(stored);
+        }
+      } catch {
+        /* default dark */
+      } finally {
+        setReady(true);
+      }
+    })();
+  }, []);
 
+  const persistAppearance = useCallback(async (next: AuthAppearance) => {
+    setAppearanceState(next);
+    try {
+      await AsyncStorage.setItem(STORAGE_KEY, next);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const setAppearance = useCallback(
+    (a: AuthAppearance) => {
+      persistAppearance(a);
+    },
+    [persistAppearance],
+  );
+
+  const mode = modeFromAppearance(appearance);
   const theme = mode === 'light' ? light : darkBlue;
+  const authTheme = getAuthTheme(appearance);
+
+  const toggle = () => {
+    persistAppearance(appearance === 'dark' ? 'light' : 'dark');
+  };
+
+  const setMode = (m: ThemeMode) => {
+    persistAppearance(appearanceFromMode(m));
+  };
 
   return (
-    <ThemeContext.Provider value={{ mode, theme, toggle, setMode }}>{children}</ThemeContext.Provider>
+    <ThemeContext.Provider
+      value={{
+        mode,
+        appearance,
+        theme,
+        authTheme,
+        toggle,
+        setMode,
+        setAppearance,
+        ready,
+      }}
+    >
+      {children}
+    </ThemeContext.Provider>
   );
 };
 

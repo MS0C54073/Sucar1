@@ -2,7 +2,48 @@ import { Response } from 'express';
 import { validationResult } from 'express-validator';
 import { DBService } from '../services/db-service';
 import { NotificationService } from '../services/notificationService';
+import { QueueEngineService } from '../services/queueEngineService';
 import { AuthRequest } from '../middleware/auth';
+
+const MAX_PROOF_URL_LENGTH = 2_500_000; // ~2MB data URL
+
+function normalizeBookingPartyId(value: unknown): string | null {
+  if (!value) return null;
+  if (typeof value === 'object' && value !== null && 'id' in value) {
+    return String((value as { id: string }).id);
+  }
+  return String(value);
+}
+
+function canAccessBookingPayment(
+  req: AuthRequest,
+  booking: Record<string, unknown>
+): boolean {
+  const userId = req.user!.id;
+  const role = req.user!.role;
+  if (role === 'admin' || role === 'subadmin') return true;
+
+  const clientId = normalizeBookingPartyId(booking.clientId ?? booking.client_id);
+  const driverId = normalizeBookingPartyId(booking.driverId ?? booking.driver_id);
+  const carWashId = normalizeBookingPartyId(booking.carWashId ?? booking.car_wash_id);
+
+  if (role === 'client' && clientId === userId) return true;
+  if (role === 'driver' && driverId === userId) return true;
+  if (role === 'carwash' && carWashId === userId) return true;
+  return false;
+}
+
+function canConfirmPayment(req: AuthRequest, booking: Record<string, unknown>): boolean {
+  const role = req.user!.role;
+  if (role === 'admin' || role === 'subadmin') return true;
+
+  const driverId = normalizeBookingPartyId(booking.driverId ?? booking.driver_id);
+  const carWashId = normalizeBookingPartyId(booking.carWashId ?? booking.car_wash_id);
+
+  if (role === 'driver' && driverId === req.user!.id) return true;
+  if (role === 'carwash' && carWashId === req.user!.id) return true;
+  return false;
+}
 
 // @desc    Initiate payment (client submits proof/transaction)
 // @route   POST /api/payments/initiate
@@ -15,10 +56,14 @@ export const initiatePayment = async (req: AuthRequest, res: Response): Promise<
       return;
     }
 
-    let { bookingId, method, transactionId } = req.body;
+    let { bookingId, method, transactionId, proofUrl } = req.body;
 
-    // Map provider-specific labels to generic enums (schema-safe)
     if (method === 'airtel_money') method = 'mobile_money';
+
+    if (proofUrl && typeof proofUrl === 'string' && proofUrl.length > MAX_PROOF_URL_LENGTH) {
+      res.status(400).json({ success: false, message: 'Payment proof image is too large (max 2MB)' });
+      return;
+    }
 
     const booking = await DBService.getBookingById(bookingId);
     if (!booking) {
@@ -26,14 +71,16 @@ export const initiatePayment = async (req: AuthRequest, res: Response): Promise<
       return;
     }
 
-    // Verify authorization (normalize relation ids)
-    const bookingClientId = typeof booking.clientId === 'object' ? booking.clientId?.id : booking.clientId;
-    if (req.user!.role !== 'admin' && bookingClientId !== req.user!.id) {
+    if (req.user!.role !== 'client' && req.user!.role !== 'admin' && req.user!.role !== 'subadmin') {
+      res.status(403).json({ success: false, message: 'Only the client can submit payment' });
+      return;
+    }
+
+    if (!canAccessBookingPayment(req, booking as Record<string, unknown>)) {
       res.status(403).json({ success: false, message: 'Not authorized' });
       return;
     }
 
-    // Allow payment after wash completed OR after vehicle delivered to client (legacy-safe)
     if (!['wash_completed', 'delivered_to_client', 'delivered'].includes(booking.status)) {
       res.status(400).json({
         success: false,
@@ -43,42 +90,44 @@ export const initiatePayment = async (req: AuthRequest, res: Response): Promise<
     }
 
     let payment = await DBService.getPaymentByBookingId(bookingId);
+    const paymentPayload: Record<string, unknown> = {
+      method,
+      transactionId: transactionId || null,
+      status: 'pending',
+    };
+    if (proofUrl) paymentPayload.proofUrl = proofUrl;
 
     if (!payment) {
-      // Create payment record on first submit
       payment = await DBService.createPayment({
         bookingId,
         amount: booking.totalAmount,
-        method,
-        transactionId: transactionId || null,
-        status: 'pending',
+        ...paymentPayload,
       });
     } else {
-      // Update existing payment as pending (awaiting confirmation)
+      payment = await DBService.updatePayment(payment.id, paymentPayload);
+    }
+
+    await DBService.updateBooking(bookingId, { paymentStatus: 'pending' });
+
+    const session = await QueueEngineService.onPaymentUploaded(bookingId);
+    if (session && payment) {
       payment = await DBService.updatePayment(payment.id, {
-        method,
-        transactionId: transactionId || null,
-        status: 'pending',
+        washSessionId: session.id,
       });
     }
 
-    // Keep booking payment pending until confirmation by driver or car wash
-    await DBService.updateBooking(bookingId, {
-      paymentStatus: 'pending',
-    });
-
-    // Prompt driver and car wash to confirm payment for cash or mobile money
-    if (['cash','mobile_money'].includes(method)) {
-      const bookingClientId = typeof booking.clientId === 'object' ? booking.clientId?.id : booking.clientId;
-      const bookingDriverId = typeof booking.driverId === 'object' ? booking.driverId?.id : booking.driverId;
-      const bookingCarWashId = typeof booking.carWashId === 'object' ? booking.carWashId?.id : booking.carWashId;
+    if (['cash', 'mobile_money', 'bank_transfer', 'card'].includes(method)) {
+      const bookingDriverId = normalizeBookingPartyId(booking.driverId);
+      const bookingCarWashId = normalizeBookingPartyId(booking.carWashId);
 
       const title = 'Payment Confirmation Required';
-      const message = `Client initiated ${method === 'cash' ? 'Cash' : 'Mobile Money'} payment. Please review and confirm.`;
+      const message = proofUrl
+        ? 'Client submitted payment with a receipt. Please review and confirm.'
+        : `Client initiated payment (${method}). Please review and confirm.`;
 
       if (bookingDriverId) {
         await NotificationService.createNotification({
-          userId: bookingDriverId as string,
+          userId: bookingDriverId,
           type: 'payment',
           title,
           message,
@@ -88,7 +137,7 @@ export const initiatePayment = async (req: AuthRequest, res: Response): Promise<
       }
       if (bookingCarWashId) {
         await NotificationService.createNotification({
-          userId: bookingCarWashId as string,
+          userId: bookingCarWashId,
           type: 'payment',
           title,
           message,
@@ -98,15 +147,9 @@ export const initiatePayment = async (req: AuthRequest, res: Response): Promise<
       }
     }
 
-    res.json({
-      success: true,
-      data: payment,
-    });
+    res.json({ success: true, data: payment });
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Server error',
-    });
+    res.status(500).json({ success: false, message: error.message || 'Server error' });
   }
 };
 
@@ -115,42 +158,22 @@ export const initiatePayment = async (req: AuthRequest, res: Response): Promise<
 // @access  Private
 export const getPaymentByBooking = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const payment = await DBService.getPaymentByBookingId(req.params.bookingId);
-
-    if (!payment) {
-      res.status(404).json({ success: false, message: 'Payment not found' });
-      return;
-    }
-
-    const booking = await DBService.getBookingById(req.params.bookingId);
+    const { bookingId } = req.params;
+    const booking = await DBService.getBookingById(bookingId);
     if (!booking) {
       res.status(404).json({ success: false, message: 'Booking not found' });
       return;
     }
 
-    // Verify authorization
-    const bookingClientId = typeof booking.clientId === 'object' ? booking.clientId?.id : booking.clientId;
-    const bookingDriverId = typeof booking.driverId === 'object' ? booking.driverId?.id : booking.driverId;
-    const bookingCarWashId = typeof booking.carWashId === 'object' ? booking.carWashId?.id : booking.carWashId;
-    if (
-      req.user!.role !== 'admin' &&
-      bookingClientId !== req.user!.id &&
-      (bookingDriverId && bookingDriverId !== req.user!.id) &&
-      bookingCarWashId !== req.user!.id
-    ) {
+    if (!canAccessBookingPayment(req, booking as Record<string, unknown>)) {
       res.status(403).json({ success: false, message: 'Not authorized' });
       return;
     }
 
-    res.json({
-      success: true,
-      data: payment,
-    });
+    const payment = await DBService.getPaymentByBookingId(bookingId);
+    res.json({ success: true, data: payment });
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Server error',
-    });
+    res.status(500).json({ success: false, message: error.message || 'Server error' });
   }
 };
 
@@ -172,24 +195,17 @@ export const verifyPayment = async (req: AuthRequest, res: Response): Promise<vo
     if (status === 'completed') {
       const booking = await DBService.getBookingById(payment.bookingId);
       if (booking) {
-          const update: any = { paymentStatus: 'paid' };
-          // If client already has the vehicle (delivered or delivered_to_client), close the job now per flow
-          if (booking.status === 'delivered_to_client' || booking.status === 'delivered') {
-            update.status = 'completed';
-          }
-          await DBService.updateBooking(booking.id, update);
+        const update: Record<string, unknown> = { paymentStatus: 'paid' };
+        if (booking.status === 'delivered_to_client' || booking.status === 'delivered') {
+          update.status = 'completed';
+        }
+        await DBService.updateBooking(booking.id, update);
       }
     }
 
-    res.json({
-      success: true,
-      data: updatedPayment,
-    });
+    res.json({ success: true, data: updatedPayment });
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Server error',
-    });
+    res.status(500).json({ success: false, message: error.message || 'Server error' });
   }
 };
 
@@ -211,28 +227,25 @@ export const confirmPayment = async (req: AuthRequest, res: Response): Promise<v
       return;
     }
 
-    // Authorization: driver assigned, car wash owner, or admin
-    const bookingDriverId = typeof booking.driverId === 'object' ? booking.driverId?.id : booking.driverId;
-    const bookingCarWashId = typeof booking.carWashId === 'object' ? booking.carWashId?.id : booking.carWashId;
-    const isAuthorized =
-      req.user!.role === 'admin' ||
-      req.user!.role === 'subadmin' ||
-      (req.user!.role === 'driver' && bookingDriverId === req.user!.id) ||
-      (req.user!.role === 'carwash' && bookingCarWashId === req.user!.id);
-
-    if (!isAuthorized) {
+    if (!canConfirmPayment(req, booking as Record<string, unknown>)) {
       res.status(403).json({ success: false, message: 'Not authorized to confirm payment' });
       return;
     }
 
-    // Fetch payment and validate proof
-    const payment = await DBService.getPaymentByBookingId(bookingId);
+    let payment = await DBService.getPaymentByBookingId(bookingId);
+    if (!payment) {
+      payment = await DBService.ensurePaymentForBooking(bookingId);
+    }
     if (!payment) {
       res.status(404).json({ success: false, message: 'Payment not found' });
       return;
     }
 
-    // Proof is optional per requirements; driver/car wash can confirm without transactionId
+    if (req.user!.role === 'carwash') {
+      const result = await QueueEngineService.approvePayment(bookingId, req.user!.id);
+      res.json({ success: true, data: result.payment });
+      return;
+    }
 
     const updatedPayment = await DBService.updatePayment(payment.id, {
       status: 'completed',
@@ -240,18 +253,20 @@ export const confirmPayment = async (req: AuthRequest, res: Response): Promise<v
     });
 
     const bookingAfter = await DBService.getBookingById(bookingId);
-    const bookingUpdate: any = { paymentStatus: 'paid' };
-    if (bookingAfter && (bookingAfter.status === 'delivered_to_client' || bookingAfter.status === 'delivered')) {
+    const bookingUpdate: Record<string, unknown> = { paymentStatus: 'paid' };
+    if (
+      bookingAfter &&
+      (bookingAfter.status === 'delivered_to_client' || bookingAfter.status === 'delivered')
+    ) {
       bookingUpdate.status = 'completed';
     }
     await DBService.updateBooking(bookingId, bookingUpdate);
 
-    // Notify client that payment was confirmed
-    const bookingClientId = typeof bookingAfter?.clientId === 'object' ? bookingAfter?.clientId?.id : bookingAfter?.clientId;
+    const bookingClientId = normalizeBookingPartyId(bookingAfter?.clientId);
     if (bookingClientId) {
       await NotificationService.createNotification({
-        userId: bookingClientId as string,
-        type: 'payment_update',
+        userId: bookingClientId,
+        type: 'payment',
         title: 'Payment Confirmed',
         message: 'Your payment has been confirmed. Thank you!',
         data: { bookingId },

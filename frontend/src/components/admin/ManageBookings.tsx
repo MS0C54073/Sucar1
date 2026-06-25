@@ -6,6 +6,7 @@ import EmptyState from '../EmptyState';
 import ConfirmDialog from '../ConfirmDialog';
 import DriverSelector from './DriverSelector';
 import LiveTracking from '../LiveTracking';
+import Icon from '../icons/Icon';
 import './ManageBookings.css';
 
 const ManageBookings = () => {
@@ -155,8 +156,8 @@ const ManageBookings = () => {
 
   const sortIcon = (col: ColumnKey) => {
     const s = sorters.find((x) => x.col === col);
-    if (!s) return '↕';
-    return s.dir === 'asc' ? '⬆' : '⬇';
+    if (!s) return <Icon name="chevronsUpDown" size={14} />;
+    return <Icon name={s.dir === 'asc' ? 'chevronUp' : 'chevronDown'} size={14} />;
   };
 
   const exportCsv = () => {
@@ -200,7 +201,7 @@ const ManageBookings = () => {
         <div className="table-toolbar">
           <div className="toolbar-left">
             <div className="input-wrap">
-              <span className="icon">🔎</span>
+              <span className="icon"><Icon name="search" size={16} /></span>
               <input
                 className="search-input"
                 placeholder="Search client, car wash, vehicle, status…"
@@ -246,7 +247,7 @@ const ManageBookings = () => {
 
         {!sorted || total === 0 ? (
           <EmptyState
-            icon="📋"
+            icon={<Icon name="clipboard" size={28} />}
             title="No bookings found"
             description="Bookings will appear here once clients create them"
           />
@@ -301,11 +302,11 @@ const ManageBookings = () => {
                     <td>
                       <div className="row-actions">
                         {['accepted','picked_up','picked_up_pending_confirmation','at_wash','delivered_to_wash','waiting_bay','washing_bay','drying_bay','wash_completed','delivered_to_client'].includes(booking.status) && (
-                          <button className="icon-btn" title="Track" onClick={() => setTrackingBookingId(booking.id || booking._id)}>🛰️</button>
+                          <button className="icon-btn" title="Track" onClick={() => setTrackingBookingId(booking.id || booking._id)}><Icon name="mapPin" size={16} /></button>
                         )}
                         {!booking.driverId ? (
                           <>
-                            <button className="icon-btn" title="Assign Driver" onClick={() => setAssignOpen({ ...assignOpen, [booking.id || booking._id]: !assignOpen[booking.id || booking._id] })}>👤➕</button>
+                            <button className="icon-btn" title="Assign Driver" onClick={() => setAssignOpen({ ...assignOpen, [booking.id || booking._id]: !assignOpen[booking.id || booking._id] })}><Icon name="userPlus" size={16} /></button>
                             {assignOpen[booking.id || booking._id] && (
                               <div className="assign-inline">
                                 <DriverSelector
@@ -331,7 +332,7 @@ const ManageBookings = () => {
                                     }
                                   }}
                                   disabled={!selectedDriver[booking.id || booking._id]}
-                                >✔️</button>
+                                ><Icon name="check" size={16} /></button>
                               </div>
                             )}
                           </>

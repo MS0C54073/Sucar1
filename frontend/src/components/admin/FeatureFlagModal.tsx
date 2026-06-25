@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../services/api';
+import Icon from '../icons/Icon';
 import './FeatureFlagModal.css';
 
 interface FeatureFlag {
@@ -91,8 +92,8 @@ const FeatureFlagModal: React.FC<FeatureFlagModalProps> = ({ flag, open, onClose
       <div className="modal-content feature-flag-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>{flag ? 'Edit Feature Flag' : 'Create Feature Flag'}</h2>
-          <button className="modal-close" onClick={onClose}>
-            ✕
+          <button className="modal-close" onClick={onClose} aria-label="Close">
+            <Icon name="x" size={16} />
           </button>
         </div>
 

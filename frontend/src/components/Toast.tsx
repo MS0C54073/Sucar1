@@ -1,5 +1,13 @@
 import { useEffect } from 'react';
+import Icon, { type IconName } from './icons/Icon';
 import './Toast.css';
+
+const TOAST_ICON: Record<'success' | 'error' | 'warning' | 'info', IconName> = {
+  success: 'checkCircle',
+  error: 'alertCircle',
+  warning: 'alertTriangle',
+  info: 'info',
+};
 
 interface ToastProps {
   message: string;
@@ -20,13 +28,12 @@ const Toast: React.FC<ToastProps> = ({ message, type = 'info', duration = 3000, 
   return (
     <div className={`toast toast-${type}`} onClick={onClose}>
       <div className="toast-icon">
-        {type === 'success' && '✅'}
-        {type === 'error' && '❌'}
-        {type === 'warning' && '⚠️'}
-        {type === 'info' && 'ℹ️'}
+        <Icon name={TOAST_ICON[type]} size={20} />
       </div>
       <div className="toast-message">{message}</div>
-      <button className="toast-close" onClick={onClose}>×</button>
+      <button className="toast-close" onClick={onClose} aria-label="Dismiss">
+        <Icon name="x" size={16} />
+      </button>
     </div>
   );
 };

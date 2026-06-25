@@ -1,0 +1,173 @@
+/**
+ * Driver app — 480px mobile column (not full desktop width)
+ */
+
+[data-app-skin='driver'] .sucar-app {
+  width: 100%;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+[data-app-skin='driver'] .sucar-content {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+@media (min-width: 768px) {
+  [data-app-skin='driver'] .sucar-app {
+    max-width: 480px;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.35);
+  }
+
+  [data-app-skin='driver'] .sucar-bottom-nav {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    max-width: 480px;
+    width: 100%;
+  }
+
+  [data-app-skin='driver'] .sucar-main {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+  }
+}
+
+[data-app-skin='driver'] .sucar-bottom-nav {
+  background: var(--bg-primary);
+  border-top-color: var(--border-primary);
+}
+
+[data-app-skin='driver'] .sucar-main {
+  padding-bottom: calc(72px + env(safe-area-inset-bottom));
+}
+
+[data-app-skin='driver'] .sucar-tab-header {
+  margin: 0 0 var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-primary);
+}
+
+[data-app-skin='driver'] .sucar-tab-header h2 {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: var(--font-bold);
+  color: var(--text-primary);
+}
+
+[data-app-skin='driver'] .sucar-card-panel {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+[data-app-skin='driver'] .sucar-card-panel .sucar-section-head {
+  margin-top: 0;
+}
+
+[data-app-skin='driver'] .bookings-list .booking-card {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+[data-app-skin='driver'] .sucar-stats-row {
+  width: 100%;
+}
+
+[data-app-skin='driver'] .sucar-job-card {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+[data-app-skin='driver'] .sucar-floating-search__input {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+}
+
+[data-app-skin='driver'][data-theme='dark'] .sucar-floating-search__input {
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+}
+
+@media (max-width: 420px) {
+  [data-app-skin='driver'] .sucar-job-grid {
+    grid-template-columns: 1fr;
+  }
+
+  [data-app-skin='driver'] .sucar-job-map-mini {
+    min-height: 80px;
+    height: 80px;
+  }
+
+  [data-app-skin='driver'] .sucar-job-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  [data-app-skin='driver'] .sucar-job-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  [data-app-skin='driver'] .sucar-btn-decline,
+  [data-app-skin='driver'] .sucar-btn-accept {
+    max-width: none;
+    flex: 1;
+  }
+}
+
+[data-app-skin='driver'] .sucar-card-panel .driver-earnings {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+[data-app-skin='driver'] .sucar-incentive {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+[data-app-skin='driver'] .driver-map-tab {
+  width: 100%;
+}
+
+[data-app-skin='driver'] .driver-map-tab-map {
+  width: 100%;
+}
+
+[data-app-skin='driver'] .driver-map-tab--fullscreen .mapboxgl-ctrl-top-right {
+  top: 76px;
+  right: 10px;
+}
+
+/* Map tab — full height inside the 480px column */
+[data-app-skin='driver'] .sucar-app--map-focus {
+  height: 100dvh;
+  max-height: 100dvh;
+  max-width: 480px;
+  overflow: hidden;
+}
+
+[data-app-skin='driver'] .sucar-app--map-focus .sucar-main {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding-bottom: 0;
+}
+
+[data-app-skin='driver'] .sucar-app--map-focus .sucar-content--map {
+  flex: 1;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+[data-app-skin='driver'] .sucar-app--map-focus .sucar-bottom-nav {
+  flex-shrink: 0;
+  position: relative;
+  left: auto;
+  transform: none;
+  max-width: 100%;
+  z-index: 30;
+}

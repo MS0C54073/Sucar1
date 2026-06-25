@@ -1,0 +1,42 @@
+{
+  "cli": {
+    "version": ">= 5.9.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": { "APP_VARIANT": "client" },
+      "android": { "buildType": "apk" },
+      "ios": { "simulator": true }
+    },
+    "development-driver": {
+      "extends": "development",
+      "env": { "APP_VARIANT": "driver" }
+    },
+    "preview": {
+      "distribution": "internal",
+      "channel": "preview",
+      "env": { "APP_VARIANT": "client" },
+      "android": { "buildType": "apk" }
+    },
+    "preview-driver": {
+      "extends": "preview",
+      "env": { "APP_VARIANT": "driver" }
+    },
+    "production": {
+      "autoIncrement": true,
+      "channel": "production",
+      "env": { "APP_VARIANT": "client" },
+      "android": { "buildType": "apk" }
+    },
+    "production-driver": {
+      "extends": "production",
+      "env": { "APP_VARIANT": "driver" }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

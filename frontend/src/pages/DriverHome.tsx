@@ -1,74 +1,108 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../services/api';
 import { useBookings } from '../hooks/useBookings';
-import MapView from '../components/MapView';
 import NearbyBookings from '../components/mapping/NearbyBookings';
-import LoadingSpinner from '../components/LoadingSpinner';
-import NotificationCenter from '../components/notifications/NotificationCenter';
+import MapView from '../components/MapView';
 import BookingCard from '../components/booking/BookingCard';
 import BookingCardSkeleton from '../components/skeletons/BookingCardSkeleton';
 import DashboardSkeleton from '../components/skeletons/DashboardSkeleton';
 import EmptyState from '../components/EmptyState';
 import DriverEarnings from '../components/driver/DriverEarnings';
-import RouteOptimizer from '../components/driver/RouteOptimizer';
 import { useToast } from '../components/ToastContainer';
 import LiveTracking from '../components/LiveTracking';
-import LiveTrackingMap from '../components/map/LiveTrackingMap';
+import AppShell from '../components/layout/AppShell';
+import DriverHero from '../components/layout/DriverHero';
+import ThemeToggle from '../components/layout/ThemeToggle';
+import { NavItem } from '../components/layout/BottomNav';
+import JobSearchAutocomplete from '../components/search/JobSearchAutocomplete';
+import Icon from '../components/icons/Icon';
+import { parseCoordinates, Coordinates } from '../services/mappingService';
+import '../components/search/SearchAutocomplete.css';
 import './DriverHome.css';
-import ThemeToggle from '../components/ThemeToggle';
+
+const DRIVER_NAV: NavItem[] = [
+  { id: 'dashboard', label: 'Today', icon: 'dashboard' },
+  { id: 'jobs', label: 'Jobs', icon: 'jobs' },
+  { id: 'earnings', label: 'Earnings', icon: 'earnings' },
+  { id: 'map', label: 'Map', icon: 'map' },
+  { id: 'profile', label: 'Profile', icon: 'profile' },
+];
 
 const DriverHome = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
-  const [selectedStatus, setSelectedStatus] = useState<string>('');
-  const [viewMode, setViewMode] = useState<'list' | 'map' | 'earnings' | 'routes' | 'track-client'>('list');
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [online, setOnline] = useState(true);
   const [trackingBookingId, setTrackingBookingId] = useState<string | null>(null);
+  const [jobsSheetOpen, setJobsSheetOpen] = useState(false);
+  const [jobSearchQuery, setJobSearchQuery] = useState('');
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  const [mapCenter, setMapCenter] = useState<Coordinates | undefined>();
 
-  // Use centralized bookings hook
-  // Critical data: Load immediately
   const { data: bookings, isLoading: bookingsLoading, error: bookingsError } = useBookings({
-    filters: { role: 'driver', status: selectedStatus || undefined },
-    refetchInterval: 10000, // Refresh every 10 seconds
+    filters: { role: 'driver' },
+    refetchInterval: 10000,
   });
 
-  // Only block on initial load
   const isInitialLoad = bookingsLoading && bookings === undefined;
+  const pendingJob = bookings?.find((b: any) => b.status === 'pending' || b.status === 'assigned_driver');
 
-  // Ensure user is loaded before rendering
-  if (!user || !user.id) {
-    return <DashboardSkeleton />;
-  }
+  const filteredJobs = useMemo(() => {
+    const q = jobSearchQuery.trim().toLowerCase();
+    if (!q) return bookings || [];
+    return (bookings || []).filter((b: any) => {
+      const haystack = [
+        b.pickupLocation,
+        b.clientId?.name,
+        b.clientName,
+        b.carWashId?.carWashName,
+        b.carWashId?.name,
+        b.vehicleId?.plateNo,
+        b.vehicleId?.make,
+        b.vehicleId?.model,
+        b.status,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return q.split(/\s+/).every((term: string) => haystack.includes(term));
+    });
+  }, [bookings, jobSearchQuery]);
 
-  // Listen for tracking events from BookingCard
+  const filteredMapBookings = useMemo(
+    () => filteredJobs.filter((b: { pickupCoordinates?: unknown }) => b.pickupCoordinates),
+    [filteredJobs]
+  );
+
+  const handleJobSearchSelect = (booking: { id: string; clientId?: { name?: string }; clientName?: string; pickupCoordinates?: unknown }) => {
+    const label = booking.clientId?.name || booking.clientName || 'Job';
+    setJobSearchQuery(label);
+    setSelectedJobId(booking.id);
+    setJobsSheetOpen(true);
+    const coords = parseCoordinates(booking.pickupCoordinates as Coordinates | string);
+    if (coords) setMapCenter(coords);
+  };
+
   useEffect(() => {
-    const handleOpenTracking = (event: any) => {
+    const handleOpenTracking = (event: CustomEvent) => {
       setTrackingBookingId(event.detail.bookingId);
     };
     window.addEventListener('openTracking' as any, handleOpenTracking as EventListener);
     return () => window.removeEventListener('openTracking' as any, handleOpenTracking as EventListener);
   }, []);
 
-  const updateStatusMutation = useMutation({
-    mutationFn: async ({ bookingId, status }: { bookingId: string; status: string }) => {
-      const response = await api.put(`/bookings/${bookingId}/status`, { status });
-      return response.data;
-    },
-    onSuccess: (data, variables) => {
-      // Invalidate all booking-related queries
-      queryClient.invalidateQueries({ queryKey: ['bookings'] });
-      queryClient.invalidateQueries({ queryKey: ['driver-bookings'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
-      showToast(`Status updated to ${variables.status.replace(/_/g, ' ')}`, 'success');
-    },
-    onError: (error: any) => {
-      showToast(error.response?.data?.message || 'Failed to update status', 'error');
-    },
-  });
+  useEffect(() => {
+    if (activeTab !== 'map') {
+      setJobSearchQuery('');
+      setSelectedJobId(null);
+      setMapCenter(undefined);
+    }
+  }, [activeTab]);
 
   const acceptMutation = useMutation({
     mutationFn: async (bookingId: string) => {
@@ -77,11 +111,10 @@ const DriverHome = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
-      queryClient.invalidateQueries({ queryKey: ['driver-bookings'] });
-      showToast('Booking accepted successfully!', 'success');
+      showToast('Job accepted!', 'success');
     },
     onError: (error: any) => {
-      showToast(error.response?.data?.message || 'Failed to accept booking', 'error');
+      showToast(error.response?.data?.message || 'Failed to accept', 'error');
     },
   });
 
@@ -92,212 +125,240 @@ const DriverHome = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
-      queryClient.invalidateQueries({ queryKey: ['driver-bookings'] });
-      showToast('Booking declined', 'info');
-    },
-    onError: (error: any) => {
-      showToast(error.response?.data?.message || 'Failed to decline booking', 'error');
+      showToast('Job declined', 'info');
     },
   });
 
-  const handleStatusUpdate = (bookingId: string, currentStatus: string) => {
-    const statusFlow: Record<string, string[]> = {
-      'accepted': ['picked_up'],
-      'picked_up': ['delivered_to_wash'],
-      'delivered_to_wash': ['delivered_to_client'],
-      'waiting_bay': ['delivered_to_client'],
-      'washing_bay': ['delivered_to_client'],
-      'drying_bay': ['delivered_to_client'],
-      'wash_completed': ['delivered_to_client'],
-    };
-
-    const nextStatuses = statusFlow[currentStatus] || [];
-    if (nextStatuses.length === 0) {
-      alert('No further status updates available');
+  const handleNav = (id: string) => {
+    if (id === 'profile') {
+      navigate('/profile');
       return;
     }
-
-    const nextStatus = nextStatuses[0];
-    if (confirm(`Update status to ${nextStatus.replace('_', ' ')}?`)) {
-      updateStatusMutation.mutate({ bookingId, status: nextStatus });
-    }
+    if (id !== 'map') setJobsSheetOpen(false);
+    setActiveTab(id);
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
+  if (!user?.id) {
+    return <DashboardSkeleton />;
+  }
 
-  // Don't block - show skeleton instead
-
-  return (
-    <div className="driver-home">
-      <header className="driver-header">
-        <div className="header-content">
-          <h1>SuCAR - Driver Dashboard</h1>
-          <p className="welcome-text">Welcome, {user?.name}</p>
+  const renderJobRequest = (booking: any) => (
+    <div className="sucar-job-card" key={booking.id}>
+      <div className="sucar-job-card-header">
+        <span>NEW JOB REQUEST</span>
+        <span className="sucar-pill">Just now</span>
+      </div>
+      <div className="sucar-job-grid">
+        <div>
+          <div className="sucar-job-detail">
+            <div className="sucar-job-detail-icon"><Icon name="user" size={18} /></div>
+            <div>
+              <strong>{booking.clientId?.name || booking.clientName || 'Customer'}</strong>
+              <p>{booking.pickupLocation || 'Pickup location'}</p>
+            </div>
+          </div>
+          <div className="sucar-job-detail">
+            <div className="sucar-job-detail-icon" aria-hidden />
+            <div>
+              <strong>Car wash service</strong>
+              <p>{booking.status?.replace(/_/g, ' ')}</p>
+            </div>
+          </div>
         </div>
-        <div className="header-actions">
-          <ThemeToggle />
-          <NotificationCenter />
-          <button className="avatar-btn" onClick={() => navigate('/profile')} title="My Profile" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
-            {user?.profilePictureUrl ? (
-              <img src={user.profilePictureUrl} alt={user.name} style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
-            ) : (
-              <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--color-primary-600)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>{user?.name?.charAt(0)}</div>
-            )}
-          </button>
-          <button className="btn btn-secondary" onClick={handleLogout}>
-            Logout
-          </button>
+        <div className="sucar-job-map-mini" aria-hidden />
+      </div>
+      <div className="sucar-job-footer">
+        <div>
+          <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)' }}>Est. Earnings</span>
+          <div className="sucar-earnings-lg">${booking.totalPrice || booking.price || '28.50'}</div>
         </div>
-      </header>
-
-      <div className="driver-filters">
-        <select
-          value={selectedStatus}
-          onChange={(e) => setSelectedStatus(e.target.value)}
-          className="status-filter"
-        >
-          <option value="">All Bookings</option>
-          <option value="pending">Pending</option>
-          <option value="accepted">Accepted</option>
-          <option value="picked_up">Picked Up</option>
-          <option value="delivered_to_wash">Delivered to Wash</option>
-          <option value="delivered_to_client">Delivered to Client</option>
-        </select>
-        <div className="view-toggle">
+        <div className="sucar-job-actions">
           <button
-            className={viewMode === 'list' ? 'active' : ''}
-            onClick={() => setViewMode('list')}
+            type="button"
+            className="sucar-btn-decline"
+            onClick={() => declineMutation.mutate(booking.id)}
+            disabled={declineMutation.isPending}
           >
-            📋 List
+            Decline
           </button>
           <button
-            className={viewMode === 'map' ? 'active' : ''}
-            onClick={() => setViewMode('map')}
+            type="button"
+            className="sucar-btn-accept"
+            onClick={() => acceptMutation.mutate(booking.id)}
+            disabled={acceptMutation.isPending}
           >
-            🗺️ Map
+            Accept
           </button>
-          <button
-            className={viewMode === 'routes' ? 'active' : ''}
-            onClick={() => setViewMode('routes')}
-          >
-            🚗 Routes
-          </button>
-          <button
-            className={viewMode === 'earnings' ? 'active' : ''}
-            onClick={() => setViewMode('earnings')}
-          >
-            💰 Earnings
-          </button>
-          {bookings?.some((b: any) => ['assigned_driver', 'driver_arrived', 'in_service', 'ready_for_delivery', 'out_for_delivery'].includes(b.status)) && (
-            <button
-              className={viewMode === 'track-client' ? 'active' : ''}
-              onClick={() => setViewMode('track-client')}
-            >
-              📍 Track Client
-            </button>
-          )}
         </div>
       </div>
+    </div>
+  );
 
-      <main className="driver-content">
-        {viewMode === 'earnings' && (
-          <div className="driver-earnings-view">
-            <h2>Earnings & Performance</h2>
-            {/* Lazy load earnings - not critical for initial view */}
-            <DriverEarnings />
+  const renderDashboard = () => (
+    <>
+      {pendingJob && renderJobRequest(pendingJob)}
+      <div className="sucar-section-head">
+        <h2 style={{ fontSize: 'var(--text-lg)', margin: 0 }}>Today&apos;s earnings</h2>
+        <button type="button" className="sucar-link" onClick={() => setActiveTab('earnings')}>
+          View summary
+        </button>
+      </div>
+      <div className="sucar-stats-row">
+        <div className="sucar-stat-card">
+          <div className="sucar-stat-icon"><Icon name="creditCard" size={20} /></div>
+          <div className="sucar-stat-value">$162.80</div>
+          <div className="sucar-stat-label">Total</div>
+        </div>
+        <div className="sucar-stat-card">
+          <div className="sucar-stat-icon"><Icon name="briefcase" size={20} /></div>
+          <div className="sucar-stat-value">6</div>
+          <div className="sucar-stat-label">Jobs done</div>
+        </div>
+        <div className="sucar-stat-card">
+          <div className="sucar-stat-icon"><Icon name="clock" size={20} /></div>
+          <div className="sucar-stat-value">5h 45m</div>
+          <div className="sucar-stat-label">Online</div>
+        </div>
+      </div>
+      <div className="sucar-card-panel sucar-incentive">
+        <span><Icon name="star" size={18} /></span>
+        <p>Keep up the great work! You&apos;re in the top 20% of detailers today.</p>
+        <span><Icon name="chevronRight" size={16} /></span>
+      </div>
+    </>
+  );
+
+  const renderJobs = () => (
+    <div className="sucar-card-panel">
+      <div className="sucar-tab-header">
+        <h2>My Jobs</h2>
+      </div>
+      {bookingsError && <div className="alert alert-error">{(bookingsError as Error).message}</div>}
+      {isInitialLoad ? (
+        <div className="bookings-list">
+          {[1, 2, 3].map((i) => (
+            <BookingCardSkeleton key={i} />
+          ))}
+        </div>
+      ) : bookings?.length ? (
+        <div className="bookings-list">
+          {bookings.map((b: any) => (
+            <BookingCard
+              key={b.id}
+              booking={b}
+              onStatusUpdate={() => queryClient.invalidateQueries({ queryKey: ['bookings'] })}
+            />
+          ))}
+        </div>
+      ) : (
+        <EmptyState title="No jobs right now" description="Stay online to receive new pickup requests." />
+      )}
+    </div>
+  );
+
+  const mapTabContent = (
+    <div className="driver-map-tab driver-map-tab--fullscreen">
+      <div className="driver-map-tab__search">
+        <JobSearchAutocomplete
+          bookings={bookings || []}
+          value={jobSearchQuery}
+          onChange={setJobSearchQuery}
+          onSelect={handleJobSearchSelect}
+          placeholder="Search jobs by client, location, plate…"
+        />
+      </div>
+      <div className="driver-map-tab-map">
+        <MapView
+          bookings={filteredMapBookings}
+          activeBookingId={selectedJobId || undefined}
+          center={mapCenter}
+          zoom={selectedJobId ? 14 : 12}
+          showNearbyServices
+          height="100%"
+          autoFitMarkers={!selectedJobId && !mapCenter}
+        />
+      </div>
+      {!bookings?.length && (
+        <div className="driver-map-empty-overlay" role="status">
+          <EmptyState icon={<Icon name="map" size={28} />} title="No jobs on map" description="Go online to receive nearby requests" />
+        </div>
+      )}
+      {bookings && bookings.length > 0 && filteredJobs.length === 0 && jobSearchQuery.trim() && (
+        <div className="driver-map-empty-overlay" role="status">
+          <EmptyState icon={<Icon name="search" size={28} />} title="No matching jobs" description="Try another name or location" />
+        </div>
+      )}
+      {filteredJobs.length > 0 && (
+        <div className="driver-map-jobs-sheet">
+          <button
+            type="button"
+            className="driver-map-jobs-toggle"
+            onClick={() => setJobsSheetOpen((o) => !o)}
+            aria-expanded={jobsSheetOpen}
+            aria-controls="driver-nearby-jobs"
+          >
+            {jobsSheetOpen ? 'Hide' : 'Show'} jobs ({filteredJobs.length})
+          </button>
+          <div
+            id="driver-nearby-jobs"
+            className={`driver-map-jobs-panel ${jobsSheetOpen ? 'open' : ''}`}
+          >
+            <NearbyBookings bookings={filteredJobs} />
           </div>
-        )}
+        </div>
+      )}
+    </div>
+  );
 
-        {viewMode === 'routes' && (
-          <div className="driver-routes-view">
-            <h2>Route Optimization</h2>
-            {bookings && bookings.length > 0 ? (
-              <RouteOptimizer bookings={bookings} />
-            ) : (
-              <p>No active bookings for routing</p>
-            )}
-          </div>
-        )}
-
-        {viewMode === 'list' && (
-          <div className="driver-bookings-view">
-            <h2>My Bookings</h2>
-            {bookingsError && (
-              <div style={{ padding: '16px', background: '#fee', color: '#c33', borderRadius: '8px', marginBottom: '16px' }}>
-                <strong>Error loading bookings:</strong> {bookingsError.message || 'Failed to load bookings. Please check console for details.'}
-                <br />
-                <small>Check browser console (F12) for more details</small>
+  const content =
+    activeTab === 'dashboard'
+      ? renderDashboard()
+      : activeTab === 'jobs'
+        ? renderJobs()
+        : activeTab === 'earnings'
+          ? (
+              <div className="sucar-card-panel">
+                <div className="sucar-tab-header">
+                  <h2>Earnings</h2>
+                </div>
+                <DriverEarnings />
               </div>
-            )}
-            {isInitialLoad ? (
-              <div className="bookings-list">
-                {[1, 2, 3].map((i) => (
-                  <BookingCardSkeleton key={i} />
-                ))}
-              </div>
-            ) : !bookingsError && bookings && bookings.length > 0 ? (
-              <div className="bookings-list">
-                {bookings.map((booking: any) => (
-                  <BookingCard
-                    key={booking.id}
-                    booking={booking}
-                    onStatusUpdate={() => {
-                      queryClient.invalidateQueries({ queryKey: ['bookings'] });
-                    }}
-                  />
-                ))}
-              </div>
-            ) : (
-              <EmptyState
-                icon="📋"
-                title="No bookings found"
-                description="You don't have any bookings yet. Available bookings will appear here when clients request pickup services."
-              />
-            )}
-          </div>
-        )}
+            )
+          : activeTab === 'map'
+            ? mapTabContent
+            : null;
 
-        {viewMode === 'map' && (
-          <div className="driver-map-view">
-            <h2>Map View</h2>
-            {bookings && bookings.length > 0 ? (
-              <div style={{ height: '600px' }}>
-                <NearbyBookings bookings={bookings} />
+  return (
+    <>
+      <AppShell
+        skin="driver"
+        contentVariant={activeTab === 'map' ? 'map' : 'default'}
+        subHeader={
+          activeTab === 'map' ? (
+            <header className="sucar-subheader">
+              <h1>Jobs map</h1>
+              <div className="sucar-subheader-actions">
+                <ThemeToggle variant="segmented" />
               </div>
-            ) : (
-              <EmptyState
-                icon="🗺️"
-                title="No bookings to display on map"
-                description="Available bookings will appear here when clients request pickup services"
-              />
-            )}
-          </div>
-        )}
-
-        {viewMode === 'track-client' && (
-          <div className="driver-tracking-view">
-            {bookings?.find((b: any) => ['assigned_driver', 'driver_arrived', 'in_service', 'ready_for_delivery', 'out_for_delivery'].includes(b.status)) ? (
-              <LiveTrackingMap
-                bookingId={bookings.find((b: any) => ['assigned_driver', 'driver_arrived', 'in_service', 'ready_for_delivery', 'out_for_delivery'].includes(b.status))?.id}
-                userRole="driver"
-              />
-            ) : (
-              <EmptyState
-                icon="📍"
-                title="No active booking"
-                description="You don't have an active booking with a client assigned yet"
-                action={{
-                  label: "Accept a Booking",
-                  onClick: () => setViewMode('list')
-                }}
-              />
-            )}
-          </div>
-        )}
-      </main>
+            </header>
+          ) : undefined
+        }
+        hero={
+          activeTab === 'dashboard' ? (
+            <DriverHero
+              userName={user.name}
+              profilePictureUrl={user.profilePictureUrl}
+              online={online}
+              onOnlineChange={setOnline}
+            />
+          ) : undefined
+        }
+        navItems={DRIVER_NAV}
+        activeNav={activeTab}
+        onNavChange={handleNav}
+      >
+        {content}
+      </AppShell>
 
       {trackingBookingId && (
         <div className="live-tracking-overlay" onClick={() => setTrackingBookingId(null)}>
@@ -306,7 +367,7 @@ const DriverHome = () => {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 

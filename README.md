@@ -6,6 +6,91 @@ A comprehensive cross-platform car wash booking system that connects clients, dr
 
 SuCAR (SuKA) is a full-stack application designed to automate car wash bookings and pickups, reducing client waiting time and improving service efficiency.
 
+---
+
+## System Architecture (A1 — Canonical & Enforced)
+
+> This section is the **authoritative** architecture. It is intentionally strict.
+> Where the current codebase still diverges, the gap is marked as a **migration**,
+> not an exception to the rules.
+
+### Hard rules (non-negotiable)
+
+- **One backend** (a single REST API) — Node.js + TypeScript + Express. No microservices. No polyglot backend.
+- **One database** — a single PostgreSQL instance (Supabase).
+- **One authentication system** — centralized in the backend (JWT).
+- **RBAC enforced server-side.** The frontend is presentation only; it never assigns or trusts roles.
+
+### Allowed roles (exactly four)
+
+`client` · `driver` · `operator` · `admin`
+
+Roles are assigned **only** by the backend and stored in the database. The JWT carries
+only the user id; the role is resolved from the database on every request, so a token
+can never carry a forged or stale role.
+
+> **Naming normalization (tracked):** the backend currently uses the legacy identifier
+> `carwash` for the **`operator`** role, and an out-of-spec `subadmin` exists. Canonical
+> name is `operator`; `carwash → operator` and the resolution of `subadmin` are tracked
+> migrations.
+
+### Application separation (strict)
+
+| App | Platform | Allowed roles | Auth |
+|---|---|---|---|
+| **Mobile** (one React Native/Expo codebase, `client`/`driver` variants) | Android **and** iOS | `client`, `driver` | Yes |
+| **Operator Web App** (`web-operator`) | Web | `operator` | Yes |
+| **Admin Dashboard** (`web-admin`) | Web | `admin` | Yes |
+| **Landing Page** (`web-landing`) | Web | public | No |
+
+- **Operators and admins MUST NOT use the mobile apps.**
+- **Clients and drivers MUST NOT use any web admin/operator dashboard.**
+
+This separation is enforced **server-side at the authentication boundary** via a canonical
+app→role matrix (operators/admins are *rejected* from mobile; clients/drivers are *rejected*
+from web dashboards) — not merely hidden in the UI:
+
+```
+APP_ROLE_MATRIX = {
+  mobile:         ['client', 'driver'],
+  'web-operator': ['operator'],
+  'web-admin':    ['admin'],
+  'web-landing':  []            // public, no auth
+}
+```
+
+### Target monorepo structure
+
+```
+sucar/
+├─ apps/
+│  ├─ backend/         # THE single API (Node + TS + Express)
+│  ├─ mobile/          # React Native/Expo — Android+iOS — client & driver
+│  ├─ web-operator/    # operator dashboard (React + Vite)
+│  ├─ web-admin/       # admin dashboard (React + Vite)
+│  └─ web-landing/     # public marketing site
+├─ packages/
+│  └─ shared-types/    # canonical roles / DTOs / status enums (single source of truth)
+├─ supabase/           # migrations + edge functions (single DB)
+└─ package.json        # workspaces
+```
+
+**Migrations from current layout:** split the monolithic `frontend/` (today serves all
+roles) into `web-operator` / `web-admin` / `web-landing`; **retire** `dashboard-nextjs/`
+(duplicate admin web) and `mobile-flutter/` (duplicate mobile stack). One web framework,
+one mobile framework.
+
+### Security model (summary)
+
+- Authentication centralized in the backend; JWT signed by the backend; role resolved from DB per request.
+- Self-registration restricted to `client`/`driver`/`operator`; **`admin` is provisioned server-side only**.
+- `authorize(...roles)` on every privileged route + per-record ownership checks (IDOR protection).
+- Write endpoints **allow-list** editable fields (no mass-assignment / privilege escalation).
+- Auth + OTP endpoints rate-limited; secrets never committed; security-relevant events logged.
+- **Golden rule:** the frontend UI is **not** security — the backend re-checks and rejects everything.
+
+---
+
 ## Features
 
 ### Client Features
@@ -15,6 +100,7 @@ SuCAR (SuKA) is a full-stack application designed to automate car wash bookings 
 - Track booking status in real-time
 - Manage vehicles
 - View booking history
+- Rate and review completed washes (car wash + driver)
 
 ### Driver Features
 - Register/Login
@@ -26,9 +112,11 @@ SuCAR (SuKA) is a full-stack application designed to automate car wash bookings 
 ### Car Wash Features
 - Register/Login
 - Manage services and pricing
+- Real-time intelligent queue & washing-bay allocation (auto-assign, FIFO + priority)
 - Update vehicle status (Waiting Bay → Washing Bay → Drying Bay → Done)
+- Review and approve/reject customer payment proofs
 - View incoming bookings
-- Monitor revenue
+- Monitor revenue and customer ratings
 
 ### Admin Features
 - Dashboard with statistics
@@ -50,43 +138,33 @@ SuCAR (SuKA) is a full-stack application designed to automate car wash bookings 
 - **Twilio** for SMS/OTP (optional)
 - **Google OAuth** for social login
 
-### Frontend (Web Dashboard)
-- **React** with **TypeScript**
-- **Vite** for build tooling
-- **React Router** for navigation
-- **React Query** for data fetching
-- **Recharts** for analytics
+### Web Apps (strict separation — one stack)
+- **React** + **TypeScript** + **Vite**, **React Router**, **React Query**, **Recharts**
+- Built as **three separate apps**: `web-operator` (operators only), `web-admin` (admins only), and `web-landing` (public marketing). Clients/drivers do not use any web dashboard.
 
-### Mobile App
-- **React Native** with **Expo**
-- **TypeScript**
-- **React Navigation**
-- **Axios** for API calls
-- **AsyncStorage** for local storage
+### Mobile App (clients & drivers only — one stack)
+- **React Native** with **Expo**, **TypeScript**, **React Navigation**, **Axios**, **AsyncStorage**
+- Single codebase with `client`/`driver` build variants, shipped to **Android and iOS**. Operators/admins do not use mobile.
 
 ## Project Structure
 
+The **canonical target** structure is defined in the
+[System Architecture (A1)](#system-architecture-a1--canonical--enforced) section above
+(`apps/backend`, `apps/mobile`, `apps/web-operator`, `apps/web-admin`, `apps/web-landing`,
+`packages/shared-types`, `supabase/`).
+
+Current on-disk layout (mid-migration toward the target):
+
 ```
 Sucar/
-├── backend/          # Node.js/Express API
-│   ├── src/
-│   │   ├── models/      # TypeScript models
-│   │   ├── controllers/ # Route controllers
-│   │   ├── routes/      # API routes
-│   │   ├── middleware/  # Auth middleware
-│   │   └── config/      # Database config
-│   └── package.json
-├── frontend/        # React web dashboard
-│   ├── src/
-│   │   ├── components/  # React components
-│   │   ├── pages/       # Page components
-│   │   └── context/     # Auth context
-│   └── package.json
-└── mobile/         # React Native app
-    ├── src/
-    │   ├── screens/     # Screen components
-    │   └── context/     # Auth context
-    └── package.json
+├── backend/          # THE single API (Node.js/Express + TypeScript)
+│   └── src/  models/ controllers/ routes/ middleware/ services/ domain/ config/
+├── frontend/         # React web app — TO BE SPLIT into web-operator / web-admin / web-landing
+├── mobile/           # React Native/Expo — client & driver variants (Android + iOS)
+├── shared-types/     # shared TypeScript types (→ packages/shared-types)
+├── supabase/         # single database: migrations + edge functions
+├── dashboard-nextjs/ # DUPLICATE admin web — to be retired
+└── mobile-flutter/   # DUPLICATE mobile stack — to be retired
 ```
 
 ## Setup Instructions
@@ -253,20 +331,30 @@ npm run android
 - `POST /api/payments/initiate` - Initiate payment
 - `GET /api/payments/booking/:bookingId` - Get payment by booking
 
+### Reviews & Ratings
+- `POST /api/reviews` - Submit a review for a completed booking (client only)
+- `GET /api/reviews/booking/:bookingId` - Get the current client's review for a booking
+- `GET /api/reviews/carwash/:carWashId` - Get a car wash's rating summary + recent reviews
+- `GET /api/reviews/driver/:driverId` - Get a driver's rating summary + recent reviews
+
 ## User Roles
 
-1. **Client**: Can book car washes, manage vehicles, track bookings
-2. **Driver**: Can accept bookings, update pickup/delivery status
-3. **Car Wash**: Can manage services, update wash status
-4. **Admin**: Full system access, manage all entities
+Exactly four roles, assigned only by the backend (see the canonical architecture section above):
+
+1. **Client** *(mobile only)*: book car washes, manage vehicles, track bookings
+2. **Driver** *(mobile only)*: accept bookings, update pickup/delivery status
+3. **Operator** *(web-operator only)*: manage services, queue & bays, update wash status, review payments *(legacy code identifier: `carwash`)*
+4. **Admin** *(web-admin only)*: full system administration of all entities
 
 ## Database Schema
 
-- **Users**: Clients, Drivers, Car Washes, Admins
+- **Users**: Clients, Drivers, Car Washes, Admins (with aggregate `rating` / `driver_rating`)
 - **Vehicles**: Client vehicle information
 - **Bookings**: Booking records with status tracking
 - **Services**: Car wash services and pricing
 - **Payments**: Payment records
+- **Reviews**: Client ratings (1–5) and comments for the car wash and/or driver, one per booking
+- **Washing Bays / Wash Sessions / Queue**: Operator real-time queue and bay allocation
 
 ## Entity Relationship (ER) Diagram
 
@@ -277,9 +365,11 @@ erDiagram
     USERS ||--o{ BOOKINGS : "assigned_to"
     USERS ||--o{ BOOKINGS : "washes_at"
     USERS ||--o{ SERVICES : "offers"
+    USERS ||--o{ REVIEWS : "writes"
     BOOKINGS ||--|| VEHICLES : "for"
     BOOKINGS ||--|| SERVICES : "includes"
     BOOKINGS ||--|| PAYMENTS : "has"
+    BOOKINGS ||--o| REVIEWS : "reviewed by"
     
     USERS {
         uuid id PK
@@ -360,6 +450,19 @@ erDiagram
         enum status "pending|completed|failed|refunded"
         string transaction_id
         timestamp payment_date
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    REVIEWS {
+        uuid id PK
+        uuid booking_id FK
+        uuid client_id FK
+        uuid car_wash_id FK
+        uuid driver_id FK
+        integer car_wash_rating "1-5"
+        integer driver_rating "1-5"
+        text comment
         timestamp created_at
         timestamp updated_at
     }
@@ -489,6 +592,14 @@ This workflow is for clients who drive their own car to the car wash facility an
 - **Refund Handling**: Automatic refunds for cancelled bookings
 - **Payment Status Tracking**: `pending` → `completed` or `failed` → `refunded`
 - **Audit Trail**: All transactions logged for reporting
+
+#### Ratings & Reviews
+- **When**: A client can review a booking once the wash is finished and payment is settled (status `wash_completed` / `delivered` / `completed`, payment no longer `pending`).
+- **What**: A 1–5 star rating for the car wash and, for pickup & delivery jobs, a separate rating for the driver, plus an optional comment. One review per booking (editable).
+- **Aggregation**: On every submission the backend recomputes the target's average rating and review count and stores them on the `users` row (`rating` / `rating_count` for car washes, `driver_rating` / `driver_rating_count` for drivers).
+- **Where it surfaces**: Aggregate stars appear on the booking card's car wash, and the **recommendation engine weights car washes by their customer rating** (falling back to completion history when no ratings exist yet).
+- **Endpoints**: `POST /api/reviews`, `GET /api/reviews/booking/:bookingId`, `GET /api/reviews/carwash/:carWashId`, `GET /api/reviews/driver/:driverId`.
+- **Schema**: `backend/migrations/add-reviews.sql` (applied automatically on API startup when `DATABASE_URL` is set, or manually via `npm run migrate:reviews`). The API degrades gracefully and returns empty summaries if the table is not yet present.
 
 #### Location Services (Mapbox Integration)
 - **Driver Geolocation**: Continuously tracks driver location for ETA
@@ -1078,12 +1189,18 @@ This architecture ensures:
 - Input validation
 - Protected API routes
 
+## Recently Added
+
+- ⭐ Ratings & reviews for car washes and drivers, feeding the recommendation engine
+- 🚿 Real-time intelligent queue & washing-bay allocation for operators
+- 🧾 Payment-proof upload with operator approve/reject workflow
+
 ## Future Enhancements
 
 - GPS-based live vehicle tracking
 - Push notifications
 - Payment gateway integration
-- Real-time updates with WebSockets
+- Full real-time updates with WebSockets (currently Supabase Realtime + polling)
 - AI-driven route optimization
 - Business intelligence dashboards
 

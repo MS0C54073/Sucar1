@@ -1,0 +1,126 @@
+.find-carwash-page {
+
+  max-width: 1200px;
+
+  margin: 0 auto;
+
+  padding: 16px 20px 32px;
+
+}
+
+
+
+.find-carwash-page--map-first {
+
+  padding-bottom: 24px;
+
+}
+
+
+
+.find-carwash-header {
+
+  display: flex;
+
+  flex-wrap: wrap;
+
+  justify-content: space-between;
+
+  align-items: flex-start;
+
+  gap: 12px;
+
+  margin-bottom: 12px;
+
+}
+
+
+
+.find-carwash-header--compact h1 {
+
+  margin: 0;
+
+  font-size: 22px;
+
+  font-weight: 800;
+
+  color: #0f172a;
+
+}
+
+
+
+.find-back {
+
+  display: inline-block;
+
+  font-size: 13px;
+
+  color: #0d9488;
+
+  font-weight: 600;
+
+  text-decoration: none;
+
+  margin-bottom: 4px;
+
+}
+
+
+
+.find-auth-hint {
+
+  display: flex;
+
+  gap: 10px;
+
+  flex-shrink: 0;
+
+}
+
+
+
+.find-banner {
+
+  padding: 8px 12px;
+
+  border-radius: 10px;
+
+  font-size: 13px;
+
+  margin-bottom: 10px;
+
+}
+
+
+
+.find-banner-warn {
+
+  background: #fef3c7;
+
+  color: #92400e;
+
+  border: 1px solid #fde68a;
+
+}
+
+
+
+@media (max-width: 640px) {
+
+  .find-carwash-page {
+
+    padding: 12px 12px 20px;
+
+  }
+
+
+
+  .find-carwash-header--compact h1 {
+
+    font-size: 18px;
+
+  }
+
+}
+

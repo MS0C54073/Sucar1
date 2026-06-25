@@ -1,12 +1,13 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { lazy, Suspense } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { MapboxProvider } from './context/MapboxContext';
 import { ToastProvider } from './components/ToastContainer';
 import ErrorBoundary from './components/ErrorBoundary';
-import ThemeToggle from './components/ThemeToggle';
 import LandingPage from './pages/LandingPage';
+import FindCarWashPage from './pages/FindCarWashPage';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -21,6 +22,8 @@ const BookService = lazy(() => import('./pages/BookService'));
 const AddVehicle = lazy(() => import('./pages/AddVehicle'));
 const Payment = lazy(() => import('./pages/Payment'));
 const Profile = lazy(() => import('./pages/Profile'));
+const MessagesInbox = lazy(() => import('./pages/MessagesInbox'));
+const BookingChat = lazy(() => import('./pages/BookingChat'));
 
 
 // Optimized React Query configuration
@@ -44,17 +47,39 @@ function App() {
         <ThemeProvider>
           <ToastProvider>
             <AuthProvider>
+              <MapboxProvider>
               <Router>
                 <Routes>
-                  <Route path="/" element={<LandingPage />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
+                  <Route path="/" element={<LandingPage />} />
+                  <Route path="/book" element={<FindCarWashPage />} />
                   <Route
                     path="/admin/*"
                     element={
                       <ProtectedRoute role="admin">
                         <Suspense fallback={<DashboardSkeleton />}>
                           <AdminDashboard />
+                        </Suspense>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/carwash/messages"
+                    element={
+                      <ProtectedRoute role="carwash">
+                        <Suspense fallback={<DashboardSkeleton />}>
+                          <MessagesInbox />
+                        </Suspense>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/carwash/chat/:bookingId"
+                    element={
+                      <ProtectedRoute role="carwash">
+                        <Suspense fallback={<DashboardSkeleton />}>
+                          <BookingChat />
                         </Suspense>
                       </ProtectedRoute>
                     }
@@ -110,6 +135,46 @@ function App() {
                     }
                   />
                   <Route
+                    path="/client/messages"
+                    element={
+                      <ProtectedRoute role="client">
+                        <Suspense fallback={<DashboardSkeleton />}>
+                          <MessagesInbox />
+                        </Suspense>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/client/chat/:bookingId"
+                    element={
+                      <ProtectedRoute role="client">
+                        <Suspense fallback={<DashboardSkeleton />}>
+                          <BookingChat />
+                        </Suspense>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/driver/messages"
+                    element={
+                      <ProtectedRoute role="driver">
+                        <Suspense fallback={<DashboardSkeleton />}>
+                          <MessagesInbox />
+                        </Suspense>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/driver/chat/:bookingId"
+                    element={
+                      <ProtectedRoute role="driver">
+                        <Suspense fallback={<DashboardSkeleton />}>
+                          <BookingChat />
+                        </Suspense>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
                     path="/driver"
                     element={
                       <ProtectedRoute role="driver">
@@ -129,10 +194,9 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
-                  <Route path="/" element={<Navigate to="/login" replace />} />
                 </Routes>
               </Router>
-              <ThemeToggle />
+              </MapboxProvider>
             </AuthProvider>
           </ToastProvider>
         </ThemeProvider>

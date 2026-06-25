@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import api from '../../services/api';
 import LoadingSpinner from '../LoadingSpinner';
 import EmptyState from '../EmptyState';
+import Icon from '../icons/Icon';
 import './Analytics.css';
 
 const Analytics = () => {
@@ -34,7 +35,7 @@ const Analytics = () => {
   if (!analytics) {
     return (
       <EmptyState
-        icon="📈"
+        icon={<Icon name="trendingUp" size={28} />}
         title="No analytics data"
         description="Analytics data will appear here once bookings are created"
       />

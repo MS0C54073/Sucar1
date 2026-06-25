@@ -3,7 +3,7 @@
  * Uses Mapbox Geocoding API for location search and autocomplete
  */
 
-import { getMapboxAccessToken } from '../config/mapbox';
+import { resolveMapboxToken } from './mapboxTokenService';
 export interface GeocodingResult {
   id: string;
   placeName: string;
@@ -34,11 +34,11 @@ export async function searchLocations(
   const proximityParam = `&proximity=${useProximity.lng},${useProximity.lat}`;
   const countryParam = `&country=zm`;
 
-  const MAPBOX_TOKEN = getMapboxAccessToken();
+  const MAPBOX_TOKEN = await resolveMapboxToken();
   if (!MAPBOX_TOKEN) {
     if (__DEV__) {
       console.warn(
-        'Geocoding: no Mapbox token. Set EXPO_PUBLIC_MAPBOX_TOKEN in .env'
+        'Geocoding: no Mapbox token. Start the backend or set EXPO_PUBLIC_MAPBOX_TOKEN in mobile/.env'
       );
     }
     return [];
@@ -81,7 +81,7 @@ export async function searchLocations(
 export async function reverseGeocode(
   coordinates: { lat: number; lng: number }
 ): Promise<string | null> {
-  const MAPBOX_TOKEN = getMapboxAccessToken();
+  const MAPBOX_TOKEN = await resolveMapboxToken();
   if (!MAPBOX_TOKEN) {
     return null;
   }

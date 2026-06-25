@@ -8,14 +8,16 @@ import {
   ActivityIndicator,
   RefreshControl,
   Alert,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Animatable from 'react-native-animatable';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { apiClient } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
-import { Colors, Typography, Spacing, BorderRadius, Shadows, StatusColors } from '../../constants/theme';
+import { Colors, Typography, Spacing, BorderRadius, StatusColors } from '../../constants/theme';
+import { DriverColors, AppLayout } from '../../constants/sucarTheme';
+import TabPageHeader from '../../components/layout/TabPageHeader';
 import { useTheme } from '../../context/ThemeContext';
 
 /**
@@ -205,18 +207,19 @@ const DriverBookingsScreen = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
+        <TabPageHeader title="Jobs" subtitle="Assigned bookings and status updates" variant="driver" />
         <FlatList
           data={bookings}
           renderItem={renderBooking}
           keyExtractor={(item: any) => item.id || item._id || String(Math.random())}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={DriverColors.primary} />
           }
           ListEmptyComponent={
             <Animatable.View animation="fadeIn" duration={500} style={styles.empty}>
-              <Ionicons name="calendar-outline" size={64} color={theme.colors.gray400} />
-              <Text style={[styles.emptyTitle, { color: theme.colors.textPrimary }]}>No bookings found</Text>
-              <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
+              <Ionicons name="calendar-outline" size={64} color={DriverColors.textMuted} />
+              <Text style={styles.emptyTitle}>No bookings found</Text>
+              <Text style={styles.emptyText}>
                 You don't have any bookings assigned yet. Check back later!
               </Text>
             </Animatable.View>
@@ -232,7 +235,7 @@ const DriverBookingsScreen = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: DriverColors.background,
   },
   container: {
     flex: 1,
@@ -249,11 +252,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   bookingCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: DriverColors.surface,
     padding: Spacing.md,
-    borderRadius: BorderRadius.lg,
+    borderRadius: AppLayout.cardRadius,
     marginBottom: Spacing.md,
-    ...Shadows.md,
+    borderWidth: 1,
+    borderColor: DriverColors.border,
   },
   bookingHeader: {
     flexDirection: 'row',

@@ -17,9 +17,16 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   padding: 16px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
+}
+
+.header-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
 .tracking-title {
@@ -202,6 +209,66 @@
   font-size: 12px;
   color: #9ca3af;
   background: #f3f4f6;
+}
+
+/* Directions Panel */
+.directions-panel {
+  padding: 12px;
+  background: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.directions-loading {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  background: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+  text-align: center;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+/* Button Styles for Directions */
+.btn {
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+}
+
+.btn-primary {
+  background: rgba(255, 255, 255, 0.25);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.btn-primary:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.25);
 }
 
 /* Responsive */

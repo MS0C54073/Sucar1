@@ -1,5 +1,6 @@
 import React from 'react';
 import CarAnimation from './CarAnimation';
+import Icon from '../icons/Icon';
 import './EnhancedCarWashScene.css';
 
 interface EnhancedCarWashSceneProps {
@@ -33,7 +34,7 @@ const EnhancedCarWashScene: React.FC<EnhancedCarWashSceneProps> = ({
               <div className="pillar"></div>
               <div className="pillar"></div>
             </div>
-            <div className="station-sign">🧼</div>
+            <div className="station-sign"><Icon name="sparkles" size={16} /></div>
             
             {/* Washing Area - Cars being washed */}
             <div className="washing-area">

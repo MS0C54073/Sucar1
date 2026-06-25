@@ -1,53 +1,67 @@
-.carwash-bookings {
-  padding: var(--space-6);
+.carwash-bookings.operator-bookings-page {
+  padding: 0;
 }
 
 .bookings-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--space-6);
+  align-items: flex-end;
+  margin-bottom: var(--space-5);
   flex-wrap: wrap;
   gap: var(--space-4);
 }
 
 .bookings-header h1 {
   margin: 0;
-  font-size: var(--text-2xl);
-  font-weight: var(--font-bold);
-  color: var(--text-primary);
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--op-text, #18191f);
+  letter-spacing: -0.02em;
 }
 
+.bookings-header__sub {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--op-text2, #6b7280);
+  max-width: 28rem;
+  line-height: 1.45;
+}
+
+.operator-view-toggle,
 .view-toggle {
   display: flex;
-  gap: var(--space-2);
-  background: var(--bg-secondary);
-  padding: var(--space-1);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-primary);
+  gap: 4px;
+  background: var(--op-card, #fff);
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid var(--op-border, rgba(0, 0, 0, 0.08));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
+.operator-view-toggle button,
 .view-toggle button {
-  padding: var(--space-2) var(--space-4);
+  padding: 10px 16px;
   border: none;
   background: transparent;
-  color: var(--text-secondary);
-  border-radius: var(--radius-sm);
+  color: var(--op-text2, #6b7280);
+  border-radius: 8px;
   cursor: pointer;
-  font-size: var(--text-sm);
-  font-weight: var(--font-medium);
-  transition: all var(--transition-base);
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
+.operator-view-toggle button.active,
 .view-toggle button.active {
-  background: var(--color-primary-600);
-  color: white;
-  box-shadow: var(--shadow-sm);
+  background: #1d9e75;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(29, 158, 117, 0.35);
 }
 
+.operator-view-toggle button:hover:not(.active),
 .view-toggle button:hover:not(.active) {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
+  background: rgba(29, 158, 117, 0.08);
+  color: var(--op-text, #18191f);
 }
 
 .bookings-view {

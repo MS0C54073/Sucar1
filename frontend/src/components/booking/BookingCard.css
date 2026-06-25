@@ -8,6 +8,17 @@
   box-shadow: var(--shadow-sm);
 }
 
+.info-value__rating {
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.booking-review-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .booking-card:hover {
   box-shadow: var(--shadow-md);
   border-color: var(--border-secondary);

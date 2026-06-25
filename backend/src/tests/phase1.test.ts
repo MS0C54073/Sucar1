@@ -3,8 +3,8 @@
  * Tests all database schema, RLS policies, API endpoints, and hooks
  */
 
-import { supabase } from '../src/config/supabase';
-import { DBService } from '../src/services/db-service';
+import { supabase } from '../config/supabase';
+import { DBService } from '../services/db-service';
 
 const colors = {
   reset: '\x1b[0m',
@@ -166,14 +166,14 @@ async function runTests() {
   log(colors.blue, '\n--- HELPER FUNCTION TESTS ---\n');
 
   await test('toSnakeCase conversion works', async () => {
-    const { toSnakeCase } = await import('../src/services/db-service');
+    const { toSnakeCase } = await import('../services/db-service');
     const input = { userId: '123', firstName: 'John' };
     const output = toSnakeCase(input);
     return output.user_id === '123' && output.first_name === 'John';
   });
 
   await test('toCamelCase conversion works', async () => {
-    const { toCamelCase } = await import('../src/services/db-service');
+    const { toCamelCase } = await import('../services/db-service');
     const input = { user_id: '123', first_name: 'John' };
     const output = toCamelCase(input);
     return output.userId === '123' && output.firstName === 'John';

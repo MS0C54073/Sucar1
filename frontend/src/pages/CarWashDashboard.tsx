@@ -1,71 +1,116 @@
-import { useState } from 'react';
-import { Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import CarWashHome from '../components/carwash/CarWashHome';
 import CarWashBookings from '../components/carwash/CarWashBookings';
 import ManageServices from '../components/carwash/ManageServices';
-import NotificationCenter from '../components/notifications/NotificationCenter';
+import Profile from './Profile';
 import DashboardSkeleton from '../components/skeletons/DashboardSkeleton';
-import './Dashboard.css';
-import ThemeToggle from '../components/ThemeToggle';
+import { NavIcon, type NavIconName } from '../components/icons/NavIcon';
+import BrandLogo from '../components/BrandLogo';
+import '../styles/sucar-operator.css';
+
+const NAV: { id: string; label: string; icon: NavIconName }[] = [
+  { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
+  { id: 'bookings', label: 'Bookings', icon: 'bookings' },
+  { id: 'services', label: 'Services', icon: 'services' },
+  { id: 'profile', label: 'Profile', icon: 'settings' },
+];
 
 const CarWashDashboard = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const location = useLocation();
   const navigate = useNavigate();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Ensure user is loaded before rendering
-  if (!user || !user.id) {
+  const pathTab = location.pathname.includes('/bookings')
+    ? 'bookings'
+    : location.pathname.includes('/services')
+      ? 'services'
+      : location.pathname.includes('/profile')
+        ? 'profile'
+        : 'dashboard';
+
+  const [activeTab, setActiveTab] = useState(pathTab);
+
+  useEffect(() => {
+    setActiveTab(pathTab);
+  }, [pathTab]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-app-skin', 'operator');
+    return () => {
+      document.documentElement.removeAttribute('data-app-skin');
+    };
+  }, []);
+
+  const handleNav = (id: string) => {
+    setActiveTab(id);
+    if (id === 'dashboard') navigate('/carwash');
+    else if (id === 'bookings') navigate('/carwash/bookings');
+    else if (id === 'services') navigate('/carwash/services');
+    else if (id === 'profile') navigate('/carwash/profile');
+  };
+
+  if (!user?.id) {
     return <DashboardSkeleton />;
   }
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
-  };
+  const today = new Date().toLocaleDateString('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
 
   return (
-    <div className="dashboard-container">
-      <nav className={`dashboard-nav ${mobileMenuOpen ? '' : 'mobile-closed'}`}>
-        <button className="mobile-menu-toggle" onClick={toggleMobileMenu}>
-          {mobileMenuOpen ? '✕' : '☰'}
-        </button>
-        <div className="nav-header">
-          <div>
-            <h1>SuCAR Car Wash</h1>
-            <p className="welcome-text">{user?.name}</p>
-          </div>
-          <div className="user-info">
-            <ThemeToggle />
-            <NotificationCenter />
-            <button className="avatar-btn" onClick={() => navigate('/profile')} title="My Profile" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
-              {user?.profilePictureUrl ? (
-                <img src={user.profilePictureUrl} alt={user.name} style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
-              ) : (
-                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--color-primary-600)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>{user?.name?.charAt(0)}</div>
-              )}
+    <div
+      className="carwash-dashboard-operator"
+      data-operator-theme="light"
+    >
+      <aside className="operator-sidebar">
+        <div className="operator-brand">
+          <BrandLogo size={30} />
+        </div>
+        <div className="operator-sidebar-user">
+          <div className="operator-sidebar-user__name">{user.carWashName || user.name}</div>
+          <div className="operator-sidebar-user__role">Car wash partner</div>
+        </div>
+        <nav className="operator-nav">
+          {NAV.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => handleNav(item.id)}
+              className={`operator-nav__item ${activeTab === item.id ? 'operator-nav__item--active' : ''}`}
+            >
+              <span className="operator-nav__icon">
+                <NavIcon name={item.icon} />
+              </span>
+              {item.label}
             </button>
-            <button className="btn btn-secondary" onClick={handleLogout}>Logout</button>
+          ))}
+        </nav>
+      </aside>
+
+      <div className="operator-main">
+        <header className="operator-topbar">
+          <h1 className="operator-topbar__title">
+            {NAV.find((n) => n.id === activeTab)?.label || 'Dashboard'}
+          </h1>
+          <div className="operator-topbar__actions">
+            <span className="operator-topbar__date">{today}</span>
           </div>
+        </header>
+        <div className="operator-content">
+          <Routes>
+            <Route index element={<CarWashHome />} />
+            <Route path="bookings" element={<CarWashBookings />} />
+            <Route path="services" element={<ManageServices />} />
+            <Route path="profile" element={<Profile />} />
+            <Route path="*" element={<Navigate to="/carwash" replace />} />
+          </Routes>
         </div>
-        <div className="nav-links">
-          <Link to="/carwash" onClick={() => setMobileMenuOpen(false)}>Dashboard</Link>
-          <Link to="/carwash/bookings" onClick={() => setMobileMenuOpen(false)}>Bookings</Link>
-          <Link to="/carwash/services" onClick={() => setMobileMenuOpen(false)}>Manage Services</Link>
-        </div>
-      </nav>
-      <main className="dashboard-content">
-        <Routes>
-          <Route index element={<CarWashHome />} />
-          <Route path="bookings" element={<CarWashBookings />} />
-          <Route path="services" element={<ManageServices />} />
-          <Route path="*" element={<Navigate to="/carwash" replace />} />
-        </Routes>
-      </main>
+      </div>
     </div>
   );
 };

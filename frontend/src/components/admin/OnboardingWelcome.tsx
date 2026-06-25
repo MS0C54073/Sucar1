@@ -1,4 +1,5 @@
 import { OnboardingService } from '../../services/onboarding-service';
+import Icon from '../icons/Icon';
 import './OnboardingWelcome.css';
 
 interface OnboardingWelcomeProps {
@@ -20,28 +21,28 @@ const OnboardingWelcome: React.FC<OnboardingWelcomeProps> = ({ onStart, onSkip }
         <div className="welcome-content">
           <div className="welcome-features">
             <div className="welcome-feature">
-              <span className="feature-icon">👥</span>
+              <span className="feature-icon"><Icon name="user" size={22} /></span>
               <div>
                 <h3>User Management</h3>
                 <p>Manage users, roles, and permissions</p>
               </div>
             </div>
             <div className="welcome-feature">
-              <span className="feature-icon">📊</span>
+              <span className="feature-icon"><Icon name="trendingUp" size={22} /></span>
               <div>
                 <h3>Analytics & Reports</h3>
                 <p>Track system performance and revenue</p>
               </div>
             </div>
             <div className="welcome-feature">
-              <span className="feature-icon">🚩</span>
+              <span className="feature-icon"><Icon name="flag" size={22} /></span>
               <div>
                 <h3>Feature Flags</h3>
                 <p>Control features without redeployment</p>
               </div>
             </div>
             <div className="welcome-feature">
-              <span className="feature-icon">🔒</span>
+              <span className="feature-icon"><Icon name="shieldCheck" size={22} /></span>
               <div>
                 <h3>Compliance</h3>
                 <p>Manage data retention and privacy</p>

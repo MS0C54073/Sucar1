@@ -1,3 +1,5 @@
+import { resolveCarWashCoordinates as resolveLusakaCarWashCoords } from '../utils/lusakaCoordinates';
+
 /**
  * Mapping Service
  * 
@@ -88,10 +90,24 @@ export function calculateRouteSegment(
  * Format distance for display
  */
 export function formatDistance(km: number): string {
+  if (!Number.isFinite(km) || km < 0) {
+    return '—';
+  }
   if (km < 1) {
     return `${Math.round(km * 1000)}m`;
   }
   return `${km.toFixed(1)}km`;
+}
+
+/** Parse API price fields (number, string, or missing) */
+export function parsePrice(price: unknown): number {
+  if (price == null || price === '') return 0;
+  const n = typeof price === 'number' ? price : parseFloat(String(price));
+  return Number.isFinite(n) ? n : 0;
+}
+
+export function formatKwacha(amount: unknown): string {
+  return parsePrice(amount).toFixed(2);
 }
 
 /**
@@ -107,51 +123,113 @@ export function formatTime(minutes: number): string {
 }
 
 /**
- * Parse coordinates from various formats
+ * Parse coordinates from various formats (JSON string, {lat,lng}, GeoJSON Point, [lng,lat])
  */
 export function parseCoordinates(
-  coords: string | Coordinates | null | undefined
+  coords: string | Coordinates | number[] | Record<string, unknown> | null | undefined
 ): Coordinates | null {
-  if (!coords) return null;
-  
-  if (typeof coords === 'object' && 'lat' in coords && 'lng' in coords) {
-    return { lat: coords.lat, lng: coords.lng };
+  if (coords == null) return null;
+
+  if (Array.isArray(coords) && coords.length >= 2) {
+    const a = Number(coords[0]);
+    const b = Number(coords[1]);
+    if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+    // GeoJSON order is [lng, lat]; detect by Zambia-ish ranges if ambiguous
+    if (Math.abs(a) <= 90 && Math.abs(b) > 90) {
+      return { lat: a, lng: b };
+    }
+    if (Math.abs(b) <= 90 && Math.abs(a) > 90) {
+      return { lat: b, lng: a };
+    }
+    return { lng: a, lat: b };
   }
-  
-  if (typeof coords === 'string') {
-    try {
-      // Try parsing as JSON
-      const parsed = JSON.parse(coords);
-      if (parsed.lat && parsed.lng) {
-        return { lat: parsed.lat, lng: parsed.lng };
+
+  if (typeof coords === 'object') {
+    const o = coords as Record<string, unknown>;
+    if (Array.isArray(o.coordinates) && o.coordinates.length >= 2) {
+      return parseCoordinates(o.coordinates as number[]);
+    }
+    const lat = o.lat ?? o.latitude;
+    const lng = o.lng ?? o.longitude ?? o.lon;
+    if (lat != null && lng != null) {
+      const latN = Number(lat);
+      const lngN = Number(lng);
+      if (Number.isFinite(latN) && Number.isFinite(lngN)) {
+        return { lat: latN, lng: lngN };
       }
+    }
+    return null;
+  }
+
+  if (typeof coords === 'string') {
+    const trimmed = coords.trim();
+    if (!trimmed) return null;
+    try {
+      const parsed = JSON.parse(trimmed);
+      return parseCoordinates(parsed);
     } catch {
-      // Try parsing as "lat,lng" string
-      const parts = coords.split(',');
+      const parts = trimmed.split(',');
       if (parts.length === 2) {
         const lat = parseFloat(parts[0].trim());
         const lng = parseFloat(parts[1].trim());
-        if (!isNaN(lat) && !isNaN(lng)) {
+        if (Number.isFinite(lat) && Number.isFinite(lng)) {
           return { lat, lng };
         }
       }
     }
   }
-  
+
   return null;
+}
+
+/** Resolve coordinates from a car wash, driver, or booking-like record */
+export function getLocatableCoordinates(
+  item: Record<string, unknown> | null | undefined
+): Coordinates | null {
+  if (!item) return null;
+  if (
+    item.role === 'carwash' ||
+    item.carWashName ||
+    (typeof item.location === 'string' && item.location.toLowerCase().includes('lusaka'))
+  ) {
+    const lusaka = resolveLusakaCarWashCoords(item);
+    if (lusaka) return lusaka;
+  }
+  return (
+    parseCoordinates(item.locationCoordinates as string | Coordinates) ??
+    parseCoordinates(item.location_coordinates as string | Coordinates) ??
+    parseCoordinates(item.coordinates as string | Coordinates) ??
+    parseCoordinates(item.pickupCoordinates as string | Coordinates) ??
+    parseCoordinates(item.pickup_coordinates as string | Coordinates) ??
+    (item.latitude != null && item.longitude != null
+      ? {
+          lat: Number(item.latitude),
+          lng: Number(item.longitude),
+        }
+      : null)
+  );
 }
 
 /**
  * Find nearby items within a radius
  */
-export function findNearby<T extends { coordinates?: Coordinates | string | null }>(
+type Locatable = {
+  coordinates?: Coordinates | string | null;
+  locationCoordinates?: Coordinates | string | null;
+};
+
+function getItemCoordinates(item: Locatable): Coordinates | null {
+  return getLocatableCoordinates(item as Record<string, unknown>);
+}
+
+export function findNearby<T extends Locatable>(
   items: T[],
   center: Coordinates,
   radiusKm: number = 10
 ): T[] {
   return items
     .map((item) => {
-      const coords = parseCoordinates(item.coordinates);
+      const coords = getItemCoordinates(item);
       if (!coords) return null;
       
       const distance = calculateDistance(center, coords);
@@ -280,3 +358,5 @@ export function estimateQueueWaitTime(
   // Could be enhanced with actual queue data
   return position * averageServiceTimeMinutes;
 }
+
+export { resolveCarWashCoordinates } from '../utils/lusakaCoordinates';

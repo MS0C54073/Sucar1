@@ -4,7 +4,8 @@ export interface ServicePackage {
   description: string;
   price: number;
   category: 'basic' | 'premium' | 'deluxe' | 'specialty';
-  icon: string;
+  /** @deprecated UI uses category styling instead of emoji */
+  icon?: string;
 }
 
 export const servicePackages: ServicePackage[] = [
@@ -14,7 +15,6 @@ export const servicePackages: ServicePackage[] = [
     description: 'Complete exterior wash including body, windows, and wheels. Perfect for regular maintenance.',
     price: 50,
     category: 'basic',
-    icon: '🚗',
   },
   {
     id: '2',
@@ -22,7 +22,6 @@ export const servicePackages: ServicePackage[] = [
     description: 'Deep cleaning of engine bay, removing dirt, grime, and oil buildup. Protects engine components.',
     price: 80,
     category: 'specialty',
-    icon: '⚙️',
   },
   {
     id: '3',
@@ -30,7 +29,6 @@ export const servicePackages: ServicePackage[] = [
     description: 'Comprehensive exterior cleaning including body wash, tire shine, and window cleaning.',
     price: 40,
     category: 'basic',
-    icon: '✨',
   },
   {
     id: '4',
@@ -38,7 +36,6 @@ export const servicePackages: ServicePackage[] = [
     description: 'Thorough interior cleaning including vacuuming, dashboard polish, and seat cleaning.',
     price: 60,
     category: 'basic',
-    icon: '🧹',
   },
   {
     id: '5',
@@ -46,7 +43,6 @@ export const servicePackages: ServicePackage[] = [
     description: 'Premium wax application and paint polishing for a showroom shine and long-lasting protection.',
     price: 100,
     category: 'premium',
-    icon: '💎',
   },
   {
     id: '6',
@@ -54,7 +50,6 @@ export const servicePackages: ServicePackage[] = [
     description: 'Full service including interior, exterior, engine wash, wax, and polishing. The ultimate car care experience.',
     price: 200,
     category: 'deluxe',
-    icon: '🌟',
   },
   {
     id: '7',
@@ -62,7 +57,6 @@ export const servicePackages: ServicePackage[] = [
     description: 'Fast exterior wash for busy customers. Body and windows only. Perfect for quick touch-ups.',
     price: 25,
     category: 'basic',
-    icon: '⚡',
   },
   {
     id: '8',
@@ -70,7 +64,6 @@ export const servicePackages: ServicePackage[] = [
     description: 'Advanced ceramic coating application for superior paint protection and hydrophobic properties.',
     price: 300,
     category: 'deluxe',
-    icon: '🛡️',
   },
   {
     id: '9',
@@ -78,7 +71,6 @@ export const servicePackages: ServicePackage[] = [
     description: 'Professional leather seat cleaning, conditioning, and protection to maintain premium feel.',
     price: 75,
     category: 'premium',
-    icon: '🪑',
   },
   {
     id: '10',
@@ -86,7 +78,6 @@ export const servicePackages: ServicePackage[] = [
     description: 'Restore cloudy or yellowed headlights to like-new condition, improving visibility and appearance.',
     price: 90,
     category: 'specialty',
-    icon: '💡',
   },
   {
     id: '11',
@@ -94,7 +85,6 @@ export const servicePackages: ServicePackage[] = [
     description: 'Thorough cleaning of vehicle undercarriage to remove road salt, mud, and prevent rust.',
     price: 65,
     category: 'specialty',
-    icon: '🔧',
   },
   {
     id: '12',
@@ -102,7 +92,6 @@ export const servicePackages: ServicePackage[] = [
     description: 'Professional paint correction to remove swirls, scratches, and restore original paint finish.',
     price: 250,
     category: 'deluxe',
-    icon: '🎨',
   },
 ];
 

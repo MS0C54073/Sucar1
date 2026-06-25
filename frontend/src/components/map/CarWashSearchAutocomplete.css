@@ -1,0 +1,110 @@
+.carwash-search-ac {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  z-index: 120;
+  pointer-events: auto;
+}
+
+.carwash-search-ac--hero {
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
+  z-index: 2;
+  width: 100%;
+}
+
+.carwash-search-ac__field {
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
+  width: 100%;
+}
+
+.carwash-search-ac--hero .carwash-search-ac__field {
+  border-radius: var(--radius-full, 999px);
+}
+
+.carwash-search-ac__list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 6px;
+  max-height: min(280px, 42vh);
+  overflow-y: auto;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
+  -webkit-overflow-scrolling: touch;
+}
+
+[data-theme='dark'] .carwash-search-ac__list {
+  background: #1e293b;
+  border-color: #475569;
+}
+
+.carwash-search-ac__option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.carwash-search-ac__option:hover,
+.carwash-search-ac__option.is-active {
+  background: rgba(0, 86, 210, 0.1);
+}
+
+[data-theme='dark'] .carwash-search-ac__option:hover,
+[data-theme='dark'] .carwash-search-ac__option.is-active {
+  background: rgba(96, 165, 250, 0.15);
+}
+
+.carwash-search-ac__name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a !important;
+}
+
+[data-theme='dark'] .carwash-search-ac__name {
+  color: #f8fafc !important;
+}
+
+.carwash-search-ac__loc {
+  font-size: 12px;
+  color: #64748b !important;
+}
+
+[data-theme='dark'] .carwash-search-ac__loc {
+  color: #94a3b8 !important;
+}
+
+.carwash-search-ac__empty {
+  padding: 12px;
+  font-size: 13px;
+  color: #64748b;
+  text-align: center;
+}
+
+[data-theme='dark'] .carwash-search-ac__empty {
+  color: #94a3b8;
+}
+
+.carwash-search-ac--hero .map-search-field {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+}
+
+@media (max-width: 640px) {
+  .carwash-search-ac {
+    left: 10px;
+    right: 10px;
+    top: 10px;
+  }
+}

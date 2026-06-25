@@ -4,18 +4,23 @@
  */
 
 export const Colors = {
-  // Primary brand colors
-  primary: '#667eea',
-  primaryDark: '#5568d3',
-  primaryLight: '#818cf8',
-  
+  // Primary brand colors (SuCAR purple — modern brand identity)
+  primary: '#7C3AED',
+  primaryDark: '#6D28D9',
+  primaryLight: '#DDD6FE',
+
+  // Accent (magenta/pink) — CTAs, highlights, the "CAR" wordmark
+  accent: '#EC4899',
+  accentDark: '#DB2777',
+  accentLight: '#FBCFE8',
+
   // Gradient colors
-  gradientStart: '#667eea',
-  gradientEnd: '#764ba2',
+  gradientStart: '#7C3AED',
+  gradientEnd: '#6D28D9',
   /** Aliases for auth/marketing headers (same as gradient by default) */
-  headerGradientStart: '#667eea',
-  headerGradientEnd: '#764ba2',
-  gradientSecondary: ['#f093fb', '#f5576c'],
+  headerGradientStart: '#7C3AED',
+  headerGradientEnd: '#6D28D9',
+  gradientSecondary: ['#a855f7', '#ec4899'],
   
   // Status colors
   success: '#10b981',
@@ -42,7 +47,7 @@ export const Colors = {
   gray900: '#111827',
   
   // Background colors
-  background: '#f5f7fa',
+  background: '#F8FAFC',
   surface: '#ffffff',
   surfaceElevated: '#ffffff',
   

@@ -1,16 +1,16 @@
 /**
  * NearbyCarWashes Component
  * Displays nearby car washes on a map and in a list view
- * Allows users to search with custom radius, use current location, and book
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import api from '../services/api';
-import useLiveLocation from '../hooks/useLiveLocation';
-import MapView from './MapView';
-import LoadingSpinner from './LoadingSpinner';
+import api from '../../services/api';
+import useLiveLocation from '../../hooks/useLiveLocation';
+import MapView from '../MapView';
+import LoadingSpinner from '../LoadingSpinner';
+import Icon from '../icons/Icon';
 import './NearbyCarWashes.css';
 
 interface CarWash {
@@ -20,7 +20,7 @@ interface CarWash {
   longitude: number;
   distanceKm: number;
   isActive: boolean;
-  createdAt: string;
+  createdAt?: string;
 }
 
 interface NearbyCarWashesProps {
@@ -37,11 +37,12 @@ const NearbyCarWashes: React.FC<NearbyCarWashesProps> = ({
   const [selectedCarWash, setSelectedCarWash] = useState<CarWash | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [listView, setListView] = useState(false);
+  const [sortBy, setSortBy] = useState<'distance' | 'name'>('distance');
+  const [showOnlyActive, setShowOnlyActive] = useState(true);
 
-  // Get user's current location
   const { location: gpsLocation, loading: gpsLoading, error: gpsError } = useLiveLocation({
     enabled: true,
-    intervalMs: 10000, // Update every 10 seconds for initial setup
+    intervalMs: 5000,
   });
 
   useEffect(() => {
@@ -53,7 +54,6 @@ const NearbyCarWashes: React.FC<NearbyCarWashesProps> = ({
     }
   }, [gpsLocation]);
 
-  // Fetch nearby car washes
   const { data: nearbyCarWashes, isLoading, error, refetch } = useQuery<CarWash[]>({
     queryKey: ['nearby-carwashes', userLocation?.lat, userLocation?.lng, radiusKm],
     queryFn: async () => {
@@ -61,7 +61,7 @@ const NearbyCarWashes: React.FC<NearbyCarWashesProps> = ({
         throw new Error('Location not available');
       }
 
-      const response = await api.post('/api/nearby-carwashes', {
+      const response = await api.post('/locations/nearby-carwashes', {
         latitude: userLocation.lat,
         longitude: userLocation.lng,
         radiusKm,
@@ -70,13 +70,12 @@ const NearbyCarWashes: React.FC<NearbyCarWashesProps> = ({
       return response.data.data || [];
     },
     enabled: !!userLocation,
-    staleTime: 30000, // 30 seconds
-    refetchInterval: 60000, // Refetch every 60 seconds
+    staleTime: 15000,
+    refetchInterval: 30000,
   });
 
   const handleRadiusChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newRadius = parseFloat(e.target.value);
-    setRadiusKm(newRadius);
+    setRadiusKm(parseFloat(e.target.value));
   };
 
   const handleUseMyLocation = useCallback(() => {
@@ -94,25 +93,49 @@ const NearbyCarWashes: React.FC<NearbyCarWashesProps> = ({
   };
 
   const handleBookCarWash = (carWash: CarWash) => {
-    navigate('/booking', { state: { carWashId: carWash.id } });
+    navigate('/client/book', { state: { carWashId: carWash.id } });
   };
 
-  // Map data for MapView component
-  const carWashMarkers =
-    nearbyCarWashes?.map((cw) => ({
-      id: cw.id,
-      status: cw.isActive ? 'active' : 'inactive',
-      pickupLocation: cw.name,
-      pickupCoordinates: { lat: cw.latitude, lng: cw.longitude },
-    })) || [];
+  const filteredAndSortedCarWashes = useCallback(() => {
+    let filtered = nearbyCarWashes || [];
+
+    if (showOnlyActive) {
+      filtered = filtered.filter((cw) => cw.isActive);
+    }
+
+    if (sortBy === 'distance') {
+      filtered = [...filtered].sort((a, b) => a.distanceKm - b.distanceKm);
+    } else if (sortBy === 'name') {
+      filtered = [...filtered].sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    return filtered;
+  }, [nearbyCarWashes, showOnlyActive, sortBy]);
+
+  const carWashMarkers = useMemo(
+    () =>
+      filteredAndSortedCarWashes().map((carWash) => ({
+        id: carWash.id,
+        status: carWash.isActive ? 'active' : 'inactive',
+        pickupLocation: carWash.name,
+        pickupCoordinates: {
+          lat: carWash.latitude,
+          lng: carWash.longitude,
+        },
+      })),
+    [filteredAndSortedCarWashes]
+  );
+
+  const displayList = filteredAndSortedCarWashes();
 
   return (
     <div className="nearby-carwashes-container">
-      {/* Search Header */}
       <div className="search-header">
         <div className="search-controls">
           <div className="radius-control">
-            <label htmlFor="radius-slider">Radius: {radiusKm} km</label>
+            <label htmlFor="radius-slider">
+              Search radius: <strong>{radiusKm} km</strong>
+            </label>
             <input
               id="radius-slider"
               type="range"
@@ -130,7 +153,7 @@ const NearbyCarWashes: React.FC<NearbyCarWashesProps> = ({
             disabled={gpsLoading}
             title="Use your current location"
           >
-            {gpsLoading ? '📍 Getting location...' : '📍 Use My Location'}
+            <Icon name="mapPin" size={15} /> {gpsLoading ? 'Getting location...' : 'Use My Location'}
           </button>
 
           <div className="view-toggle">
@@ -139,26 +162,57 @@ const NearbyCarWashes: React.FC<NearbyCarWashesProps> = ({
               onClick={() => setListView(false)}
               title="Map view"
             >
-              🗺️ Map
+              <Icon name="map" size={15} /> Map
             </button>
             <button
               className={`toggle-btn ${listView ? 'active' : ''}`}
               onClick={() => setListView(true)}
               title="List view"
             >
-              📋 List
+              <Icon name="clipboard" size={15} /> List
             </button>
           </div>
         </div>
 
+        {listView && (
+          <div className="filters-row">
+            <div className="filter-group">
+              <label htmlFor="sort-select">Sort by:</label>
+              <select
+                id="sort-select"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as 'distance' | 'name')}
+                className="sort-select"
+              >
+                <option value="distance">Nearest First</option>
+                <option value="name">Name (A-Z)</option>
+              </select>
+            </div>
+
+            <label className="filter-checkbox">
+              <input
+                type="checkbox"
+                checked={showOnlyActive}
+                onChange={(e) => setShowOnlyActive(e.target.checked)}
+              />
+              <span>Open Now</span>
+            </label>
+
+            {userLocation && (
+              <div className="location-indicator">
+                <Icon name="mapPin" size={13} /> {userLocation.lat.toFixed(2)}°, {userLocation.lng.toFixed(2)}°
+              </div>
+            )}
+          </div>
+        )}
+
         {gpsError && (
           <div className="error-banner">
-            <span>⚠️ {gpsError}</span>
+            <span><Icon name="alertTriangle" size={14} /> {gpsError}</span>
           </div>
         )}
       </div>
 
-      {/* Content Area */}
       {!userLocation ? (
         <div className="loading-container">
           <LoadingSpinner size="lg" />
@@ -167,7 +221,9 @@ const NearbyCarWashes: React.FC<NearbyCarWashesProps> = ({
       ) : error ? (
         <div className="error-container">
           <div className="error-message">
-            <span>❌ {error instanceof Error ? error.message : 'Failed to fetch nearby car washes'}</span>
+            <span>
+              <Icon name="alertCircle" size={14} /> {error instanceof Error ? error.message : 'Failed to fetch nearby car washes'}
+            </span>
             <button onClick={() => refetch()} className="retry-button">
               Retry
             </button>
@@ -180,13 +236,12 @@ const NearbyCarWashes: React.FC<NearbyCarWashesProps> = ({
         </div>
       ) : !nearbyCarWashes || nearbyCarWashes.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">🧼</div>
+          <div className="empty-icon"><Icon name="droplets" size={32} /></div>
           <p>No car washes found within {radiusKm} km</p>
           <p className="empty-hint">Try increasing the radius</p>
         </div>
       ) : (
         <>
-          {/* Map View */}
           {!listView && (
             <div className="map-section">
               <MapView
@@ -198,14 +253,13 @@ const NearbyCarWashes: React.FC<NearbyCarWashesProps> = ({
             </div>
           )}
 
-          {/* List View */}
           {listView && (
             <div className="list-section">
               <div className="carwash-list">
-                {nearbyCarWashes.map((carWash) => (
+                {displayList.map((carWash) => (
                   <div
                     key={carWash.id}
-                    className={`carwash-card ${selectedCarWash?.id === carWash.id ? 'selected' : ''}`}
+                    className={`carwash-card ${selectedCarWash?.id === carWash.id ? 'selected' : ''} ${!carWash.isActive ? 'inactive' : ''}`}
                     onClick={() => handleCarWashSelect(carWash)}
                   >
                     <div className="carwash-header">
@@ -216,15 +270,14 @@ const NearbyCarWashes: React.FC<NearbyCarWashesProps> = ({
                     </div>
 
                     <div className="carwash-status">
-                      <span className={`status-dot ${carWash.isActive ? 'active' : 'inactive'}`}></span>
-                      <span className="status-text">
-                        {carWash.isActive ? 'Open' : 'Closed'}
-                      </span>
+                      <span className={`status-dot ${carWash.isActive ? 'active' : 'inactive'}`} />
+                      <span className="status-text">{carWash.isActive ? 'Open' : 'Closed'}</span>
                     </div>
 
-                    {showBookButton && (
+                    {showBookButton && carWash.isActive && (
                       <button
                         className="book-button"
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleBookCarWash(carWash);
@@ -239,10 +292,10 @@ const NearbyCarWashes: React.FC<NearbyCarWashesProps> = ({
             </div>
           )}
 
-          {/* Summary */}
           <div className="summary">
-            Found <strong>{nearbyCarWashes.length}</strong> car wash{nearbyCarWashes.length !== 1 ? 'es' : ''} within{' '}
-            <strong>{radiusKm} km</strong>
+            Found <strong>{displayList.length}</strong> car wash
+            {displayList.length !== 1 ? 'es' : ''} within <strong>{radiusKm} km</strong>
+            {showOnlyActive && ' (Open now)'}
           </div>
         </>
       )}

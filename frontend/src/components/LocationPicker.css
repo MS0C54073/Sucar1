@@ -6,6 +6,12 @@
   width: 100%;
 }
 
+.location-picker-map {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--border-primary);
+}
+
 .location-picker-input-group {
   display: flex;
   gap: 12px;

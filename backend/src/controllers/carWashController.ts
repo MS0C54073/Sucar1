@@ -12,6 +12,8 @@ import {
 } from '../shared/errors/AppError';
 import { asyncHandler } from '../shared/errors/errorHandler';
 import { ApiSuccessResponse } from '../shared/types/api.types';
+import { parseStoredCoordinates, resolveCarWashCoordinates } from '../utils/lusakaCoordinates';
+import { supabase } from '../config/supabase';
 
 // @desc    Get car wash services
 // @route   GET /api/carwash/services
@@ -70,13 +72,30 @@ export const getCarWashes = asyncHandler(async (req: Request, res: Response): Pr
     throw new InternalServerError('Invalid data format received from database');
   }
 
+  const lusakaCarWashes = carWashes
+    .map((cw: any) => {
+      const { password, ...rest } = cw;
+      const hadStored =
+        parseStoredCoordinates(rest.locationCoordinates) ??
+        parseStoredCoordinates(rest.location_coordinates);
+      const coords = resolveCarWashCoordinates(rest);
+      if (coords) {
+        rest.locationCoordinates = coords;
+        if (!hadStored && rest.id) {
+          void supabase
+            .from('users')
+            .update({ location_coordinates: JSON.stringify(coords) })
+            .eq('id', rest.id);
+        }
+      }
+      return rest;
+    })
+    .filter((cw: any) => Boolean(cw.locationCoordinates));
+
   const response: ApiSuccessResponse = {
     success: true,
-    count: carWashes.length,
-    data: carWashes.map((cw: any) => {
-      const { password, ...carWashWithoutPassword } = cw;
-      return carWashWithoutPassword;
-    }),
+    count: lusakaCarWashes.length,
+    data: lusakaCarWashes,
   };
 
   res.json(response);

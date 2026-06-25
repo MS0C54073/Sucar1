@@ -1,0 +1,128 @@
+.op-calendar.card {
+  background: var(--op-card, #fff);
+  border: 1px solid var(--op-border, rgba(0, 0, 0, 0.07));
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.cal-range {
+  font-size: 12px;
+  color: var(--op-text2, #6b7280);
+  font-weight: 500;
+}
+
+.cal-grid-wrap {
+  overflow-x: auto;
+  padding: 0 12px 12px;
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: 48px repeat(7, minmax(72px, 1fr));
+  min-width: 640px;
+}
+
+.cal-corner {
+  height: 36px;
+}
+
+.cal-day-head {
+  text-align: center;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--op-border, #eee);
+  font-size: 11px;
+}
+
+.cal-dow {
+  font-weight: 700;
+  color: var(--op-text, #18191f);
+}
+
+.cal-dom {
+  color: var(--op-text2, #6b7280);
+}
+
+.cal-row {
+  display: contents;
+}
+
+.cal-time {
+  font-size: 10px;
+  color: var(--op-text2, #6b7280);
+  padding: 8px 4px;
+  text-align: right;
+  border-top: 1px solid var(--op-border, #f0f0ee);
+}
+
+.cal-cell {
+  border-top: 1px solid var(--op-border, #f0f0ee);
+  border-left: 1px solid var(--op-border, #f0f0ee);
+  min-height: 44px;
+  padding: 2px;
+  position: relative;
+}
+
+.cal-block {
+  border-radius: 6px;
+  padding: 4px 6px;
+  font-size: 9px;
+  margin-bottom: 2px;
+}
+
+.cal-block-name {
+  font-weight: 700;
+  color: #fff;
+}
+
+.cal-block-svc,
+.cal-block-time {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 8px;
+}
+
+.cal-progress {
+  background: #1d9e75;
+}
+
+.cal-pending {
+  background: #e07b39;
+}
+
+.cal-done {
+  background: #9ca3af;
+}
+
+.cal-cancel {
+  background: #d1d5db;
+  opacity: 0.7;
+}
+
+.cal-legend {
+  display: flex;
+  gap: 16px;
+  padding: 10px 16px 14px;
+  font-size: 11px;
+  color: var(--op-text2, #6b7280);
+}
+
+.cal-legend .leg {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.cal-legend .leg.cal-progress {
+  background: #1d9e75;
+}
+
+.cal-legend .leg.cal-pending {
+  background: #e07b39;
+}
+
+.cal-legend .leg.cal-done {
+  background: #9ca3af;
+}

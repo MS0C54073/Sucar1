@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ONBOARDING_SECTIONS, OnboardingService } from '../../services/onboarding-service';
+import Icon from '../icons/Icon';
 import './ContextualHelp.css';
 
 interface ContextualHelpProps {
@@ -21,14 +22,14 @@ const ContextualHelp: React.FC<ContextualHelpProps> = ({ sectionId, className = 
         title="Show help"
         aria-label="Show help"
       >
-        ℹ️
+        <Icon name="info" size={16} />
       </button>
       {showHelp && (
         <div className="help-popup">
           <div className="help-popup-header">
             <h4>{section.title}</h4>
-            <button className="help-popup-close" onClick={() => setShowHelp(false)}>
-              ✕
+            <button className="help-popup-close" onClick={() => setShowHelp(false)} aria-label="Close">
+              <Icon name="x" size={15} />
             </button>
           </div>
           <div className="help-popup-content">

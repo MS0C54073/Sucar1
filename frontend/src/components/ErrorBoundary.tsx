@@ -71,7 +71,7 @@ class ErrorBoundary extends Component<Props, State> {
           margin: '2rem auto',
         }}>
           <h2 style={{ color: '#dc2626', marginBottom: '1rem' }}>
-            ⚠️ Something went wrong
+            Something went wrong
           </h2>
           <p style={{ marginBottom: '1rem', color: '#6b7280' }}>
             An unexpected error occurred. Please try refreshing the page.

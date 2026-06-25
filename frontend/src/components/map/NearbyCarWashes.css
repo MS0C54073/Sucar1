@@ -41,6 +41,77 @@
   white-space: nowrap;
 }
 
+.radius-control label strong {
+  color: #3b82f6;
+}
+
+.filters-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-group label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.sort-select {
+  padding: 6px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 13px;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.sort-select:hover {
+  border-color: #3b82f6;
+}
+
+.sort-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.filter-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.filter-checkbox input {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.location-indicator {
+  font-size: 12px;
+  color: #6b7280;
+  font-family: 'Courier New', monospace;
+  background: #f3f4f6;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
 .radius-slider {
   flex: 1;
   min-width: 150px;

@@ -1,0 +1,196 @@
+.car-wash-map-explorer {
+  width: 100%;
+}
+
+.car-wash-map-explorer__map-wrap {
+  position: relative;
+  width: 100%;
+  height: var(--map-explorer-height, min(72vh, 680px));
+  min-height: 420px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #e2e8f0;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+}
+
+.car-wash-map-explorer__map-wrap > .map-container {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  height: 100% !important;
+  min-height: 100% !important;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.car-wash-map-explorer__overlays {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.car-wash-map-explorer__overlays > * {
+  pointer-events: auto;
+}
+
+.car-wash-map-explorer__overlays .map-float-badge,
+.car-wash-map-explorer__overlays .map-float-hint,
+.car-wash-map-explorer__overlays .map-float-route-status {
+  pointer-events: none;
+}
+
+.car-wash-map-explorer__map-wrap .map-view {
+  min-height: 100% !important;
+}
+
+/* Push Mapbox controls below floating search */
+.car-wash-map-explorer .mapboxgl-ctrl-top-right {
+  top: 76px;
+  right: 10px;
+}
+
+/* Search autocomplete — see SearchAutocomplete.css */
+.car-wash-map-explorer__overlays .sucar-search-ac {
+  pointer-events: auto;
+}
+
+.map-float-badge {
+  position: absolute;
+  top: 78px;
+  left: 14px;
+  z-index: 20;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #0d9488;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+  pointer-events: none;
+}
+
+.map-float-hint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 20;
+  padding: 12px 18px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  font-size: 14px;
+  color: #64748b;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  pointer-events: none;
+}
+
+.map-float-route-status {
+  position: absolute;
+  top: 108px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 15;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.96);
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+}
+
+.map-float-route-status--error {
+  color: #b91c1c;
+  background: #fef2f2;
+}
+
+.map-float-panel {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 50;
+  max-height: min(42vh, 320px);
+  overflow-y: auto;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.2);
+}
+
+.map-float-panel .carwash-detail-panel {
+  margin: 0;
+  border-radius: 16px;
+  max-height: none;
+}
+
+.car-wash-map-explorer__state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 12px;
+  color: #64748b;
+}
+
+/* Client Deals tab — map fills column between top and bottom nav */
+[data-app-skin='light'] .car-wash-map-explorer--immersive {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+[data-app-skin='light'] .car-wash-map-explorer--immersive .car-wash-map-explorer__map-wrap {
+  flex: 1;
+  min-height: 360px;
+  height: 100% !important;
+  max-height: none;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  box-shadow: none;
+}
+
+[data-app-skin='light'] .car-wash-map-explorer--immersive .map-float-search {
+  top: max(12px, env(safe-area-inset-top));
+}
+
+[data-app-skin='light'] .car-wash-map-explorer--immersive .map-float-panel {
+  max-height: min(48vh, 360px);
+  bottom: max(12px, env(safe-area-inset-bottom));
+}
+
+/* Full page /book */
+.car-wash-map-explorer--fullpage .car-wash-map-explorer__map-wrap {
+  --map-explorer-height: min(calc(100vh - 140px), 780px);
+  border-radius: 20px;
+}
+
+@media (max-width: 640px) {
+  .car-wash-map-explorer__map-wrap {
+    min-height: 360px;
+    border-radius: 12px;
+  }
+
+  .car-wash-map-explorer__overlays .map-float-search {
+    left: 10px;
+    right: 10px;
+    top: 10px;
+  }
+
+  .map-float-badge {
+    top: 64px;
+    left: 10px;
+    font-size: 11px;
+  }
+
+  .map-float-panel {
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    max-height: 50vh;
+  }
+}

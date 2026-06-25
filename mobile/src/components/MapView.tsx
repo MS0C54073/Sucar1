@@ -7,8 +7,9 @@ import {
   Dimensions,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
+import { Ionicons } from '@expo/vector-icons';
 import { Coordinates } from '../services/locationService';
-import { getMapboxAccessToken } from '../config/mapbox';
+import { useMapbox } from '../context/MapboxContext';
 
 interface MapViewProps {
   pickupLocation?: Coordinates;
@@ -16,6 +17,13 @@ interface MapViewProps {
   height?: number;
   showRoute?: boolean;
   onMapReady?: () => void;
+  /**
+   * When false (the default for previews embedded in a ScrollView), the map
+   * does not capture touch gestures, so the surrounding list/page scrolls
+   * smoothly when the user drags over the map. Set true for a full-screen,
+   * pannable map.
+   */
+  interactive?: boolean;
 }
 
 /**
@@ -31,17 +39,30 @@ const CustomMapView: React.FC<MapViewProps> = ({
   height = 300,
   showRoute = false,
   onMapReady,
+  interactive = false,
 }) => {
   const webViewRef = useRef<WebView>(null);
   const [mapReady, setMapReady] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [mapHtml, setMapHtml] = useState('');
+  const { token: mapboxToken, loading: tokenLoading, error: tokenError } = useMapbox();
 
   useEffect(() => {
-    generateMapHTML();
-  }, [pickupLocation, destinationLocation, height]);
+    setMapReady(false);
+    setLoadFailed(false);
+    if (!mapboxToken) return;
+    generateMapHTML(mapboxToken);
+  }, [pickupLocation, destinationLocation, height, interactive, mapboxToken]);
 
-  const generateMapHTML = () => {
-    const mapboxToken = getMapboxAccessToken();
+  // Never spin forever: if the map hasn't reported ready within a few seconds
+  // (slow tiles, network, bad token), fall back to the static preview.
+  useEffect(() => {
+    if (!mapboxToken || mapReady) return;
+    const t = setTimeout(() => setLoadFailed(true), 7000);
+    return () => clearTimeout(t);
+  }, [mapboxToken, mapReady, mapHtml]);
+
+  const generateMapHTML = (token: string) => {
     const locations: Coordinates[] = [];
     if (pickupLocation) locations.push(pickupLocation);
     if (destinationLocation) locations.push(destinationLocation);
@@ -74,7 +95,7 @@ const CustomMapView: React.FC<MapViewProps> = ({
       markers.push({
         lat: pickupLocation.lat,
         lng: pickupLocation.lng,
-        color: '#3b82f6',
+        color: '#7C3AED',
         title: 'Pickup Location',
         description: 'Vehicle pickup point',
       });
@@ -83,7 +104,7 @@ const CustomMapView: React.FC<MapViewProps> = ({
       markers.push({
         lat: destinationLocation.lat,
         lng: destinationLocation.lng,
-        color: '#10b981',
+        color: '#EC4899',
         title: 'Destination',
         description: 'Car wash location',
       });
@@ -123,7 +144,7 @@ const CustomMapView: React.FC<MapViewProps> = ({
       style: 'mapbox://styles/mapbox/streets-v12',
       center: [${centerLng}, ${centerLat}],
       zoom: ${zoom},
-      interactive: true,
+      interactive: ${interactive ? 'true' : 'false'},
       attributionControl: false
     });
 
@@ -174,7 +195,7 @@ const CustomMapView: React.FC<MapViewProps> = ({
             'line-cap': 'round'
           },
           paint: {
-            'line-color': '#3b82f6',
+            'line-color': '#7C3AED',
             'line-width': 4,
             'line-opacity': 0.7
           }
@@ -219,17 +240,49 @@ const CustomMapView: React.FC<MapViewProps> = ({
         if (onMapReady) {
           onMapReady();
         }
+      } else if (data.type === 'mapError') {
+        setLoadFailed(true);
       }
     } catch (error) {
       // Ignore parse errors
     }
   };
 
+  // Loading or missing token — show placeholder instead of a blank/broken map.
+  if (tokenLoading) {
+    return (
+      <View style={[styles.container, { height }, styles.placeholder]}>
+        <ActivityIndicator size="small" color="#7C3AED" />
+        <Text style={styles.placeholderTitle}>Loading map…</Text>
+      </View>
+    );
+  }
+
+  if (!mapboxToken || loadFailed) {
+    const coord = pickupLocation || destinationLocation;
+    return (
+      <View style={[styles.container, { height }, styles.placeholder]}>
+        <Ionicons name="map-outline" size={28} color="#64748B" />
+        <Text style={styles.placeholderTitle}>Map preview</Text>
+        {tokenError ? (
+          <Text style={styles.placeholderHint}>{tokenError}</Text>
+        ) : null}
+        {coord ? (
+          <Text style={styles.placeholderCoord}>
+            {coord.lat.toFixed(4)}, {coord.lng.toFixed(4)}
+          </Text>
+        ) : (
+          <Text style={styles.placeholderCoord}>Location set</Text>
+        )}
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.container, { height }]}>
       {!mapReady && (
         <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#667eea" />
+          <ActivityIndicator size="large" color="#7C3AED" />
           <Text style={styles.loadingText}>Loading map...</Text>
         </View>
       )}
@@ -240,8 +293,12 @@ const CustomMapView: React.FC<MapViewProps> = ({
         onMessage={handleMessage}
         javaScriptEnabled={true}
         domStorageEnabled={true}
+        originWhitelist={['*']}
+        mixedContentMode="always"
         startInLoadingState={true}
         scalesPageToFit={true}
+        scrollEnabled={interactive}
+        pointerEvents={interactive ? 'auto' : 'none'}
       />
     </View>
   );
@@ -274,6 +331,29 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 14,
     color: '#666',
+  },
+  placeholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EEF2F7',
+  },
+  placeholderTitle: {
+    marginTop: 8,
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  placeholderCoord: {
+    marginTop: 2,
+    fontSize: 11,
+    color: '#94A3B8',
+  },
+  placeholderHint: {
+    marginTop: 4,
+    fontSize: 10,
+    color: '#94A3B8',
+    textAlign: 'center',
+    paddingHorizontal: 12,
   },
 });
 

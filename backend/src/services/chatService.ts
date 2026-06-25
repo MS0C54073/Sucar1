@@ -127,4 +127,94 @@ export class ChatService {
 
     return Object.values(conversationsMap);
   }
+
+  /** Conversations for the current user (client, driver, or car wash). */
+  static async getConversationsForUser(userId: string) {
+    const { data, error } = await supabase
+      .from('messages')
+      .select(
+        `
+        id,
+        booking_id,
+        sender_id,
+        receiver_id,
+        message,
+        read,
+        created_at,
+        booking:bookings(
+          id,
+          status,
+          client_id,
+          driver_id,
+          car_wash_id,
+          client:users!bookings_client_id_fkey(id, name),
+          driver:users!bookings_driver_id_fkey(id, name),
+          car_wash:users!bookings_car_wash_id_fkey(id, name, car_wash_name)
+        )
+      `
+      )
+      .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    const conversationsMap: Record<string, any> = {};
+
+    for (const msg of data || []) {
+      if (!msg.booking_id) continue;
+
+      const booking = msg.booking as any;
+      if (!booking) continue;
+
+      const clientId = booking.client_id || booking.client?.id;
+      const driverId = booking.driver_id || booking.driver?.id;
+      const carWashId = booking.car_wash_id || booking.car_wash?.id;
+
+      const hasAccess =
+        clientId === userId || driverId === userId || carWashId === userId;
+      if (!hasAccess) continue;
+
+      let otherParty: { id: string; name: string; role: string } | null = null;
+      if (userId === clientId) {
+        if (driverId && driverId !== userId) {
+          otherParty = {
+            id: driverId,
+            name: booking.driver?.name || 'Driver',
+            role: 'driver',
+          };
+        } else if (carWashId) {
+          otherParty = {
+            id: carWashId,
+            name: booking.car_wash?.car_wash_name || booking.car_wash?.name || 'Car Wash',
+            role: 'carwash',
+          };
+        }
+      } else if (userId === driverId || userId === carWashId) {
+        otherParty = {
+          id: clientId,
+          name: booking.client?.name || 'Client',
+          role: 'client',
+        };
+      }
+
+      if (!conversationsMap[msg.booking_id]) {
+        conversationsMap[msg.booking_id] = {
+          bookingId: msg.booking_id,
+          bookingStatus: booking.status,
+          lastMessage: msg.message,
+          lastTime: msg.created_at,
+          unreadCount: 0,
+          otherParty,
+        };
+      }
+
+      if (!msg.read && msg.receiver_id === userId) {
+        conversationsMap[msg.booking_id].unreadCount += 1;
+      }
+    }
+
+    return Object.values(conversationsMap).sort(
+      (a, b) => new Date(b.lastTime).getTime() - new Date(a.lastTime).getTime()
+    );
+  }
 }

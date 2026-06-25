@@ -98,7 +98,7 @@ export const createBooking = asyncHandler(async (req: AuthRequest, res: Response
     await DBService.createPayment({
       bookingId: booking.id,
       amount: service.price,
-      method: 'pending',
+      method: 'cash',
       status: 'pending',
     });
   } catch (paymentError) {
@@ -629,12 +629,18 @@ export const cancelBooking = asyncHandler(async (req: AuthRequest, res: Response
     throw new NotFoundError('Booking not found');
   }
 
-  // Get client ID (handle both object and string formats)
   const bookingClientId = typeof booking.clientId === 'object' ? booking.clientId?.id : booking.clientId;
+  const bookingDriverId = typeof booking.driverId === 'object' ? booking.driverId?.id : booking.driverId;
+  const bookingCarWashId =
+    typeof booking.carWashId === 'object' ? booking.carWashId?.id : booking.carWashId;
 
-  // Only client or admin can cancel
-  if (req.user.role !== 'admin' && bookingClientId !== req.user.id) {
-    throw new ForbiddenError('Only the booking owner or admin can cancel this booking');
+  const isClient = bookingClientId === req.user.id;
+  const isDriver = req.user.role === 'driver' && bookingDriverId === req.user.id;
+  const isCarWash = req.user.role === 'carwash' && bookingCarWashId === req.user.id;
+  const isAdmin = req.user.role === 'admin' || req.user.role === 'subadmin';
+
+  if (!isAdmin && !isClient && !isDriver && !isCarWash) {
+    throw new ForbiddenError('You do not have permission to cancel this booking');
   }
 
   // Can't cancel if already completed or delivered

@@ -1,0 +1,109 @@
+.payment-review-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px;
+}
+
+.payment-review-modal {
+  background: var(--bg-secondary, #fff);
+  border-radius: 16px 16px 0 0;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90dvh;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.payment-review-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid var(--border-primary, #e5e7eb);
+}
+
+.payment-review-modal__header h2 {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.payment-review-modal__close {
+  border: none;
+  background: transparent;
+  font-size: 1.5rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.payment-review-modal__body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.payment-review-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.9375rem;
+}
+
+.payment-review-row span {
+  color: var(--text-secondary, #6b7280);
+}
+
+.payment-review-proof span {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-secondary, #6b7280);
+  font-size: 0.875rem;
+}
+
+.payment-review-proof__img {
+  width: 100%;
+  max-height: 240px;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 1px solid var(--border-primary, #e5e7eb);
+}
+
+.payment-review-proof__empty {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.payment-review-reject {
+  padding: 0 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.payment-review-reject textarea {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--border-primary, #e5e7eb);
+  padding: 8px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.payment-review-modal__footer {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  border-top: 1px solid var(--border-primary, #e5e7eb);
+}
+
+.payment-review-modal__footer .btn {
+  flex: 1;
+}

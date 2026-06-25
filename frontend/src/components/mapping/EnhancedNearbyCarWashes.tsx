@@ -14,11 +14,22 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { getCurrentPosition, Coordinates } from '../../services/locationService';
-import { findNearby, parseCoordinates, formatDistance, formatTime, calculateDistance, calculateRouteSegment, RouteSegment } from '../../services/mappingService';
+import {
+  findNearby,
+  getLocatableCoordinates,
+  formatDistance,
+  formatTime,
+  formatKwacha,
+  parsePrice,
+  calculateDistance,
+  calculateRouteSegment,
+  RouteSegment,
+} from '../../services/mappingService';
 import { useToast } from '../ToastContainer';
 import api from '../../services/api';
 import LoadingSpinner from '../LoadingSpinner';
 import LocationPicker from '../LocationPicker';
+import Icon from '../icons/Icon';
 import './EnhancedNearbyCarWashes.css';
 
 interface CarWash {
@@ -47,13 +58,29 @@ interface CarWashWithDistance extends CarWash {
   estimatedTime?: number;
 }
 
-const EnhancedNearbyCarWashes = () => {
+interface PendingBookingPreview {
+  carWash: CarWashWithDistance;
+  service: Service;
+  routeSegment: RouteSegment;
+  totalPrice: number;
+}
+
+interface EnhancedNearbyCarWashesProps {
+  onRouteChange?: (segments: RouteSegment[] | null) => void;
+  onPendingBookingChange?: (pending: PendingBookingPreview | null) => void;
+}
+
+const EnhancedNearbyCarWashes = ({
+  onRouteChange,
+  onPendingBookingChange,
+}: EnhancedNearbyCarWashesProps = {}) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
   const [searchLocation, setSearchLocation] = useState<Coordinates | null>(null);
+  const [pickupAddress, setPickupAddress] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCarWash, setSelectedCarWash] = useState<CarWashWithDistance | null>(null);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
@@ -62,12 +89,7 @@ const EnhancedNearbyCarWashes = () => {
   const [locationError, setLocationError] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [showAutocomplete, setShowAutocomplete] = useState(false);
-  const [pendingBooking, setPendingBooking] = useState<{
-    carWash: CarWashWithDistance;
-    service: Service;
-    routeSegment: RouteSegment;
-    totalPrice: number;
-  } | null>(null);
+  const [pendingBooking, setPendingBooking] = useState<PendingBookingPreview | null>(null);
 
   // Fetch car washes with services
   const { data: carWashes, isLoading: carWashesLoading } = useQuery<CarWash[]>({
@@ -115,7 +137,8 @@ const EnhancedNearbyCarWashes = () => {
       if (!selectedCarWash?.id) return [];
       try {
         const response = await api.get(`/carwash/services?carWashId=${selectedCarWash.id}`);
-        return response.data.data || [];
+        const list = response.data.data || [];
+        return list.map((s: Service) => ({ ...s, price: parsePrice(s.price) }));
       } catch (error) {
         console.error('Error fetching services:', error);
         return [];
@@ -153,7 +176,8 @@ const EnhancedNearbyCarWashes = () => {
           lng: position.coords.longitude,
         };
         setUserLocation(coords);
-        setSearchLocation(coords); // Default to user location
+        setSearchLocation(coords);
+        setPickupAddress('Current location');
         setLocationError(null);
       })
       .catch((error) => {
@@ -181,38 +205,46 @@ const EnhancedNearbyCarWashes = () => {
   // Find nearby car washes based on search location
   const nearbyCarWashes = useMemo(() => {
     if (!filteredCarWashes || !searchLocation) return [];
-    
-    const nearby = findNearby(filteredCarWashes, searchLocation, 50); // 50km radius
-    
-    // Calculate distance, route segment, and estimated time for each car wash
-    return nearby.map((carWash) => {
-      const coords = parseCoordinates(carWash.locationCoordinates);
-      if (!coords) {
-        return { ...carWash, distance: Infinity };
-      }
-      
-      const distance = calculateDistance(searchLocation, coords);
-      const routeSegment = calculateRouteSegment(searchLocation, coords);
-      
-      return { 
-        ...carWash, 
-        distance,
-        routeSegment,
-        estimatedTime: routeSegment.estimatedTime,
-      };
-    }).sort((a, b) => a.distance - b.distance);
+
+    const nearby = findNearby(filteredCarWashes, searchLocation, 50);
+
+    return nearby
+      .map((carWash) => {
+        const coords = getLocatableCoordinates(carWash as Record<string, unknown>);
+        if (!coords) return null;
+
+        const distance = calculateDistance(searchLocation, coords);
+        if (!Number.isFinite(distance)) return null;
+
+        const routeSegment = calculateRouteSegment(searchLocation, coords);
+        const services = (carWash.services || []).map((s) => ({
+          ...s,
+          price: parsePrice(s.price),
+        }));
+
+        return {
+          ...carWash,
+          services,
+          distance,
+          routeSegment,
+          estimatedTime: routeSegment.estimatedTime,
+        } as CarWashWithDistance;
+      })
+      .filter((cw): cw is CarWashWithDistance => cw !== null)
+      .sort((a, b) => a.distance - b.distance);
   }, [filteredCarWashes, searchLocation]);
 
-  // Calculate price with distance-based fee
-  const calculateTotalPrice = (servicePrice: number, distance: number): number => {
-    // Base service price
-    let total = servicePrice;
-    
-    // Distance-based fee: K5 per km for pickup & delivery
-    const distanceFee = distance * 5;
-    total += distanceFee;
-    
-    return Math.round(total * 100) / 100; // Round to 2 decimal places
+  const calculateTotalPrice = (servicePrice: unknown, distance: number): number => {
+    const base = parsePrice(servicePrice);
+    const km = Number.isFinite(distance) ? distance : 0;
+    return Math.round((base + km * 5) * 100) / 100;
+  };
+
+  const formatCoordsLabel = (coords: Coordinates | null) => {
+    if (!coords || !Number.isFinite(coords.lat) || !Number.isFinite(coords.lng)) {
+      return '';
+    }
+    return `Lat: ${coords.lat.toFixed(4)}, Lng: ${coords.lng.toFixed(4)}`;
   };
 
   // Booking mutation
@@ -237,35 +269,78 @@ const EnhancedNearbyCarWashes = () => {
   });
 
   const handleLocationSelect = (location: string, coordinates: Coordinates) => {
+    if (!Number.isFinite(coordinates?.lat) || !Number.isFinite(coordinates?.lng)) {
+      showToast('Invalid location coordinates. Please pick another result.', 'error');
+      return;
+    }
+    setPickupAddress(location);
     setSearchLocation(coordinates);
     setShowAutocomplete(false);
-    // Clear pending booking when location changes
     setPendingBooking(null);
   };
 
-  const handleCarWashSelect = (carWash: CarWashWithDistance) => {
-    setSelectedCarWash(carWash);
+  const resolveRouteForWash = (
+    carWash: CarWash | CarWashWithDistance,
+  ): RouteSegment | null => {
+    if (carWash.routeSegment) return carWash.routeSegment;
+    if (!searchLocation) return null;
+    const coords = getLocatableCoordinates(carWash as Record<string, unknown>);
+    if (!coords) return null;
+    return calculateRouteSegment(searchLocation, coords);
+  };
+
+  const enrichCarWashWithDistance = (carWash: CarWash): CarWashWithDistance => {
+    if (!searchLocation) {
+      return { ...carWash, distance: 0 };
+    }
+    const coords = getLocatableCoordinates(carWash as Record<string, unknown>);
+    if (!coords) {
+      return { ...carWash, distance: 0 };
+    }
+    const distance = calculateDistance(searchLocation, coords);
+    const routeSegment = calculateRouteSegment(searchLocation, coords);
+    return {
+      ...carWash,
+      distance: Number.isFinite(distance) ? distance : 0,
+      routeSegment,
+      estimatedTime: routeSegment.estimatedTime,
+    };
+  };
+
+  const handleCarWashSelect = (carWash: CarWash | CarWashWithDistance) => {
+    setSelectedCarWash(enrichCarWashWithDistance(carWash));
     setShowBookingModal(true);
   };
 
   const handleBookNow = (carWash: CarWashWithDistance, service: Service) => {
     if (!searchLocation) {
-      showToast('Please select a pickup location', 'error');
+      showToast('Please select a pickup location first', 'error');
       return;
     }
 
-    if (!carWash.routeSegment) {
-      showToast('Unable to calculate route. Please try again.', 'error');
+    const routeSegment = resolveRouteForWash(carWash);
+    if (!routeSegment) {
+      showToast(
+        'This car wash has no map location saved. Pick another one or ask the operator to update their address.',
+        'error',
+      );
       return;
     }
 
-    const totalPrice = calculateTotalPrice(service.price, carWash.distance);
-    
-    // Set pending booking to show route and accept/reject prompt
+    const distance = routeSegment.distance;
+    const enrichedWash: CarWashWithDistance = {
+      ...carWash,
+      distance: carWash.distance ?? distance,
+      routeSegment,
+      estimatedTime: routeSegment.estimatedTime,
+    };
+
+    const totalPrice = calculateTotalPrice(service.price, distance);
+
     const pending = {
-      carWash,
+      carWash: enrichedWash,
       service,
-      routeSegment: carWash.routeSegment,
+      routeSegment,
       totalPrice,
     };
     setPendingBooking(pending);
@@ -279,6 +354,48 @@ const EnhancedNearbyCarWashes = () => {
     }
   };
 
+  const submitBooking = (
+    carWash: CarWashWithDistance,
+    service: Service,
+    vehicle: { id: string },
+  ) => {
+    if (!searchLocation) {
+      showToast('Please select a pickup location first', 'error');
+      return;
+    }
+    createBookingMutation.mutate({
+      vehicleId: vehicle.id,
+      carWashId: carWash.id,
+      serviceId: service.id,
+      bookingType: 'pickup_delivery',
+      pickupLocation:
+        pickupAddress ||
+        carWash.location ||
+        `Near ${carWash.carWashName || carWash.name || 'car wash'}`,
+      pickupCoordinates: searchLocation,
+    });
+  };
+
+  const handleConfirmModalBooking = () => {
+    if (!selectedCarWash || !selectedService || !selectedVehicle) {
+      showToast('Please select a service and vehicle', 'error');
+      return;
+    }
+    const routeSegment = resolveRouteForWash(selectedCarWash);
+    if (!routeSegment) {
+      showToast(
+        'This car wash has no map location saved. Pick another one or ask the operator to update their address.',
+        'error',
+      );
+      return;
+    }
+    submitBooking(
+      { ...selectedCarWash, routeSegment, distance: selectedCarWash.distance ?? routeSegment.distance },
+      selectedService,
+      selectedVehicle,
+    );
+  };
+
   const handleAcceptBooking = () => {
     if (!pendingBooking || !selectedVehicle) {
       showToast('Please select a vehicle first', 'error');
@@ -286,14 +403,7 @@ const EnhancedNearbyCarWashes = () => {
       return;
     }
 
-    createBookingMutation.mutate({
-      vehicleId: selectedVehicle.id,
-      carWashId: pendingBooking.carWash.id,
-      serviceId: pendingBooking.service.id,
-      bookingType: 'pickup_delivery',
-      pickupLocation: `Near ${pendingBooking.carWash.carWashName || pendingBooking.carWash.name}`,
-      pickupCoordinates: searchLocation,
-    });
+    submitBooking(pendingBooking.carWash, pendingBooking.service, selectedVehicle);
 
     setPendingBooking(null);
     if (onRouteChange) {
@@ -340,9 +450,6 @@ const EnhancedNearbyCarWashes = () => {
 
   return (
     <div className="enhanced-nearby-carwashes">
-      <div className="map-tooltip-enhanced" aria-live="polite">
-        {hoveredIcon && hoveredIcon.name && <span>{hoveredIcon.name}</span>}
-      </div>
       <div className="enhanced-header">
         <h3>Bookings & Nearby Services</h3>
         <p className="enhanced-subtitle">Search and book car wash services near you</p>
@@ -367,7 +474,7 @@ const EnhancedNearbyCarWashes = () => {
               setTimeout(() => setShowAutocomplete(false), 200);
             }}
           />
-          <span className="search-icon">🔍</span>
+          <span className="search-icon"><Icon name="search" size={17} /></span>
           
           {/* Autocomplete Dropdown */}
           {showAutocomplete && autocompleteResults.length > 0 && (
@@ -377,13 +484,16 @@ const EnhancedNearbyCarWashes = () => {
                   key={carWash.id}
                   className="autocomplete-item"
                   onClick={() => {
-                    setSearchQuery(carWash.carWashName || carWash.name || '');
+                    const name = carWash.carWashName || carWash.name || '';
+                    setSearchQuery(name);
                     setShowAutocomplete(false);
                     searchInputRef.current?.blur();
-                    handleCarWashSelect(carWash); // Open profile modal on click
+                    if (searchLocation) {
+                      handleCarWashSelect(carWash);
+                    }
                   }}
                 >
-                  <span className="autocomplete-icon">🧼</span>
+                  <span className="autocomplete-icon"><Icon name="droplets" size={16} /></span>
                   <div className="autocomplete-content">
                     <div className="autocomplete-name">
                       {carWash.carWashName || carWash.name || 'Car Wash'}
@@ -403,8 +513,9 @@ const EnhancedNearbyCarWashes = () => {
           <label className="location-label">Pickup Location</label>
           <LocationPicker
             onLocationSelect={handleLocationSelect}
-            initialLocation={searchLocation ? `Lat: ${searchLocation.lat.toFixed(4)}, Lng: ${searchLocation.lng.toFixed(4)}` : ''}
+            initialLocation={formatCoordsLabel(searchLocation)}
             initialCoordinates={searchLocation || undefined}
+            showMapPreview
           />
           {locationError && (
             <p className="location-error">{locationError}</p>
@@ -415,7 +526,7 @@ const EnhancedNearbyCarWashes = () => {
       {/* Results */}
       {!searchLocation ? (
         <div className="no-location-message">
-          <p>📍 Please select a location to see nearby car washes</p>
+          <p><Icon name="mapPin" size={15} /> Please select a location to see nearby car washes</p>
         </div>
       ) : nearbyCarWashes.length === 0 ? (
         <div className="no-results">
@@ -446,14 +557,14 @@ const EnhancedNearbyCarWashes = () => {
                       />
                     </div>
                   ) : (
-                    <div className="carwash-icon">🧼</div>
+                    <div className="carwash-icon"><Icon name="droplets" size={20} /></div>
                   )}
                   <div className="carwash-info">
                     <h4 className="carwash-name">
                       {carWash.carWashName || carWash.name || 'Car Wash'}
                     </h4>
                     <p className="carwash-location">
-                      📍 {carWash.location || 'Location not specified'}
+                      <Icon name="mapPin" size={13} /> {carWash.location || 'Location not specified'}
                     </p>
                     <p className="carwash-distance">
                       {formatDistance(carWash.distance)} away
@@ -465,20 +576,20 @@ const EnhancedNearbyCarWashes = () => {
                   <div className="carwash-services">
                     <div className="services-header">Available Services:</div>
                     {carWash.services.slice(0, 3).map((service) => {
-                      const totalPrice = calculateTotalPrice(service.price, carWash.distance);
+                      const totalPrice = calculateTotalPrice(service.price, carWash.distance ?? 0);
                       return (
                         <div key={service.id} className="service-item">
                           <div className="service-info">
                             <span className="service-name">{service.name}</span>
                             <span className="service-price">
-                              K{service.price.toFixed(2)}
+                              K{formatKwacha(service.price)}
                             </span>
                           </div>
                           <div className="service-total">
                             <span className="total-label">Total (with delivery):</span>
-                            <span className="total-price">K{totalPrice.toFixed(2)}</span>
+                            <span className="total-price">K{formatKwacha(totalPrice)}</span>
                             <span className="distance-fee">
-                              (+K{(carWash.distance * 5).toFixed(2)} delivery fee)
+                              (+K{formatKwacha((carWash.distance ?? 0) * 5)} delivery fee)
                             </span>
                           </div>
                           <button
@@ -537,7 +648,7 @@ const EnhancedNearbyCarWashes = () => {
                   {selectedCarWash.carWashName || selectedCarWash.name}
                 </p>
                 <p className="modal-distance">
-                  📍 {formatDistance(selectedCarWash.distance)} away
+                  <Icon name="mapPin" size={13} /> {formatDistance(selectedCarWash.distance)} away
                 </p>
               </div>
 
@@ -556,15 +667,15 @@ const EnhancedNearbyCarWashes = () => {
                         >
                           <div className="service-option-header">
                             <span className="service-option-name">{service.name}</span>
-                            <span className="service-option-price">K{service.price.toFixed(2)}</span>
+                            <span className="service-option-price">K{formatKwacha(service.price)}</span>
                           </div>
                           {service.description && (
                             <p className="service-option-desc">{service.description}</p>
                           )}
                           <div className="service-option-total">
-                            <span>Total: K{totalPrice.toFixed(2)}</span>
+                            <span>Total: K{formatKwacha(totalPrice)}</span>
                             <span className="service-option-fee">
-                              (Service: K{service.price.toFixed(2)} + Delivery: K{(selectedCarWash.distance * 5).toFixed(2)})
+                              (Service: K{formatKwacha(service.price)} + Delivery: K{formatKwacha((selectedCarWash.distance ?? 0) * 5)})
                             </span>
                           </div>
                         </div>
@@ -628,16 +739,16 @@ const EnhancedNearbyCarWashes = () => {
                   </div>
                   <div className="summary-row">
                     <span>Service Price:</span>
-                    <span>K{selectedService.price.toFixed(2)}</span>
+                    <span>K{formatKwacha(selectedService.price)}</span>
                   </div>
                   <div className="summary-row">
                     <span>Delivery Fee:</span>
-                    <span>K{(selectedCarWash.distance * 5).toFixed(2)}</span>
+                    <span>K{formatKwacha((selectedCarWash.distance ?? 0) * 5)}</span>
                   </div>
                   <div className="summary-row total-row">
                     <span>Total:</span>
                     <span className="total-amount">
-                      K{calculateTotalPrice(selectedService.price, selectedCarWash.distance).toFixed(2)}
+                      K{formatKwacha(calculateTotalPrice(selectedService.price, selectedCarWash.distance ?? 0))}
                     </span>
                   </div>
                 </div>
@@ -653,7 +764,7 @@ const EnhancedNearbyCarWashes = () => {
               </button>
               <button
                 className="modal-confirm-btn"
-                onClick={handleBookNow}
+                onClick={handleConfirmModalBooking}
                 disabled={
                   !selectedService ||
                   !selectedVehicle ||
@@ -679,7 +790,7 @@ const EnhancedNearbyCarWashes = () => {
       {pendingBooking && searchLocation && (
         <div className="pending-booking-prompt">
           <div className="pending-booking-header">
-            <h4>📋 Booking Summary</h4>
+            <h4><Icon name="clipboard" size={16} /> Booking Summary</h4>
             <button
               className="close-pending-btn"
               onClick={handleRejectBooking}
@@ -716,19 +827,19 @@ const EnhancedNearbyCarWashes = () => {
               <div className="pending-info-row">
                 <span className="pending-label">Service Price:</span>
                 <span className="pending-value">
-                  K{pendingBooking.service.price.toFixed(2)}
+                  K{formatKwacha(pendingBooking.service.price)}
                 </span>
               </div>
               <div className="pending-info-row">
                 <span className="pending-label">Delivery Fee:</span>
                 <span className="pending-value">
-                  K{(pendingBooking.routeSegment.distance * 5).toFixed(2)}
+                  K{formatKwacha((pendingBooking.routeSegment?.distance ?? 0) * 5)}
                 </span>
               </div>
               <div className="pending-info-row total-pending-row">
                 <span className="pending-label">Total Price:</span>
                 <span className="pending-total-price">
-                  K{pendingBooking.totalPrice.toFixed(2)}
+                  K{formatKwacha(pendingBooking.totalPrice)}
                 </span>
               </div>
             </div>

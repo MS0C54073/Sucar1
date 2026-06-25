@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import LoadingSpinner from '../LoadingSpinner';
+import Icon from '../icons/Icon';
 import './ChatWindow.css';
 
 interface Message {
@@ -20,9 +21,17 @@ interface ChatWindowProps {
   receiverId: string;
   receiverName: string;
   onClose?: () => void;
+  /** Full-page chat (dedicated route) vs modal overlay */
+  fullPage?: boolean;
 }
 
-const ChatWindow = ({ bookingId, receiverId, receiverName, onClose }: ChatWindowProps) => {
+const ChatWindow = ({
+  bookingId,
+  receiverId,
+  receiverName,
+  onClose,
+  fullPage = false,
+}: ChatWindowProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [newMessage, setNewMessage] = useState('');
@@ -49,6 +58,7 @@ const ChatWindow = ({ bookingId, receiverId, receiverName, onClose }: ChatWindow
     onSuccess: () => {
       setNewMessage('');
       queryClient.invalidateQueries({ queryKey: ['chat', bookingId] });
+      queryClient.invalidateQueries({ queryKey: ['my-conversations'] });
     },
   });
 
@@ -80,13 +90,22 @@ const ChatWindow = ({ bookingId, receiverId, receiverName, onClose }: ChatWindow
   };
 
   return (
-    <div className="chat-window">
+    <div className={`chat-window ${fullPage ? 'chat-window--full-page' : ''}`}>
       <div className="chat-header">
         <div className="receiver-info">
+          {fullPage && onClose && (
+            <button type="button" className="chat-back-btn" onClick={onClose} aria-label="Back">
+              <Icon name="arrowLeft" size={18} />
+            </button>
+          )}
           <div className="avatar">{receiverName.charAt(0)}</div>
           <h3>{receiverName}</h3>
         </div>
-        <button className="close-btn" onClick={onClose}>×</button>
+        {!fullPage && (
+          <button type="button" className="close-btn" onClick={onClose}>
+            ×
+          </button>
+        )}
       </div>
 
       <div className="chat-messages">

@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import api from '../../services/api';
 import LoadingSpinner from '../LoadingSpinner';
 import EmptyState from '../EmptyState';
+import Icon, { type IconName } from '../icons/Icon';
 import './AuditLogs.css';
 
 interface AuditLog {
@@ -68,15 +69,15 @@ const AuditLogs = () => {
       .join(' ');
   };
 
-  const getActionIcon = (action: string): string => {
-    if (action.includes('suspended')) return '⏸️';
-    if (action.includes('reactivated')) return '▶️';
-    if (action.includes('deleted')) return '🗑️';
-    if (action.includes('created')) return '➕';
-    if (action.includes('updated')) return '✏️';
-    if (action.includes('role') || action.includes('level')) return '👑';
-    if (action.includes('payment')) return '💳';
-    return '📝';
+  const getActionIcon = (action: string): IconName => {
+    if (action.includes('suspended')) return 'pause';
+    if (action.includes('reactivated')) return 'play';
+    if (action.includes('deleted')) return 'trash';
+    if (action.includes('created')) return 'plus';
+    if (action.includes('updated')) return 'pencil';
+    if (action.includes('role') || action.includes('level')) return 'crown';
+    if (action.includes('payment')) return 'creditCard';
+    return 'fileText';
   };
 
   if (isLoading) {
@@ -143,7 +144,7 @@ const AuditLogs = () => {
         {/* Logs Table */}
         {filteredLogs.length === 0 ? (
           <EmptyState
-            icon="📋"
+            icon={<Icon name="clipboard" size={28} />}
             title="No audit logs found"
             description="No activity matches your filters"
           />
@@ -153,7 +154,7 @@ const AuditLogs = () => {
               {filteredLogs.map((log: AuditLog) => (
                 <div key={log.id} className="log-entry">
                   <div className="log-header">
-                    <div className="log-icon">{getActionIcon(log.actionType)}</div>
+                    <div className="log-icon"><Icon name={getActionIcon(log.actionType)} size={18} /></div>
                     <div className="log-info">
                       <div className="log-action">{formatActionType(log.actionType)}</div>
                       <div className="log-meta">

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../services/api';
+import Icon from '../icons/Icon';
 import './IncidentModal.css';
 
 interface IncidentModalProps {
@@ -46,8 +47,8 @@ const IncidentModal: React.FC<IncidentModalProps> = ({ open, onClose }) => {
       <div className="modal-content incident-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>Create Incident</h2>
-          <button className="modal-close" onClick={onClose}>
-            ✕
+          <button className="modal-close" onClick={onClose} aria-label="Close">
+            <Icon name="x" size={16} />
           </button>
         </div>
 

@@ -1,26 +1,40 @@
 /**
  * Mapbox public access token for Geocoding API and Mapbox GL (maps).
  *
- * Set `EXPO_PUBLIC_MAPBOX_TOKEN` in `.env` (Expo inlines at build time).
- * `MAPBOX_ACCESS_TOKEN` is also read for tooling compatibility.
+ * Resolution order:
+ * 1. Runtime token set by MapboxProvider / useMapboxToken (from backend API)
+ * 2. EXPO_PUBLIC_MAPBOX_TOKEN / MAPBOX_ACCESS_TOKEN in mobile/.env
  *
- * In __DEV__, a fallback keeps maps/geocoding working when env is not set;
- * replace with your own token in production and restrict it in Mapbox dashboard.
+ * There is intentionally no hardcoded fallback — the backend serves the token at
+ * GET /api/config/mapbox-token (MAPBOX_TOKEN in backend/.env).
  */
-const DEV_PUBLIC_FALLBACK =
-  'pk.eyJ1IjoibXV6b3NhbGkiLCJhIjoiY21oc2J2d2tyMGg3ejJtc2N4dXg0NGo4eiJ9.p75SiHMh2nWAlbnFR8kyXQ';
+
+let runtimeToken: string | null = null;
+
+export const MAPBOX_TOKEN_CACHE_KEY = 'mapbox_token';
+export const MAPBOX_TOKEN_EXPIRY_KEY = 'mapbox_token_expiry';
+
+export function setMapboxRuntimeToken(token: string) {
+  runtimeToken = token;
+}
+
+export function validateMapboxToken(token: string): boolean {
+  return Boolean(token && token.startsWith('pk.') && token.length > 20);
+}
 
 export function getMapboxAccessToken(): string {
+  if (runtimeToken && validateMapboxToken(runtimeToken)) {
+    return runtimeToken;
+  }
+
   const fromEnv =
     (typeof process !== 'undefined' &&
       (process.env.EXPO_PUBLIC_MAPBOX_TOKEN || process.env.MAPBOX_ACCESS_TOKEN)) ||
     '';
   const trimmed = fromEnv.trim();
-  if (trimmed.length > 0) {
+  if (trimmed.length > 0 && validateMapboxToken(trimmed)) {
     return trimmed;
   }
-  if (__DEV__) {
-    return DEV_PUBLIC_FALLBACK;
-  }
+
   return '';
 }

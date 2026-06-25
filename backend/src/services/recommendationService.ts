@@ -116,17 +116,26 @@ export async function recommendCarWashes(
         reasons.push(`${carWash.washing_bays} washing bay${carWash.washing_bays > 1 ? 's' : ''}`);
       }
 
-      // 4. Historical Performance (10% weight) - Based on completed bookings
-      const { data: bookings } = await supabase
-        .from('bookings')
-        .select('id')
-        .eq('car_wash_id', carWash.id)
-        .eq('status', 'completed')
-        .limit(100);
+      // 4. Customer Rating (10% weight) - Based on client reviews
+      const rating = Number(carWash.rating) || 0;
+      const ratingCount = Number(carWash.rating_count) || 0;
+      if (rating > 0 && ratingCount > 0) {
+        // 5.0 stars => 10 points, scaled linearly
+        score += (rating / 5) * 10;
+        reasons.push(`Rated ${rating.toFixed(1)}/5 by ${ratingCount} customer${ratingCount > 1 ? 's' : ''}`);
+      } else {
+        // Fall back to completion history when no ratings exist yet
+        const { data: bookings } = await supabase
+          .from('bookings')
+          .select('id')
+          .eq('car_wash_id', carWash.id)
+          .eq('status', 'completed')
+          .limit(100);
 
-      if (bookings && bookings.length > 50) {
-        score += 10;
-        reasons.push('High completion rate');
+        if (bookings && bookings.length > 50) {
+          score += 8;
+          reasons.push('High completion rate');
+        }
       }
 
       scoredCarWashes.push({

@@ -1,5 +1,7 @@
 import { supabase } from '../config/supabase';
 import { DBService } from './db-service';
+import { QueueEngineService } from './queueEngineService';
+import { WashingBayService } from './washingBayService';
 
 export interface QueueEntry {
   id: string;
@@ -19,62 +21,10 @@ export class QueueService {
     bookingId: string,
     serviceDurationMinutes: number = 30
   ) {
-    // Get current max position for this car wash
-    const { data: maxPosition } = await supabase
-      .from('car_wash_queue')
-      .select('position')
-      .eq('car_wash_id', carWashId)
-      .order('position', { ascending: false })
-      .limit(1)
-      .single();
-
-    const nextPosition = (maxPosition?.position || 0) + 1;
-
-    // Calculate estimated times
-    const now = new Date();
-    const { data: activeBookings } = await supabase
-      .from('car_wash_queue')
-      .select('service_duration_minutes')
-      .eq('car_wash_id', carWashId)
-      .in('status', ['waiting', 'in_progress'])
-      .order('position', { ascending: true });
-
-    let totalWaitMinutes = 0;
-    if (activeBookings) {
-      totalWaitMinutes = activeBookings.reduce(
-        (sum, entry) => sum + (entry.service_duration_minutes || 30),
-        0
-      );
-    }
-
-    const estimatedStartTime = new Date(now.getTime() + totalWaitMinutes * 60000);
-    const estimatedCompletionTime = new Date(
-      estimatedStartTime.getTime() + serviceDurationMinutes * 60000
-    );
-
-    const { data, error } = await supabase
-      .from('car_wash_queue')
-      .insert({
-        car_wash_id: carWashId,
-        booking_id: bookingId,
-        position: nextPosition,
-        estimated_start_time: estimatedStartTime.toISOString(),
-        estimated_completion_time: estimatedCompletionTime.toISOString(),
-        service_duration_minutes: serviceDurationMinutes,
-        status: 'waiting',
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    // Update booking with queue info
-    await DBService.updateBooking(bookingId, {
-      queuePosition: nextPosition,
-      estimatedWaitTime: totalWaitMinutes,
+    const result = await QueueEngineService.checkIn(bookingId, carWashId, {
+      durationMinutes: serviceDurationMinutes,
     });
-
-    return data;
+    return result.queue;
   }
 
   // Get queue for a car wash
@@ -109,32 +59,50 @@ export class QueueService {
     return data || null;
   }
 
-  // Start service (move from waiting to in_progress)
   static async startService(queueId: string) {
-    const { data, error } = await supabase
+    const { data: row, error } = await supabase
       .from('car_wash_queue')
-      .update({ status: 'in_progress' })
+      .select('car_wash_id, bay_id')
       .eq('id', queueId)
-      .select()
       .single();
+    if (error || !row) throw error || new Error('Queue entry not found');
 
-    if (error) throw error;
+    let bayId = row.bay_id as string | null;
+    if (!bayId) {
+      const bay = await WashingBayService.getAvailableBay(row.car_wash_id);
+      if (!bay) throw new Error('No available washing bay');
+      await QueueEngineService.assignQueueEntryToBay(row.car_wash_id, queueId, bay.id);
+      bayId = bay.id;
+    }
+
+    await QueueEngineService.startWashOnBay(row.car_wash_id, bayId as string);
+    const { data } = await supabase.from('car_wash_queue').select('*').eq('id', queueId).single();
     return data;
   }
 
-  // Complete service
   static async completeService(queueId: string) {
-    const { data, error } = await supabase
+    const { data: row, error } = await supabase
       .from('car_wash_queue')
-      .update({ status: 'completed' })
+      .select('car_wash_id, bay_id, booking_id')
       .eq('id', queueId)
-      .select()
       .single();
+    if (error || !row) throw error || new Error('Queue entry not found');
 
-    if (error) throw error;
+    if (row.bay_id) {
+      await QueueEngineService.completeWashOnBay(row.car_wash_id, row.bay_id);
+    } else {
+      await supabase
+        .from('car_wash_queue')
+        .update({ status: 'completed', operational_status: 'PAYMENT_PENDING' })
+        .eq('id', queueId);
+      await DBService.updateBooking(row.booking_id, {
+        status: 'wash_completed',
+        paymentStatus: 'pending',
+      });
+      await QueueEngineService.tryAssignNextBay(row.car_wash_id);
+    }
 
-    // Update queue positions - this is handled by the database trigger
-
+    const { data } = await supabase.from('car_wash_queue').select('*').eq('id', queueId).single();
     return data;
   }
 

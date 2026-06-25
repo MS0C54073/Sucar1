@@ -40,19 +40,19 @@ export class DBService {
     const normalizedEmail = email.toLowerCase().trim();
 
     try {
-      // Try exact match first (most common case)
+      // Case-insensitive lookup via normalized email
       let { data, error } = await supabase
         .from('users')
         .select('*')
-        .eq('email', email)
+        .eq('email', normalizedEmail)
         .maybeSingle();
 
-      // If not found with exact match, try lowercase
+      // Fallback: exact match for legacy rows with mixed-case emails
       if (!data && (error?.code === 'PGRST116' || !error)) {
         const { data: data2, error: error2 } = await supabase
           .from('users')
           .select('*')
-          .eq('email', normalizedEmail)
+          .eq('email', email)
           .maybeSingle();
 
         if (data2) {
@@ -208,61 +208,45 @@ export class DBService {
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + expiresInMinutes);
 
-    // First, try to update existing user
-    const { data: existingUser } = await supabase
-      .from('users')
-      .select('id')
-      .eq('phone', phone)
-      .maybeSingle();
+    // Store keyed by phone (works for first-time users who have no `users` row
+    // yet). One row per phone; a resend overwrites the previous code.
+    const { error } = await supabase
+      .from('phone_verification_codes')
+      .upsert(
+        { phone, code, expires_at: expiresAt.toISOString() },
+        { onConflict: 'phone' }
+      );
 
-    if (existingUser) {
-      const { error } = await supabase
-        .from('users')
-        .update({
-          phone_verification_code: code,
-          phone_verification_expires: expiresAt.toISOString(),
-        })
-        .eq('id', existingUser.id);
-
-      if (error) throw error;
-      return true;
-    }
-
-    // If no user exists, we'll store it when they verify (in verifyOTP)
+    if (error) throw error;
     return true;
   }
 
   static async verifyPhoneCode(phone: string, code: string): Promise<boolean> {
     const { data, error } = await supabase
-      .from('users')
-      .select('phone_verification_code, phone_verification_expires')
+      .from('phone_verification_codes')
+      .select('code, expires_at')
       .eq('phone', phone)
       .maybeSingle();
 
     if (error || !data) return false;
 
-    // Check if code matches and hasn't expired
-    if (data.phone_verification_code === code) {
-      const expiresAt = new Date(data.phone_verification_expires);
-      if (expiresAt > new Date()) {
-        // Clear the code after verification
-        await supabase
-          .from('users')
-          .update({
-            phone_verified: true,
-            phone_verification_code: null,
-            phone_verification_expires: null,
-          })
-          .eq('phone', phone);
-        return true;
-      }
+    if (data.code === code && new Date(data.expires_at) > new Date()) {
+      // Consume the code so it cannot be replayed.
+      await supabase.from('phone_verification_codes').delete().eq('phone', phone);
+      // Mark an existing user verified (no-op for first-time sign-ups).
+      await supabase.from('users').update({ phone_verified: true }).eq('phone', phone);
+      return true;
     }
 
     return false;
   }
 
   static async comparePassword(plainPassword: string, hashedPassword: string): Promise<boolean> {
-    return await bcrypt.compare(plainPassword, hashedPassword);
+    if (!hashedPassword) return false;
+    if (hashedPassword.startsWith('$2a$') || hashedPassword.startsWith('$2b$')) {
+      return bcrypt.compare(plainPassword, hashedPassword);
+    }
+    return plainPassword === hashedPassword;
   }
 
   // Vehicle operations
@@ -632,10 +616,26 @@ export class DBService {
         booking_id:bookings(*)
       `)
       .eq('booking_id', bookingId)
-      .single();
+      .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') throw error;
+    if (error) throw error;
     return data ? toCamelCase(data) : null;
+  }
+
+  /** Create a pending payment row if missing (fixes legacy bookings without payments). */
+  static async ensurePaymentForBooking(bookingId: string) {
+    const existing = await this.getPaymentByBookingId(bookingId);
+    if (existing) return existing;
+
+    const booking = await this.getBookingById(bookingId);
+    if (!booking) return null;
+
+    return this.createPayment({
+      bookingId,
+      amount: booking.totalAmount ?? 0,
+      method: 'cash',
+      status: 'pending',
+    });
   }
 
   static async updatePayment(id: string, paymentData: any) {
@@ -868,7 +868,24 @@ export class DBService {
       throw error;
     }
 
-    return data ? toCamelCase(data) : null;
+    if (!data) return null;
+
+    const location = toCamelCase(data);
+
+    // Enrich with the user's display name + avatar so the map can show real faces
+    const { data: profile } = await supabase
+      .from('users')
+      .select('name, car_wash_name, profile_picture_url, role')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (profile) {
+      location.name = profile.car_wash_name || profile.name || null;
+      location.profilePictureUrl = profile.profile_picture_url || null;
+      location.role = profile.role || null;
+    }
+
+    return location;
   }
 
   static async getNearbyCarWashes(latitude: number, longitude: number, radiusKm: number = 10) {

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import LoadingSpinner from '../LoadingSpinner';
+import Icon from '../icons/Icon';
 import ConfirmDialog from '../ConfirmDialog';
 import IncidentModal from './IncidentModal';
 import './Incidents.css';
@@ -193,7 +194,7 @@ const Incidents = () => {
                 onClick={() => navigate(`/admin/incidents/${incident.id}`)}
               >
                 {incident.severity === 'critical' && (
-                  <div className="incident-urgent-badge">⚠️ URGENT</div>
+                  <div className="incident-urgent-badge"><Icon name="alertTriangle" size={14} /> URGENT</div>
                 )}
                 <div className="incident-header">
                   <div className="incident-title-section">

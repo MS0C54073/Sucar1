@@ -49,10 +49,18 @@ export const getBookingQueuePosition = async (
       return;
     }
 
+    const clientId =
+      typeof booking.clientId === 'object' ? (booking.clientId as { id?: string })?.id : booking.clientId;
+    const carWashId =
+      typeof booking.carWashId === 'object'
+        ? (booking.carWashId as { id?: string })?.id
+        : booking.carWashId;
+
     const hasAccess =
-      booking.clientId === userId ||
-      booking.carWashId === userId ||
-      req.user!.role === 'admin';
+      clientId === userId ||
+      carWashId === userId ||
+      req.user!.role === 'admin' ||
+      req.user!.role === 'subadmin';
 
     if (!hasAccess) {
       res.status(403).json({ success: false, message: 'Not authorized' });
@@ -91,7 +99,12 @@ export const addToQueue = async (req: AuthRequest, res: Response): Promise<void>
 
     // Verify booking belongs to this car wash
     const booking = await DBService.getBookingById(bookingId);
-    if (!booking || booking.carWashId !== carWashId) {
+    const bookingCarWashId =
+      typeof booking.carWashId === 'object'
+        ? (booking.carWashId as { id?: string })?.id
+        : booking.carWashId;
+
+    if (!booking || bookingCarWashId !== carWashId) {
       res.status(404).json({ success: false, message: 'Booking not found' });
       return;
     }
@@ -143,13 +156,6 @@ export const completeService = async (req: AuthRequest, res: Response): Promise<
     const { queueId } = req.params;
 
     const queueEntry = await QueueService.completeService(queueId);
-
-    // Update booking status
-    if (queueEntry) {
-      await DBService.updateBooking(queueEntry.booking_id, {
-        status: 'wash_completed',
-      });
-    }
 
     res.json({
       success: true,

@@ -1,6 +1,27 @@
 .payment-page {
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--bg-secondary);
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: var(--space-6);
+}
+
+.payment-proof-preview {
+  display: block;
+  margin-top: 12px;
+  max-width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--border-primary);
+}
+
+.payment-proof-upload .form-input[type='file'] {
+  padding: 8px;
 }
 
 .payment-wait {
@@ -108,9 +129,12 @@
   max-width: 700px;
   margin: 0 auto;
   padding: var(--space-6);
+  padding-bottom: var(--space-8);
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
+  flex: 1;
+  width: 100%;
 }
 
 .booking-summary-card {
@@ -294,9 +318,9 @@
 
 .form-hint {
   margin: var(--space-2) 0 0 0;
-  font-size: var(--text-xs);
-  color: var(--text-tertiary);
-  font-style: italic;
+  font-size: var(--text-sm);
+  color: var(--text-secondary, #4b5563);
+  line-height: 1.45;
 }
 
 .payment-info {
@@ -341,6 +365,44 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.form-actions--inline {
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-primary);
+}
+
+/* Explicit styles so submit is always visible (not reliant on global .btn alone) */
+.payment-submit-btn {
+  width: 100%;
+  min-height: 52px;
+  padding: 14px 20px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ffffff;
+  background: linear-gradient(160deg, #0056d2 0%, #0077e6 45%, #00a3ff 100%);
+  box-shadow: 0 4px 14px rgba(0, 86, 210, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.payment-submit-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0, 86, 210, 0.45);
+}
+
+.payment-submit-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .pay-btn {

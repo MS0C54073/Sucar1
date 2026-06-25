@@ -48,13 +48,17 @@ const AddVehicle = () => {
   };
 
   return (
-    <div className="add-vehicle">
-      <header className="add-vehicle-header">
-        <button onClick={() => navigate('/client')}>← Back</button>
-        <h1>Add Vehicle</h1>
+    <div className="add-vehicle sucar-page">
+      <header className="add-vehicle-header book-header">
+        <button type="button" className="back-button" onClick={() => navigate('/client')}>
+          ← Back
+        </button>
+        <div className="header-content">
+          <h1>Add Vehicle</h1>
+        </div>
       </header>
 
-      <div className="add-vehicle-content">
+      <div className="add-vehicle-content book-content">
         <form onSubmit={handleSubmit} className="vehicle-form">
           <AutocompleteSelect
             label="Make"

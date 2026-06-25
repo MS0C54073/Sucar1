@@ -14,6 +14,8 @@ import { asyncHandler } from '../shared/errors/errorHandler';
 import { ApiSuccessResponse } from '../shared/types/api.types';
 import { SMSService } from '../services/smsService';
 import { OAuth2Client } from 'google-auth-library';
+import { SELF_REGISTERABLE_ROLES, isSelfRegisterableRole } from '../domain/roles';
+import { sanitizeProfileUpdate } from '../domain/profileUpdate';
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -37,10 +39,15 @@ export const register = asyncHandler(async (req: Request, res: Response): Promis
 
   const { name, email, password, phone, nrc, role, ...roleSpecificData } = req.body;
 
-  // Validate role
-  const validRoles = ['client', 'driver', 'carwash', 'admin'];
-  if (!role || !validRoles.includes(role)) {
-    throw new BadRequestError(`Invalid role. Must be one of: ${validRoles.join(', ')}`);
+  // Validate role.
+  // SECURITY: privileged roles (admin/subadmin) must NEVER be self-assignable via
+  // the public registration endpoint — that would allow anyone to create an admin
+  // account and take over the system. Admins are provisioned server-side only
+  // (seed scripts / ensure-default-admin / admin-created users).
+  if (!isSelfRegisterableRole(role)) {
+    throw new BadRequestError(
+      `Invalid role. Must be one of: ${SELF_REGISTERABLE_ROLES.join(', ')}`
+    );
   }
 
   // Check if user exists
@@ -121,7 +128,8 @@ export const login = asyncHandler(async (req: Request, res: Response): Promise<v
     throw new ValidationError('Validation failed', errorMap);
   }
 
-  const { email, password } = req.body;
+  const email = String(req.body.email || '').trim().toLowerCase();
+  const password = String(req.body.password || '');
 
   if (!email || !password) {
     throw new BadRequestError('Email and password are required');
@@ -244,36 +252,25 @@ export const updateProfile = asyncHandler(async (req: AuthRequest, res: Response
     throw new UnauthorizedError('User not authenticated');
   }
 
-  // Filter out role-specific fields that don't apply to this user
-  const userData: any = { ...req.body };
-  
-  // Only include carWashPictureUrl if user is a carwash
-  if (req.user.role !== 'carwash' && userData.carWashPictureUrl !== undefined) {
-    delete userData.carWashPictureUrl;
+  // SECURITY: allow-list the fields a user may change about themselves. This
+  // prevents mass-assignment privilege escalation (e.g. setting role/isActive)
+  // and tampering with system-managed fields (rating, password, identity keys).
+  const { sanitized, rejected } = sanitizeProfileUpdate(req.user.role, req.body ?? {});
+
+  if (rejected.length > 0) {
+    // Observability: a non-editable field in the payload is worth recording —
+    // it is either a stale client field or an escalation attempt.
+    console.warn(
+      `[security] Ignored non-editable profile fields for user ${req.user.id} ` +
+        `(role=${req.user.role}): ${rejected.join(', ')}`
+    );
   }
 
-  // Only include driver-specific fields if user is a driver
-  if (req.user.role !== 'driver') {
-    if (userData.licenseNumber !== undefined) delete userData.licenseNumber;
-    if (userData.licenseType !== undefined) delete userData.licenseType;
-    if (userData.licenseExpiry !== undefined) delete userData.licenseExpiry;
-    if (userData.maritalStatus !== undefined) delete userData.maritalStatus;
+  if (Object.keys(sanitized).length === 0) {
+    throw new BadRequestError('No updatable profile fields were provided');
   }
 
-  // Only include client-specific fields if user is a client
-  if (req.user.role !== 'client') {
-    if (userData.businessName !== undefined) delete userData.businessName;
-    if (userData.isBusiness !== undefined) delete userData.isBusiness;
-  }
-
-  // Only include carwash-specific fields if user is a carwash
-  if (req.user.role !== 'carwash') {
-    if (userData.carWashName !== undefined) delete userData.carWashName;
-    if (userData.location !== undefined) delete userData.location;
-    if (userData.washingBays !== undefined) delete userData.washingBays;
-  }
-
-  const user = await DBService.updateUser(req.user.id, userData);
+  const user = await DBService.updateUser(req.user.id, sanitized);
 
   if (!user) {
     throw new InternalServerError('Failed to update profile');
@@ -301,10 +298,23 @@ export const googleLogin = asyncHandler(async (req: Request, res: Response) => {
     throw new BadRequestError('Google token is required');
   }
 
+  // Accept ID tokens minted for any of our configured OAuth clients
+  // (web + Android + iOS). Google sets the token `aud` to the client that
+  // requested it, so mobile tokens won't match the web client id alone.
+  const allowedAudiences = [
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_ANDROID_CLIENT_ID,
+    process.env.GOOGLE_IOS_CLIENT_ID,
+  ].filter(Boolean) as string[];
+
+  if (allowedAudiences.length === 0) {
+    throw new BadRequestError('Google sign-in is not configured on the server.');
+  }
+
   try {
     const ticket = await googleClient.verifyIdToken({
       idToken: token,
-      audience: process.env.GOOGLE_CLIENT_ID,
+      audience: allowedAudiences,
     });
 
     const payload = ticket.getPayload();
@@ -334,11 +344,18 @@ export const googleLogin = asyncHandler(async (req: Request, res: Response) => {
         throw new BadRequestError('User role is required for new accounts');
       }
 
+      // SECURITY: never allow a privileged role to be self-assigned via OAuth sign-up.
+      if (!isSelfRegisterableRole(role)) {
+        throw new BadRequestError(
+          `Invalid role. Must be one of: ${SELF_REGISTERABLE_ROLES.join(', ')}`
+        );
+      }
+
       user = await DBService.createUser({
         name: name || 'Google User',
         email: email,
         google_id: googleId,
-        role: role || 'client', // Default to client if not provided
+        role,
         auth_provider: 'google',
         phone: '', // Placeholder - user can update later
         nrc: `G-${googleId.substring(0, 8)}`, // Temporary NRC - user should update
@@ -436,6 +453,13 @@ export const verifyOTP = asyncHandler(async (req: Request, res: Response) => {
       throw new BadRequestError('Role and Name are required for new registration');
     }
 
+    // SECURITY: never allow a privileged role to be self-assigned via phone sign-up.
+    if (!isSelfRegisterableRole(role)) {
+      throw new BadRequestError(
+        `Invalid role. Must be one of: ${SELF_REGISTERABLE_ROLES.join(', ')}`
+      );
+    }
+
     user = await DBService.createUser({
       name,
       phone: formattedPhone,
@@ -465,4 +489,55 @@ export const verifyOTP = asyncHandler(async (req: Request, res: Response) => {
       token: jwtToken,
     },
   });
+});
+
+/**
+ * @desc    Change the authenticated user's password
+ * @route   POST /api/auth/change-password
+ * @access  Private
+ */
+export const changePassword = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+  if (!req.user?.id) throw new UnauthorizedError('User not authenticated');
+
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    throw new BadRequestError('currentPassword and newPassword are required');
+  }
+
+  if (typeof newPassword !== 'string' || newPassword.length < 6) {
+    throw new BadRequestError('New password must be at least 6 characters');
+  }
+
+  if (currentPassword === newPassword) {
+    throw new BadRequestError('New password must be different from the current password');
+  }
+
+  // Fetch the stored hash
+  const { data: row, error: fetchError } = await (await import('../config/supabase')).supabase
+    .from('users')
+    .select('password, password_hash')
+    .eq('id', req.user.id)
+    .single();
+
+  if (fetchError || !row) throw new UnauthorizedError('User not found');
+
+  const stored = row.password || row.password_hash;
+  if (!stored) throw new BadRequestError('Cannot change password for accounts authenticated via Google or phone');
+
+  const match = await DBService.comparePassword(currentPassword, stored);
+  if (!match) throw new UnauthorizedError('Current password is incorrect');
+
+  // Hash the new password and persist
+  const bcrypt = await import('bcryptjs');
+  const hashed = await bcrypt.hash(newPassword, 10);
+
+  const { error: updateError } = await (await import('../config/supabase')).supabase
+    .from('users')
+    .update({ password: hashed })
+    .eq('id', req.user.id);
+
+  if (updateError) throw new InternalServerError('Failed to update password');
+
+  res.json({ success: true, message: 'Password changed successfully' });
 });

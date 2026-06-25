@@ -6,6 +6,10 @@ import express from 'express';
 import cors from 'cors';
 import connectDB from './config/database';
 import { errorHandler, notFoundHandler } from './shared/errors/errorHandler';
+import { assertAuthConfig } from './config/jwt';
+
+// Fail fast if auth-critical config is missing in production
+assertAuthConfig();
 
 // Routes
 import authRoutes from './routes/authRoutes';
@@ -17,23 +21,42 @@ import vehicleRoutes from './routes/vehicleRoutes';
 import paymentRoutes from './routes/paymentRoutes';
 import chatRoutes from './routes/chatRoutes';
 import queueRoutes from './routes/queueRoutes';
+import operationsRoutes from './routes/operationsRoutes';
 import recommendationRoutes from './routes/recommendationRoutes';
 import locationRoutes from './routes/locationRoutes';
 import notificationRoutes from './routes/notificationRoutes';
+import reviewRoutes from './routes/reviewRoutes';
+import favoritesRoutes from './routes/favoritesRoutes';
+import configRoutes from './routes/configRoutes';
 
 // Connect to database
 connectDB().then(async () => {
   // Auto-create tables if they don't exist (only if DATABASE_URL is set)
   const { initDatabase } = await import('./migrations/init-database');
   await initDatabase();
+  const { ensureDefaultAdmin } = await import('./services/ensure-default-admin');
+  await ensureDefaultAdmin();
+  const { ensureSeedUsers } = await import('./services/ensure-seed-users');
+  await ensureSeedUsers();
+  const { ensureOperatorSchema } = await import('./services/operatorSchemaService');
+  await ensureOperatorSchema();
+  const { ensureReviewsSchema } = await import('./services/reviewService');
+  await ensureReviewsSchema();
+  const { ensureFavoritesSchema } = await import('./services/favoritesService');
+  await ensureFavoritesSchema();
+  const { ensurePhoneVerificationSchema } = await import('./services/phoneVerificationService');
+  await ensurePhoneVerificationSchema();
 }).catch((error) => {
   console.error('Database setup error:', error);
 });
 
 const app = express();
+const isProduction = process.env.NODE_ENV === 'production';
 
-// CORS configuration - inline headers
-const allowedOrigins = [
+// CORS allow-list. In production ONLY the configured origins are allowed
+// (FRONTEND_URL plus a comma-separated CORS_ORIGINS); localhost/emulator
+// origins are added only outside production.
+const devOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
   'http://127.0.0.1:5173',
@@ -42,8 +65,21 @@ const allowedOrigins = [
   'http://10.0.2.2:5173',
   'http://localhost:5000',
   'http://127.0.0.1:5000',
-  process.env.FRONTEND_URL || ''
-].filter(Boolean);
+];
+const configuredOrigins = [
+  process.env.FRONTEND_URL || '',
+  ...(process.env.CORS_ORIGINS || '').split(',').map((o) => o.trim()),
+];
+const allowedOrigins = [...(isProduction ? [] : devOrigins), ...configuredOrigins].filter(Boolean);
+
+// Baseline security headers (dependency-free; no helmet needed).
+app.use((_req, res, next) => {
+  res.header('X-Content-Type-Options', 'nosniff');
+  res.header('X-Frame-Options', 'DENY');
+  res.header('Referrer-Policy', 'no-referrer');
+  res.header('X-DNS-Prefetch-Control', 'off');
+  next();
+});
 
 // Inline CORS middleware
 app.use((req, res, next) => {
@@ -53,8 +89,9 @@ app.use((req, res, next) => {
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    res.header('Vary', 'Origin');
   }
-  
+
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
     res.sendStatus(200);
@@ -88,9 +125,13 @@ app.use('/api/vehicles', vehicleRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/queue', queueRoutes);
+app.use('/api/operations', operationsRoutes);
 app.use('/api/recommendations', recommendationRoutes);
 app.use('/api/locations', locationRoutes);  // ✅ Phase 1: Location tracking
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/favorites', favoritesRoutes);
+app.use('/api/config', configRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => {

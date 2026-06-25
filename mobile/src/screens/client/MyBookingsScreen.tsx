@@ -8,15 +8,18 @@ import {
   ActivityIndicator,
   RefreshControl,
   Alert,
-  SafeAreaView,
   TextInput,
   Modal,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { apiClient } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
-import { Colors, Typography, Spacing, BorderRadius, Shadows, StatusColors } from '../../constants/theme';
+import { Colors, Typography, Spacing, BorderRadius, StatusColors } from '../../constants/theme';
+import { ClientColors, AppLayout } from '../../constants/sucarTheme';
+import TabPageHeader from '../../components/layout/TabPageHeader';
+import { isActiveBooking } from '../../components/ui/TrackingDriverCard';
 
 /**
  * List screen showing all bookings for the logged‑in client.
@@ -139,7 +142,12 @@ const MyBookingsScreen = () => {
   const renderBooking = ({ item }: any) => (
     <TouchableOpacity
       style={styles.bookingCard}
-      onPress={() => navigation.navigate('BookingDetail', { bookingId: item.id || item._id } as never)}
+      onPress={() =>
+        navigation.navigate('BookingDetail', {
+          bookingId: item.id || item._id,
+          tracking: isActiveBooking(item.status),
+        } as never)
+      }
       activeOpacity={0.7}
     >
       <View style={styles.bookingHeader}>
@@ -239,7 +247,7 @@ const MyBookingsScreen = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* Search and Filter Bar */}
+        <TabPageHeader title="Bookings" subtitle="Track and manage your washes" />
         <View style={styles.searchContainer}>
           <View style={styles.searchBar}>
             <Ionicons name="search-outline" size={20} color={Colors.gray400} style={styles.searchIcon} />
@@ -358,9 +366,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     padding: Spacing.md,
     gap: Spacing.sm,
-    backgroundColor: Colors.white,
+    backgroundColor: ClientColors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: ClientColors.border,
   },
   searchBar: {
     flex: 1,
@@ -428,11 +436,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   bookingCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: ClientColors.surface,
     padding: Spacing.md,
-    borderRadius: BorderRadius.lg,
+    borderRadius: AppLayout.cardRadius,
     marginBottom: Spacing.md,
-    ...Shadows.md,
+    borderWidth: 1,
+    borderColor: ClientColors.border,
   },
   bookingHeader: {
     flexDirection: 'row',

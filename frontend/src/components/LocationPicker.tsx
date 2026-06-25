@@ -1,18 +1,23 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { getCurrentPosition, Coordinates } from '../services/locationService';
 import { searchLocations, reverseGeocode, GeocodingResult } from '../services/geocodingService';
+import MapView from './MapView';
+import Icon from './icons/Icon';
 import './LocationPicker.css';
 
 interface LocationPickerProps {
   onLocationSelect: (location: string, coordinates: Coordinates) => void;
   initialLocation?: string;
   initialCoordinates?: Coordinates;
+  /** Show Mapbox map preview when coordinates are set */
+  showMapPreview?: boolean;
 }
 
 const LocationPicker = ({
   onLocationSelect,
   initialLocation,
   initialCoordinates,
+  showMapPreview = false,
 }: LocationPickerProps) => {
   const [location, setLocation] = useState<string>(initialLocation || '');
   const [coordinates, setCoordinates] = useState<Coordinates | undefined>(initialCoordinates);
@@ -124,7 +129,7 @@ const LocationPicker = ({
             }}
           />
           {isSearching && (
-            <span className="location-picker-spinner">⏳</span>
+            <span className="location-picker-spinner"><Icon name="clock" size={16} /></span>
           )}
           
           {/* Autocomplete Results */}
@@ -136,7 +141,7 @@ const LocationPicker = ({
                   className="location-picker-result-item"
                   onClick={() => handleResultSelect(result)}
                 >
-                  <span className="result-icon">📍</span>
+                  <span className="result-icon"><Icon name="mapPin" size={16} /></span>
                   <div className="result-content">
                     <div className="result-name">{result.placeName}</div>
                     {result.context && result.context.length > 0 && (
@@ -154,10 +159,17 @@ const LocationPicker = ({
           onClick={handleUseCurrentLocation}
           title="Use current location"
         >
-          📍 Current
+          <Icon name="mapPin" size={15} /> Current
         </button>
       </div>
-      {coordinates && (
+      {coordinates && showMapPreview && (
+        <div className="location-picker-map">
+          <MapView center={coordinates} pinLocation={coordinates} zoom={15} height="180px" />
+        </div>
+      )}
+      {coordinates &&
+        Number.isFinite(coordinates.lat) &&
+        Number.isFinite(coordinates.lng) && (
         <div className="location-picker-coordinates">
           <small>
             Coordinates: {coordinates.lat.toFixed(6)}, {coordinates.lng.toFixed(6)}

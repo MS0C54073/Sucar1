@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { DBService } from '../services/db-service';
 import { UnauthorizedError, ForbiddenError } from '../shared/errors/AppError';
 import { asyncHandler } from '../shared/errors/errorHandler';
+import { getJwtSecret } from '../config/jwt';
 
 export interface AuthRequest extends Request {
   user?: any;
@@ -26,7 +27,7 @@ export const protect = asyncHandler(async (req: AuthRequest, _res: Response, nex
 
   try {
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as { id: string };
+    const decoded = jwt.verify(token, getJwtSecret()) as { id: string };
 
     if (!decoded.id) {
       throw new UnauthorizedError('Invalid token format.');

@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../services/api';
 import { useToast } from '../components/ToastContainer';
 import LoadingSpinner from '../components/LoadingSpinner';
+import ThemeToggle from '../components/layout/ThemeToggle';
+import Icon from '../components/icons/Icon';
 import './Profile.css';
 
 const Profile = () => {
     const { user, logout } = useAuth();
+    const navigate = useNavigate();
     const { showToast } = useToast();
     const queryClient = useQueryClient();
     const [formData, setFormData] = useState<any>({});
@@ -62,6 +66,15 @@ const Profile = () => {
             queryClient.invalidateQueries({ queryKey: ['user'] });
             showToast('Profile updated successfully', 'success');
             setIsEditing(false);
+            
+            // Redirect to home page after successful profile update
+            setTimeout(() => {
+                const homePath = user?.role === 'admin' ? '/admin' 
+                               : user?.role === 'carwash' ? '/carwash'
+                               : user?.role === 'driver' ? '/driver'
+                               : '/client';
+                navigate(homePath, { replace: true });
+            }, 1500);
         },
         onError: (error: any) => {
             showToast(error.response?.data?.message || 'Failed to update profile', 'error');
@@ -138,14 +151,23 @@ const Profile = () => {
         }
     };
 
+    const handleBackClick = () => {
+        // Try to go back using browser history, otherwise go to dashboard
+        if (window.history.length > 1) {
+            navigate(-1);
+        } else {
+            navigate(getDashboardPath());
+        }
+    };
+
     if (!user) return <LoadingSpinner />;
 
     return (
-        <div className="profile-page">
+        <div className="profile-page sucar-page">
             <header className="profile-header">
                 <div className="header-left">
-                    <button className="btn btn-secondary" onClick={() => window.location.href = getDashboardPath()}>
-                        ← Back to Dashboard
+                    <button className="btn btn-secondary" onClick={handleBackClick}>
+                        <Icon name="arrowLeft" size={16} /> Back
                     </button>
                     <h1>My Profile</h1>
                 </div>
@@ -158,6 +180,12 @@ const Profile = () => {
             </header>
 
             <div className="profile-container">
+                <div className="profile-card profile-appearance-card">
+                    <h3>Appearance</h3>
+                    <p className="profile-appearance-hint">Choose light or dark mode for the app interface.</p>
+                    <ThemeToggle variant="segmented" />
+                </div>
+
                 <div className="profile-card main-info">
                     <div className="profile-pic-section">
                         <div className="profile-pic-container">
@@ -282,7 +310,7 @@ const Profile = () => {
                                                 </div>
                                             ) : (
                                                 <label className="carwash-picture-upload-placeholder">
-                                                    <div className="upload-icon">📷</div>
+                                                    <div className="upload-icon"><Icon name="camera" size={24} /></div>
                                                     <span>Upload Car Wash Picture</span>
                                                     <input 
                                                         type="file" 

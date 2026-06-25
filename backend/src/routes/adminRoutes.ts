@@ -47,7 +47,7 @@ import { requirePermission } from '../middleware/permissions';
 const router = express.Router();
 
 router.use(protect);
-router.use(authorize('admin'));
+router.use(authorize('admin', 'subadmin'));
 
 router.get('/dashboard', getDashboard);
 // User management

@@ -1,473 +1,69 @@
-.client-home {
-  min-height: 100vh;
-  background: var(--bg-secondary);
-  display: flex;
-  flex-direction: column;
-}
-
-.client-header {
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  padding: var(--space-4) var(--space-6);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-4);
-  border-bottom: 1px solid var(--border-primary);
-  box-shadow: var(--shadow-sm);
-  position: sticky;
-  top: 0;
-  z-index: var(--z-sticky);
-  transition: all var(--transition-base);
-}
-
-.header-actions {
-  display: flex;
-  gap: var(--space-3);
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.welcome-text {
-  font-size: var(--text-sm);
-  color: var(--text-secondary);
-  margin-top: var(--space-1);
-  margin: var(--space-1) 0 0 0;
-}
-
-/* Tablet and up */
-@media (min-width: 640px) {
-  .client-header {
-    padding: 1rem 2rem;
-  }
-  
-  .header-actions {
-    gap: 1rem;
-  }
-}
-
-.header-actions button {
-  /* Use design system button styles */
-  padding: var(--space-2) var(--space-4);
-  font-size: var(--text-sm);
-  font-weight: var(--font-medium);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: all var(--transition-base);
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 36px;
-}
-
-.client-nav {
-  background: var(--bg-primary);
-  padding: 0 var(--space-6);
-  display: flex;
-  gap: var(--space-1);
-  border-bottom: 1px solid var(--border-primary);
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-
-.client-nav::-webkit-scrollbar {
-  display: none;
-}
-
-.client-nav button {
-  white-space: nowrap;
-  flex-shrink: 0;
-  padding: var(--space-3) var(--space-4);
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
-  color: var(--text-secondary);
-  font-size: var(--text-sm);
-  font-weight: var(--font-medium);
-  cursor: pointer;
-  transition: all var(--transition-base);
-  margin-bottom: -1px;
-}
-
-/* Tablet and up */
-@media (min-width: 640px) {
-  .client-nav {
-    padding: 1rem 2rem;
-    gap: 1rem;
-  }
-}
-
-.client-nav button {
-  padding: 0.75rem 1.5rem;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s;
-}
-
-.client-nav button.active {
-  border-bottom-color: var(--color-primary-600);
-  color: var(--color-primary-600);
-  font-weight: var(--font-semibold);
-}
-
-.client-nav button:hover:not(.active) {
-  color: var(--text-primary);
-  background: var(--bg-secondary);
-}
-
-.client-content {
-  flex: 1;
-  padding: var(--space-6);
-  max-width: 75rem;
-  margin: 0 auto;
-  width: 100%;
-}
-
-.client-content h2 {
-  font-size: var(--text-2xl);
-  font-weight: var(--font-semibold);
-  color: var(--text-primary);
-  margin-bottom: var(--space-6);
-  letter-spacing: var(--tracking-tight);
-}
-
-/* Tablet and up */
-@media (min-width: 640px) {
-  .client-content {
-    padding: var(--space-8);
-  }
-}
-
 .bookings-list,
 .vehicles-list {
-  display: grid;
-  gap: var(--space-4);
-  margin-top: var(--space-6);
-}
-
-.booking-card,
-.vehicle-card {
-  background: var(--bg-primary);
-  padding: var(--space-6);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-primary);
-  box-shadow: var(--shadow-sm);
-  transition: all var(--transition-base);
-}
-
-.booking-card:hover,
-.vehicle-card:hover {
-  box-shadow: var(--shadow-md);
-  border-color: var(--border-secondary);
-  transform: translateY(-1px);
-}
-
-.booking-header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: var(--space-4);
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: var(--space-3);
 }
 
-.booking-header h3 {
-  color: var(--text-primary);
-  font-weight: var(--font-semibold);
-  font-size: var(--text-lg);
-  letter-spacing: var(--tracking-tight);
-  flex: 1;
-  min-width: 200px;
-}
-
-.status-badge {
-  padding: var(--space-1) var(--space-3);
-  border-radius: var(--radius-full);
-  font-size: var(--text-xs);
-  font-weight: var(--font-semibold);
-  text-transform: capitalize;
-  letter-spacing: var(--tracking-wide);
-  white-space: nowrap;
-}
-
-.status-pending {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.status-accepted {
-  background: #dbeafe;
-  color: #1e40af;
-}
-
-.status-picked_up,
-.status-at_wash {
-  background: #e0e7ff;
-  color: #3730a3;
-}
-
-.status-waiting_bay,
-.status-washing_bay,
-.status-drying_bay {
-  background: #fce7f3;
-  color: #9f1239;
-}
-
-.status-wash_completed,
-.status-delivered_to_client,
-.status-completed {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.status-cancelled {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.booking-details {
-  margin-bottom: var(--space-4);
-}
-
-.booking-details p {
-  margin: var(--space-2) 0;
-  color: var(--text-secondary);
-  line-height: var(--leading-relaxed);
-  font-size: var(--text-sm);
-}
-
-.booking-details strong {
-  color: var(--text-primary);
-  font-weight: var(--font-semibold);
-  margin-right: var(--space-2);
-}
-
-.booking-actions {
+.sucar-vehicle-row {
   display: flex;
   gap: var(--space-3);
-  margin-top: var(--space-4);
-  flex-wrap: wrap;
-}
-
-.cancel-btn,
-.pay-btn {
-  padding: var(--space-2) var(--space-4);
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  font-weight: var(--font-medium);
-  font-size: var(--text-sm);
-  transition: all var(--transition-base);
-}
-
-.cancel-btn {
-  background: rgba(239, 68, 68, 0.1);
-  color: var(--color-error);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-}
-
-.cancel-btn:hover {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: rgba(239, 68, 68, 0.3);
-}
-
-.pay-btn {
-  background: var(--color-success);
-  color: white;
-  box-shadow: var(--shadow-sm);
-}
-
-.pay-btn:hover {
-  background: #059669;
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
-}
-
-.track-btn {
-  padding: var(--space-2) var(--space-4);
-  background: var(--color-primary-600);
-  color: white;
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  font-weight: var(--font-medium);
-  font-size: var(--text-sm);
-  transition: all var(--transition-base);
-  box-shadow: var(--shadow-sm);
-}
-
-.track-btn:hover {
-  background: var(--color-primary-700);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
-}
-
-.add-vehicle-btn,
-.book-btn {
-  padding: var(--space-3) var(--space-6);
-  background: var(--color-primary-600);
-  color: white;
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  font-weight: var(--font-semibold);
-  font-size: var(--text-base);
-  margin-bottom: var(--space-6);
-  transition: all var(--transition-base);
-  box-shadow: var(--shadow-sm);
-}
-
-.add-vehicle-btn:hover,
-.book-btn:hover {
-  background: var(--color-primary-700);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
-}
-
-.loading {
-  display: flex;
   align-items: center;
-  justify-content: center;
-  padding: var(--space-16);
-  min-height: 50vh;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  margin-bottom: var(--space-2);
 }
 
-/* Map Section */
-.map-section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
+.sucar-vehicle-row p {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.sucar-vehicle-icon {
+  font-size: 1.5rem;
+}
+
+.sucar-track-banner {
   width: 100%;
-  height: 100%;
-  min-height: 0;
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  border: none;
+  border-radius: var(--sucar-radius-lg);
+  background: var(--color-primary-50);
+  color: var(--color-primary-700);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  cursor: pointer;
+  text-align: left;
 }
 
-.map-section-header {
-  margin-bottom: var(--space-4);
-  flex-shrink: 0;
-}
+/* Explore layout lives in sucar-client-layout.css */
 
-.map-section-subtitle {
+.text-muted {
   color: var(--text-secondary);
   font-size: var(--text-sm);
-  margin-top: var(--space-2);
 }
 
-.map-layout {
-  display: grid;
-  grid-template-columns: 400px 1fr;
-  gap: var(--space-6);
-  height: calc(100vh - 250px);
-  min-height: 600px;
-  align-items: stretch;
-}
-
-.map-sidebar {
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding-right: var(--space-2);
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.map-section-content {
-  height: 100%;
-  min-height: 600px;
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  border: 1px solid var(--border-primary);
-  position: relative;
-}
-
-@media (max-width: 1024px) {
-  .map-layout {
-    grid-template-columns: 1fr;
-    height: auto;
-    min-height: auto;
-  }
-  
-  .map-sidebar {
-    max-height: 400px;
-    order: 2;
-  }
-  
-  .map-section-content {
-    height: 500px;
-    min-height: 500px;
-    order: 1;
-  }
-}
-
-/* Live Tracking Overlay */
 .live-tracking-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(4px);
   z-index: var(--z-modal);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: var(--space-4);
-  backdrop-filter: blur(4px);
 }
 
 .live-tracking-overlay > div {
   width: 100%;
-  max-width: 1200px;
+  max-width: 900px;
   max-height: 90vh;
+  overflow: auto;
   background: var(--bg-primary);
-  border-radius: var(--radius-xl);
+  border-radius: var(--sucar-radius-xl);
   box-shadow: var(--shadow-xl);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-@media (max-width: 640px) {
-  .map-section-content {
-    height: 400px;
-  }
-
-  .live-tracking-overlay {
-    padding: 0;
-  }
-
-  .live-tracking-overlay > div {
-    max-height: 100vh;
-    border-radius: 0;
-  }
-}
-
-/* Skeleton styles for vehicle cards */
-.vehicle-card.skeleton {
-  background: var(--bg-primary);
-  border: 1px solid var(--border-primary);
-  padding: var(--space-6);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-}
-
-.skeleton-line {
-  background: linear-gradient(90deg, var(--bg-skeleton) 25%, var(--bg-skeleton-shimmer) 50%, var(--bg-skeleton) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-  border-radius: var(--radius-sm);
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
 }

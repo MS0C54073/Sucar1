@@ -1,3 +1,4 @@
+import Icon from '../icons/Icon';
 import './QueueEstimate.css';
 
 interface QueueEstimateProps {
@@ -35,7 +36,7 @@ const QueueEstimate = ({
   return (
     <div className="queue-estimate">
       <div className="queue-info">
-        <span className="queue-icon">⏳</span>
+        <span className="queue-icon"><Icon name="clock" size={20} /></span>
         <div className="queue-details">
           <div className="queue-position">
             Position: <strong>#{queuePosition}</strong> in queue

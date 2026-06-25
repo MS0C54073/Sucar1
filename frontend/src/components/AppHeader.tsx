@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import BrandLogo from './BrandLogo';
 import './AppHeader.css';
 
 const AppHeader = () => {
@@ -31,7 +32,7 @@ const AppHeader = () => {
           onClick={handleLogoClick}
           aria-label="Go to dashboard"
         >
-          <span className="logo-text">SuCAR</span>
+          <BrandLogo size={28} textClassName="logo-text" />
         </button>
         {user && (
           <div className="header-right">

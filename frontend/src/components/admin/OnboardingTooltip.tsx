@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { OnboardingSection, OnboardingService } from '../../services/onboarding-service';
+import Icon from '../icons/Icon';
 import './OnboardingTooltip.css';
 
 interface OnboardingTooltipProps {
@@ -83,8 +84,8 @@ const OnboardingTooltip: React.FC<OnboardingTooltipProps> = ({ section, onComple
       >
         <div className="tooltip-header">
           <h3 className="tooltip-title">{section.title}</h3>
-          <button className="tooltip-close" onClick={onSkip}>
-            ✕
+          <button className="tooltip-close" onClick={onSkip} aria-label="Close">
+            <Icon name="x" size={15} />
           </button>
         </div>
         <div className="tooltip-content">

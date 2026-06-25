@@ -1,0 +1,744 @@
+/**
+ * SuCAR Admin — self-contained dark theme
+ * Remaps design-system variables so ALL admin child pages inherit dark surfaces.
+ */
+.admin-dashboard.admin-mockup {
+  /* Brand — professional neutral slate (readable on light surfaces) */
+  --adm-accent: #475569;
+  --adm-accent-hover: #334155;
+  --adm-accent-muted: rgba(71, 85, 105, 0.1);
+  --adm-accent-border: rgba(71, 85, 105, 0.22);
+
+  /* Surfaces — clean light theme */
+  --adm-bg: #f4f6fa;
+  --adm-bg-elevated: #ffffff;
+  --adm-card: #ffffff;
+  --adm-card-hover: #f4f7fb;
+  --adm-border: rgba(15, 27, 45, 0.1);
+  --adm-border-subtle: rgba(15, 27, 45, 0.06);
+
+  /* Text */
+  --adm-text: #1a2333;
+  --adm-text-muted: #5a6678;
+  --adm-text-faint: #8a93a6;
+
+  /* Semantic (badges / alerts only) */
+  --adm-success: #059669;
+  --adm-success-bg: rgba(5, 150, 105, 0.12);
+  --adm-warning: #b45309;
+  --adm-warning-bg: rgba(180, 83, 9, 0.12);
+  --adm-error: #dc2626;
+  --adm-error-bg: rgba(220, 38, 38, 0.1);
+
+  --adm-sidebar-w: 260px;
+  --adm-radius: 14px;
+  --adm-radius-sm: 10px;
+  --adm-card-pad: 18px 20px;
+
+  /* ── Remap global design tokens for every admin child ── */
+  --bg-primary: var(--adm-card);
+  --bg-secondary: var(--adm-bg-elevated);
+  --bg-tertiary: var(--adm-card-hover);
+  --text-primary: var(--adm-text);
+  --text-secondary: var(--adm-text-muted);
+  --text-tertiary: var(--adm-text-faint);
+  --border-primary: var(--adm-border);
+  --border-secondary: var(--adm-border-subtle);
+  --card-bg: var(--adm-card);
+  --input-bg: var(--adm-bg-elevated);
+  --input-border: var(--adm-border);
+  --white: var(--adm-card);
+  --bg-color: var(--adm-bg);
+  --text-color: var(--adm-text);
+  --border-color: var(--adm-border);
+  --hover-bg: rgba(15, 27, 45, 0.05);
+  --shadow: 0 1px 3px rgba(15, 27, 45, 0.08), 0 1px 2px rgba(15, 27, 45, 0.04);
+  --shadow-sm: 0 1px 2px rgba(15, 27, 45, 0.06);
+  --shadow-md: 0 6px 24px rgba(15, 27, 45, 0.1);
+  --color-primary-50: var(--adm-accent-muted);
+  --color-primary-100: var(--adm-accent-muted);
+  --color-primary-300: var(--adm-accent);
+  --color-primary-500: var(--adm-accent);
+  --color-primary-600: var(--adm-accent);
+  --color-primary-700: var(--adm-accent-hover);
+  --color-primary-900: #1a2333;
+  --color-info: var(--adm-accent);
+  --color-success: var(--adm-success);
+  --color-warning: var(--adm-warning);
+  --color-error: var(--adm-error);
+  --bg-skeleton: #e8ecf3;
+  --bg-skeleton-shimmer: #f1f4f9;
+
+  background: var(--adm-bg);
+  color: var(--adm-text);
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  min-height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+/* Kill global marketing background bleed on admin */
+body:has(.admin-dashboard.admin-mockup)::before {
+  display: none !important;
+}
+
+body:has(.admin-dashboard.admin-mockup) {
+  background: var(--adm-bg) !important;
+}
+
+/* Override legacy sucar-ui blue sidebar */
+.admin-dashboard.admin-mockup .admin-sidebar {
+  background: var(--adm-bg-elevated) !important;
+}
+
+.admin-dashboard.admin-mockup .nav-item.active {
+  background: var(--adm-accent-muted) !important;
+  color: var(--adm-accent) !important;
+  border-color: var(--adm-accent-border) !important;
+}
+
+/* ── Layout ── */
+.admin-mockup .admin-sidebar {
+  width: var(--adm-sidebar-w);
+  background: var(--adm-bg-elevated);
+  border-right: 1px solid var(--adm-border-subtle);
+}
+
+.admin-mockup .admin-main {
+  margin-left: var(--adm-sidebar-w);
+  background: var(--adm-bg);
+  min-height: 100vh;
+  flex: 1;
+}
+
+.admin-mockup .admin-content {
+  padding: 28px 32px 48px;
+  width: 100%;
+  max-width: none;
+  overflow-x: hidden;
+}
+
+.admin-mockup .admin-main {
+  overflow-x: hidden;
+}
+
+/* ── Sidebar ── */
+.admin-mockup .sidebar-header {
+  padding: 22px 18px 18px;
+  border-bottom: 1px solid var(--adm-border-subtle);
+}
+
+.admin-mockup .sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+}
+
+.admin-mockup .sidebar-brand-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  object-fit: cover;
+  flex-shrink: 0;
+  display: block;
+}
+
+.admin-mockup .sidebar-brand-mark {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  background: var(--adm-accent);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.admin-mockup .sidebar-brand-text h1 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--adm-text);
+  letter-spacing: -0.02em;
+}
+
+.admin-mockup .sidebar-brand-text span {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--adm-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.admin-mockup .role-badge {
+  margin-top: 10px;
+  padding: 4px 10px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--adm-accent);
+  background: var(--adm-accent-muted);
+  border: 1px solid var(--adm-accent-border);
+  border-radius: 20px;
+}
+
+.admin-mockup .sidebar-nav {
+  padding: 14px 12px;
+}
+
+.admin-mockup .nav-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--adm-text-faint);
+  padding: 16px 10px 8px;
+}
+
+.admin-mockup .nav-item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 12px;
+  margin-bottom: 2px;
+  color: var(--adm-text-muted);
+  text-decoration: none;
+  border-radius: var(--adm-radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid transparent;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.admin-mockup .nav-item:hover {
+  background: rgba(15, 27, 45, 0.05);
+  color: var(--adm-text);
+}
+
+.admin-mockup .nav-item.active {
+  background: var(--adm-accent-muted) !important;
+  color: var(--adm-accent) !important;
+  border-color: var(--adm-accent-border) !important;
+  font-weight: 600;
+}
+
+.admin-mockup .nav-icon {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-mockup .nav-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: var(--adm-warning-bg);
+  color: var(--adm-warning);
+  border: none;
+}
+
+.admin-mockup .sidebar-footer {
+  padding: 16px 12px 18px;
+  border-top: 1px solid var(--adm-border-subtle);
+}
+
+.admin-mockup .user-info:hover {
+  background: rgba(15, 27, 45, 0.04);
+  border-radius: var(--adm-radius-sm);
+}
+
+.admin-mockup .user-avatar {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  flex-shrink: 0;
+  background: var(--adm-accent);
+  color: #ffffff;
+  overflow: hidden;
+}
+
+.admin-mockup .user-avatar .avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.admin-mockup .user-name { color: var(--adm-text); font-size: 13px; }
+.admin-mockup .user-email { color: var(--adm-text-faint); font-size: 12px; }
+
+.admin-mockup .help-btn {
+  border: 1px solid var(--adm-border);
+  background: var(--adm-card);
+  color: var(--adm-text-muted);
+  border-radius: var(--adm-radius-sm);
+}
+
+.admin-mockup .logout-btn {
+  background: var(--adm-card);
+  color: var(--adm-text-muted);
+  border: 1px solid var(--adm-border);
+}
+
+.admin-mockup .logout-btn:hover {
+  background: var(--adm-card-hover);
+  color: var(--adm-text);
+}
+
+.admin-mockup .sidebar-secure {
+  display: none;
+}
+
+/* ── Header ── */
+.admin-mockup .admin-header {
+  background: var(--adm-bg-elevated);
+  border-bottom: 1px solid var(--adm-border-subtle);
+  padding: 16px 32px;
+  gap: 20px;
+}
+
+.admin-mockup .header-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--adm-text);
+}
+
+.admin-mockup .header-breadcrumb {
+  display: none;
+}
+
+.admin-mockup .header-search {
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  color: var(--adm-text);
+  border-radius: var(--adm-radius-sm);
+  padding: 10px 16px;
+  font-size: 14px;
+}
+
+.admin-mockup .header-search:focus {
+  border-color: var(--adm-accent-border);
+  box-shadow: 0 0 0 3px var(--adm-accent-muted);
+}
+
+.admin-mockup .header-pill {
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  color: var(--adm-text-muted);
+}
+
+.admin-mockup .admin-user-chip {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: 50%;
+  background: var(--adm-accent-muted);
+  color: var(--adm-accent);
+  border: 1px solid var(--adm-accent-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.admin-mockup .admin-user-chip-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ── Dashboard ── */
+.admin-mockup .admin-dash-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  gap: 12px;
+}
+
+.admin-mockup .admin-dash-head p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--adm-text-muted);
+}
+
+.admin-mockup .admin-dash-live {
+  padding: 8px 14px;
+  background: var(--adm-accent-muted);
+  border: 1px solid var(--adm-accent-border);
+  color: var(--adm-accent);
+  font-size: 12px;
+  border-radius: 24px;
+}
+
+.admin-mockup .admin-dash-live::before {
+  background: var(--adm-accent);
+}
+
+.admin-mockup .kpi-grid-mockup {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.admin-mockup .kpi-card-mockup {
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius);
+  padding: var(--adm-card-pad);
+  min-height: 108px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.admin-mockup .kpi-card-mockup:hover {
+  border-color: rgba(15, 27, 45, 0.12);
+  box-shadow: 0 8px 24px rgba(15, 27, 45, 0.1);
+}
+
+.admin-mockup .kpi-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.admin-mockup .kpi-lbl {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--adm-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0;
+}
+
+.admin-mockup .kpi-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--adm-accent-muted);
+  border: 1px solid var(--adm-accent-border);
+  color: var(--adm-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.admin-mockup .kpi-val {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--adm-text);
+  letter-spacing: -0.03em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-mockup .kpi-sub {
+  font-size: 12px;
+  color: var(--adm-text-faint);
+  margin: 0;
+}
+
+.admin-mockup .admin-dash-body {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 20px;
+}
+
+.admin-mockup .admin-charts-row {
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.admin-mockup .admin-chart-card,
+.admin-mockup .admin-tx-card,
+.admin-mockup .admin-health-card {
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius);
+}
+
+.admin-mockup .admin-chart-card {
+  padding: var(--adm-card-pad);
+}
+
+.admin-mockup .admin-chart-card h3,
+.admin-mockup .admin-tx-head h3,
+.admin-mockup .admin-health-card h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--adm-text);
+}
+
+.admin-mockup .admin-tx-head a {
+  color: var(--adm-accent);
+}
+
+.admin-mockup .admin-tx-table th {
+  background: rgba(15, 27, 45, 0.04);
+  color: var(--adm-text-faint);
+  font-size: 11px;
+  padding: 12px 18px;
+}
+
+.admin-mockup .admin-tx-table td {
+  padding: 14px 18px;
+  font-size: 13px;
+  border-top: 1px solid var(--adm-border-subtle);
+}
+
+.admin-mockup .admin-tx-scroll {
+  overflow-x: auto;
+}
+
+.admin-mockup .admin-tx-table tbody tr:hover td {
+  background: rgba(15, 27, 45, 0.04);
+}
+
+.admin-mockup .tx-user {
+  font-weight: 600;
+}
+
+.admin-mockup .tx-email {
+  font-size: 11px;
+  color: var(--adm-text-faint);
+}
+
+.admin-mockup .tx-mono {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--adm-text-muted);
+}
+
+.admin-mockup .admin-chart-empty {
+  color: var(--adm-text-faint);
+  text-align: center;
+  padding: 24px;
+  font-size: 13px;
+}
+
+.admin-mockup .tx-paid {
+  background: var(--adm-success-bg);
+  color: var(--adm-success);
+}
+
+.admin-mockup .tx-pending {
+  background: var(--adm-warning-bg);
+  color: var(--adm-warning);
+}
+
+.admin-mockup .tx-failed {
+  background: var(--adm-error-bg);
+  color: var(--adm-error);
+}
+
+.admin-mockup .admin-quick-btn {
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius-sm);
+  color: var(--adm-text-muted);
+  padding: 14px 16px;
+}
+
+.admin-mockup .admin-quick-btn:hover {
+  background: var(--adm-card-hover);
+  color: var(--adm-accent);
+  border-color: var(--adm-accent-border);
+}
+
+.admin-mockup .admin-mini-stat {
+  background: var(--adm-bg-elevated);
+  border: 1px solid var(--adm-border-subtle);
+}
+
+.admin-mockup .admin-mini-stat:hover {
+  background: var(--adm-card-hover);
+}
+
+/* ── Inner pages: tables, filters, cards ── */
+.admin-mockup .admin-card,
+.admin-mockup .user-management,
+.admin-mockup .filters-bar,
+.admin-mockup .table-container {
+  color: var(--adm-text);
+}
+
+.admin-mockup .admin-card {
+  background: var(--adm-card) !important;
+  border: 1px solid var(--adm-border) !important;
+  border-radius: var(--adm-radius) !important;
+  box-shadow: none !important;
+}
+
+.admin-mockup .data-table {
+  background: var(--adm-card) !important;
+}
+
+.admin-mockup .data-table thead {
+  background: rgba(15, 27, 45, 0.04) !important;
+  border-bottom: 1px solid var(--adm-border) !important;
+}
+
+.admin-mockup .data-table th {
+  color: var(--adm-text-faint) !important;
+}
+
+.admin-mockup .data-table td {
+  border-color: var(--adm-border-subtle) !important;
+  color: var(--adm-text) !important;
+}
+
+.admin-mockup .data-table tbody tr:hover td {
+  background: rgba(15, 27, 45, 0.04) !important;
+}
+
+.admin-mockup .search-input,
+.admin-mockup .filter-select,
+.admin-mockup .admin-content input,
+.admin-mockup .admin-content select,
+.admin-mockup .admin-content textarea {
+  background: var(--adm-bg-elevated) !important;
+  border: 1px solid var(--adm-border) !important;
+  color: var(--adm-text) !important;
+}
+
+.admin-mockup .search-input:focus,
+.admin-mockup .filter-select:focus {
+  border-color: var(--adm-accent-border) !important;
+  box-shadow: 0 0 0 3px var(--adm-accent-muted) !important;
+}
+
+.admin-mockup .btn-primary,
+.admin-mockup button[class*='primary'],
+.admin-mockup .create-btn {
+  background: var(--adm-accent) !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+.admin-mockup .btn-primary:hover {
+  background: var(--adm-accent-hover) !important;
+}
+
+.admin-mockup .loading-container,
+.admin-mockup .empty-state {
+  color: var(--adm-text-muted);
+}
+
+.admin-mockup .stat-card {
+  background: var(--adm-card) !important;
+  border: 1px solid var(--adm-border) !important;
+  border-left-width: 1px !important;
+}
+
+.admin-mockup .stat-blue,
+.admin-mockup .stat-amber,
+.admin-mockup .stat-green,
+.admin-mockup .stat-emerald,
+.admin-mockup .stat-purple {
+  border-left-color: var(--adm-border) !important;
+}
+
+/* Alerts */
+.admin-mockup .alert-item {
+  background: var(--adm-bg-elevated);
+  border: 1px solid var(--adm-border);
+}
+
+.admin-mockup .alert-severity-warning {
+  border-left: 3px solid var(--adm-warning);
+}
+
+.admin-mockup .alert-severity-error {
+  border-left: 3px solid var(--adm-error);
+}
+
+/* Help / onboarding overlays */
+.admin-mockup .onboarding-welcome-overlay {
+  z-index: 10001;
+}
+
+.admin-mockup .onboarding-welcome {
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  color: var(--adm-text);
+}
+
+.admin-mockup .onboarding-welcome h2,
+.admin-mockup .onboarding-welcome p {
+  color: var(--adm-text);
+}
+
+.admin-mockup .welcome-start-btn {
+  background: var(--adm-accent) !important;
+  color: #ffffff !important;
+}
+
+/* Reports / misc */
+.admin-mockup h1,
+.admin-mockup h2 {
+  color: var(--adm-text);
+}
+
+.admin-mockup .dashboard-card {
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius);
+  padding: var(--adm-card-pad);
+  margin-bottom: 20px;
+}
+
+/* Mobile */
+@media (max-width: 900px) {
+  .admin-mockup .admin-main {
+    margin-left: 0;
+  }
+
+  .admin-mockup .kpi-grid-mockup {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .admin-mockup .admin-dash-body {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-mockup .admin-charts-row {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-mockup .header-search-wrap {
+    display: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .admin-mockup .kpi-grid-mockup {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-mockup .admin-content {
+    padding: 16px;
+  }
+}

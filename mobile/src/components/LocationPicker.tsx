@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,10 +7,14 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
-  ScrollView,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { getCurrentPosition, Coordinates } from '../services/locationService';
 import { searchLocations, reverseGeocode, GeocodingResult } from '../services/geocodingService';
+import { useMapbox } from '../context/MapboxContext';
+import { ClientColors } from '../constants/sucarTheme';
+import SearchAutocomplete, { AutocompleteItem } from './ui/SearchAutocomplete';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 
 interface LocationPickerProps {
   onLocationSelect: (location: string, coordinates: Coordinates) => void;
@@ -37,6 +41,9 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   const [isSearching, setIsSearching] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const debouncedLocation = useDebouncedValue(location, 300);
+  const { token: mapboxToken, loading: tokenLoading } = useMapbox();
 
   useEffect(() => {
     if (initialLocation) {
@@ -58,24 +65,57 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       });
   }, []);
 
-  // Search locations with debounce
+  // Search locations when debounced query changes — re-runs when token becomes available
   useEffect(() => {
-    if (!location || location.length < 2) {
+    if (!debouncedLocation || debouncedLocation.length < 2) {
       setSearchResults([]);
-      setShowResults(false);
+      setSearchError(null);
+      if (debouncedLocation.length < 2) setShowResults(false);
       return;
     }
 
-    const timeoutId = setTimeout(async () => {
-      setIsSearching(true);
-      const results = await searchLocations(location, userLocation || undefined);
-      setSearchResults(results);
-      setShowResults(true);
-      setIsSearching(false);
-    }, 300); // 300ms debounce
+    if (tokenLoading) return;
 
-    return () => clearTimeout(timeoutId);
-  }, [location, userLocation]);
+    let cancelled = false;
+
+    (async () => {
+      setIsSearching(true);
+      setSearchError(null);
+      try {
+        const results = await searchLocations(debouncedLocation, userLocation || undefined);
+        if (cancelled) return;
+        setSearchResults(results);
+        setShowResults(true);
+        if (results.length === 0 && !mapboxToken) {
+          setSearchError('Location search unavailable. Start the backend server.');
+        } else if (results.length === 0) {
+          setSearchError('No locations found. Try a different search.');
+        }
+      } catch {
+        if (!cancelled) {
+          setSearchError('Search failed. Check your connection.');
+          setSearchResults([]);
+        }
+      } finally {
+        if (!cancelled) setIsSearching(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedLocation, userLocation, mapboxToken, tokenLoading]);
+
+  const autocompleteItems: AutocompleteItem[] = useMemo(
+    () =>
+      searchResults.map((r) => ({
+        id: r.id,
+        title: r.placeName.split(',')[0]?.trim() || r.placeName,
+        subtitle: r.context?.length ? r.context.join(', ') : r.placeName,
+        icon: 'location-outline' as const,
+      })),
+    [searchResults]
+  );
 
   const handleLocationChange = (text: string) => {
     setLocation(text);
@@ -112,15 +152,6 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
     }
   };
 
-  const handleManualEntry = () => {
-    // If user has typed something and there are no results, allow manual entry
-    if (location && location.length > 0 && !coordinates) {
-      // User can manually enter location without coordinates
-      // This will be handled by the parent component
-      onLocationSelect(location, coordinates || { lat: 0, lng: 0 });
-    }
-  };
-
   return (
     <View style={styles.container}>
       <View style={styles.inputGroup}>
@@ -131,21 +162,18 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
             value={location}
             onChangeText={handleLocationChange}
             onFocus={() => {
-              if (searchResults.length > 0) {
+              if (searchResults.length > 0 || location.length >= 2) {
                 setShowResults(true);
               }
             }}
             onBlur={() => {
-              // Delay to allow click on results
-              setTimeout(() => {
-                setShowResults(false);
-                handleManualEntry();
-              }, 200);
+              // Delay hide so result taps register (onPressIn also selects)
+              setTimeout(() => setShowResults(false), 250);
             }}
           />
           {isSearching && (
             <View style={styles.spinner}>
-              <ActivityIndicator size="small" color="#667eea" />
+              <ActivityIndicator size="small" color={ClientColors.primary} />
             </View>
           )}
         </View>
@@ -158,35 +186,28 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
           {isGettingLocation ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
-            <Text style={styles.currentButtonText}>📍 Current</Text>
+            <View style={styles.currentButtonInner}>
+              <Ionicons name="locate" size={15} color="#fff" />
+              <Text style={styles.currentButtonText}>Current</Text>
+            </View>
           )}
         </TouchableOpacity>
       </View>
 
       {/* Autocomplete Results */}
-      {showResults && searchResults.length > 0 && (
-        <ScrollView 
-          style={styles.resultsContainer}
-          nestedScrollEnabled={true}
-          keyboardShouldPersistTaps="handled"
-        >
-          {searchResults.map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              style={styles.resultItem}
-              onPress={() => handleResultSelect(item)}
-            >
-              <Text style={styles.resultIcon}>📍</Text>
-              <View style={styles.resultContent}>
-                <Text style={styles.resultName}>{item.placeName}</Text>
-                {item.context && item.context.length > 0 && (
-                  <Text style={styles.resultContext}>{item.context.join(', ')}</Text>
-                )}
-              </View>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      )}
+      <SearchAutocomplete
+        visible={showResults && location.length >= 2}
+        loading={isSearching}
+        items={autocompleteItems}
+        onSelect={(item) => {
+          const result = searchResults.find((r) => r.id === item.id);
+          if (result) handleResultSelect(result);
+        }}
+        emptyMessage={searchError || 'No locations found'}
+        headerLabel="Address suggestions"
+        maxHeight={200}
+        embedded
+      />
 
       {coordinates && (
         <View style={styles.coordinatesContainer}>
@@ -231,7 +252,7 @@ const styles = StyleSheet.create({
     top: 15,
   },
   currentButton: {
-    backgroundColor: '#667eea',
+    backgroundColor: ClientColors.primary,
     paddingHorizontal: 15,
     paddingVertical: 12,
     borderRadius: 5,
@@ -242,46 +263,15 @@ const styles = StyleSheet.create({
   currentButtonDisabled: {
     opacity: 0.6,
   },
+  currentButtonInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   currentButtonText: {
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
-  },
-  resultsContainer: {
-    maxHeight: 200,
-    backgroundColor: '#fff',
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    marginTop: 5,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  resultItem: {
-    flexDirection: 'row',
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  resultIcon: {
-    fontSize: 20,
-    marginRight: 10,
-  },
-  resultContent: {
-    flex: 1,
-  },
-  resultName: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
-    marginBottom: 2,
-  },
-  resultContext: {
-    fontSize: 12,
-    color: '#666',
   },
   coordinatesContainer: {
     marginTop: 5,

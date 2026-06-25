@@ -7,6 +7,7 @@ import UserModal from './UserModal';
 import CreateUserModal from './CreateUserModal';
 import ConfirmDialog from '../ConfirmDialog';
 import ContextualHelp from './ContextualHelp';
+import Icon from '../icons/Icon';
 import { useToast } from '../ToastContainer';
 import './UserManagement.css';
 
@@ -361,7 +362,7 @@ const UserManagement = () => {
         {/* Users Table */}
         {filteredUsers.length === 0 ? (
           <EmptyState
-            icon="👥"
+            icon={<Icon name="user" size={28} />}
             title="No users found"
             description={searchTerm || roleFilter !== 'all' || statusFilter !== 'all'
               ? 'Try adjusting your filters'
@@ -453,40 +454,45 @@ const UserManagement = () => {
                           className="btn-icon"
                           onClick={() => handleEdit(user)}
                           title="Edit User"
+                          aria-label="Edit User"
                         >
-                          ✏️
+                          <Icon name="pencil" size={16} />
                         </button>
                         {!user.isSuspended ? (
                           <button
                             className="btn-icon"
                             onClick={() => handleSuspend(user)}
                             title="Suspend User"
+                            aria-label="Suspend User"
                           >
-                            ⏸️
+                            <Icon name="pause" size={16} />
                           </button>
                         ) : (
                           <button
                             className="btn-icon"
                             onClick={() => handleReactivate(user)}
                             title="Reactivate User"
+                            aria-label="Reactivate User"
                           >
-                            ▶️
+                            <Icon name="play" size={16} />
                           </button>
                         )}
                         <button
                           className="btn-icon"
                           onClick={() => handleToggleActive(user)}
                           title={user.isActive ? 'Deactivate' : 'Activate'}
+                          aria-label={user.isActive ? 'Deactivate' : 'Activate'}
                         >
-                          {user.isActive ? '🚫' : '✅'}
+                          <Icon name={user.isActive ? 'alertCircle' : 'checkCircle'} size={16} />
                         </button>
                         {user.role !== 'admin' && user.role !== 'subadmin' && (
                           <button
                             className="btn-icon"
                             onClick={() => handleRoleChange(user, 'subadmin')}
                             title="Make Subadmin"
+                            aria-label="Make Subadmin"
                           >
-                            🛡️
+                            <Icon name="shieldCheck" size={16} />
                           </button>
                         )}
                         {user.role !== 'admin' && (
@@ -494,8 +500,9 @@ const UserManagement = () => {
                             className="btn-icon"
                             onClick={() => handleRoleChange(user, 'admin')}
                             title="Make Admin"
+                            aria-label="Make Admin"
                           >
-                            👑
+                            <Icon name="crown" size={16} />
                           </button>
                         )}
                         {user.role === 'admin' && user.adminLevel !== 'super_admin' && (
@@ -503,16 +510,18 @@ const UserManagement = () => {
                             className="btn-icon"
                             onClick={() => handleAdminLevelChange(user, 'super_admin')}
                             title="Make Super Admin"
+                            aria-label="Make Super Admin"
                           >
-                            ⭐
+                            <Icon name="star" size={16} />
                           </button>
                         )}
                         <button
                           className="btn-icon btn-danger"
                           onClick={() => handleDelete(user)}
                           title="Delete User"
+                          aria-label="Delete User"
                         >
-                          🗑️
+                          <Icon name="trash" size={16} />
                         </button>
                       </div>
                     </td>

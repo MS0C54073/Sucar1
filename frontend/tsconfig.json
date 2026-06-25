@@ -15,14 +15,7 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "noImplicitReturns": true,
-    "baseUrl": "./src",
-    "paths": {
-      "@app/*": ["app/*"],
-      "@features/*": ["features/*"],
-      "@shared/*": ["shared/*"],
-      "@assets/*": ["assets/*"]
-    }
+    "noImplicitReturns": true
   },
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]

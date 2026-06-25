@@ -5,6 +5,7 @@ import LoadingSpinner from '../LoadingSpinner';
 import EmptyState from '../EmptyState';
 import ConfirmDialog from '../ConfirmDialog';
 import FeatureFlagModal from './FeatureFlagModal';
+import Icon from '../icons/Icon';
 import './FeatureFlags.css';
 
 interface FeatureFlag {
@@ -160,7 +161,7 @@ const FeatureFlags = () => {
 
         {!flags || flags.length === 0 ? (
           <EmptyState
-            icon="🚩"
+            icon={<Icon name="flag" size={28} />}
             title="No feature flags"
             description="Create your first feature flag to start managing features"
           />
@@ -180,15 +181,17 @@ const FeatureFlags = () => {
                       className="btn-icon"
                       onClick={() => handleEdit(flag)}
                       title="Edit Feature Flag"
+                      aria-label="Edit"
                     >
-                      ✏️
+                      <Icon name="pencil" size={16} />
                     </button>
                     <button
                       className="btn-icon btn-danger"
                       onClick={() => handleDelete(flag)}
                       title="Delete Feature Flag"
+                      aria-label="Delete"
                     >
-                      🗑️
+                      <Icon name="trash" size={16} />
                     </button>
                   </div>
                 </div>

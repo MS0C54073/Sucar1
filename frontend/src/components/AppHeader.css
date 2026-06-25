@@ -37,14 +37,13 @@
 }
 
 .logo-text {
-  font-size: var(--text-2xl);
+  font-size: var(--text-xl);
   font-weight: var(--font-bold);
-  color: var(--color-primary-600);
   letter-spacing: var(--tracking-tight);
-}
-
-[data-theme='dark'] .logo-text {
-  color: var(--color-primary-500);
+  background: var(--gradient-brand);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .welcome-text {

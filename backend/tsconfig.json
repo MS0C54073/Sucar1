@@ -14,15 +14,8 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noImplicitReturns": false,
-    "noFallthroughCasesInSwitch": true,
-    "baseUrl": "./src",
-    "paths": {
-      "@core/*": ["core/*"],
-      "@api/*": ["api/*"],
-      "@infrastructure/*": ["infrastructure/*"],
-      "@shared/*": ["shared/*"]
-    }
+    "noFallthroughCasesInSwitch": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "tests"]
+  "exclude": ["node_modules", "dist", "tests", "**/__tests__/**", "**/*.test.ts"]
 }

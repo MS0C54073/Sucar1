@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import LoadingSpinner from '../LoadingSpinner';
+import Icon, { type IconName } from '../icons/Icon';
 import './AlertsPanel.css';
 
 interface Alert {
@@ -51,7 +52,7 @@ const AlertsPanel = () => {
   if (!alerts || alerts.length === 0) {
     return (
       <div className="alerts-panel empty">
-        <div className="alert-icon">✅</div>
+        <div className="alert-icon"><Icon name="checkCircle" size={26} /></div>
         <div className="alert-message">All systems operational</div>
       </div>
     );
@@ -61,10 +62,10 @@ const AlertsPanel = () => {
     return `alert-severity-${severity}`;
   };
 
-  const getSeverityIcon = (severity: string) => {
-    if (severity === 'error') return '🔴';
-    if (severity === 'warning') return '⚠️';
-    return 'ℹ️';
+  const getSeverityIcon = (severity: string): IconName => {
+    if (severity === 'error') return 'alertCircle';
+    if (severity === 'warning') return 'alertTriangle';
+    return 'info';
   };
 
 
@@ -95,11 +96,11 @@ const AlertsPanel = () => {
               }
             }}
           >
-            <div className="alert-icon-small">{getSeverityIcon(alert.severity)}</div>
+            <div className="alert-icon-small"><Icon name={getSeverityIcon(alert.severity)} size={18} /></div>
             <div className="alert-content">
               <div className="alert-message">{alert.message}</div>
               {alert.action && (
-                <div className="alert-action-hint">Click to view →</div>
+                <div className="alert-action-hint">Click to view <Icon name="arrowRight" size={13} /></div>
               )}
             </div>
             {alert.count > 1 && (

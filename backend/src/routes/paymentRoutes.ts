@@ -13,6 +13,8 @@ const router = express.Router();
 const paymentValidation = [
   body('bookingId').notEmpty().withMessage('Booking ID is required'),
   body('method').isIn(['cash', 'card', 'mobile_money', 'bank_transfer']).withMessage('Invalid payment method'),
+  body('proofUrl').optional().isString(),
+  body('transactionId').optional().isString(),
 ];
 
 router.use(protect);

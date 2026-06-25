@@ -1,5 +1,6 @@
 import React from 'react';
 import CarAnimation from './CarAnimation';
+import Icon from '../icons/Icon';
 import './CarQueueSystem.css';
 
 interface CarQueueSystemProps {
@@ -32,7 +33,7 @@ const CarQueueSystem: React.FC<CarQueueSystemProps> = ({
                 <div className="queue-pillar"></div>
                 <div className="queue-pillar"></div>
               </div>
-              <div className="queue-station-sign">🧼</div>
+              <div className="queue-station-sign"><Icon name="sparkles" size={16} /></div>
             </div>
 
             {/* Washing Area - Car being washed */}

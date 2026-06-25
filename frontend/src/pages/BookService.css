@@ -81,6 +81,89 @@
   padding-bottom: var(--space-8);
 }
 
+.book-service.sucar-page {
+  background: var(--sucar-surface);
+  padding-bottom: calc(var(--space-8) + env(safe-area-inset-bottom));
+}
+
+.book-service.sucar-page .book-header {
+  background: var(--sucar-header-gradient);
+  color: #fff;
+  border: none;
+  border-radius: 0 0 var(--sucar-radius-xl) var(--sucar-radius-xl);
+  margin: calc(-1 * var(--space-4)) calc(-1 * var(--space-4)) var(--space-6);
+  padding: var(--space-5) var(--space-4);
+}
+
+.book-service.sucar-page .book-header h1,
+.book-service.sucar-page .header-subtitle {
+  color: #fff;
+}
+
+.book-service.sucar-page .back-button {
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #fff;
+}
+
+.book-service.sucar-page .back-button:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Steps must fit the client column (480px) */
+.book-service.sucar-page .book-steps {
+  max-width: 100%;
+  margin: 0;
+  padding: var(--space-4) var(--space-3);
+  overflow-x: auto;
+  justify-content: flex-start;
+  gap: var(--space-2);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.book-service.sucar-page .book-steps::before {
+  display: none;
+}
+
+.book-service.sucar-page .step {
+  flex: 0 0 auto;
+  min-width: 64px;
+  max-width: none;
+}
+
+.book-service.sucar-page .step-label {
+  font-size: 9px;
+  line-height: 1.2;
+  max-width: 72px;
+}
+
+.book-service.sucar-page .book-content {
+  max-width: 100%;
+  padding: var(--space-4);
+  box-sizing: border-box;
+}
+
+.book-service.sucar-page .book-header {
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.book-service.sucar-page .header-content {
+  min-width: 0;
+  flex: 1 1 180px;
+}
+
+.book-service.sucar-page .booking-type-selection {
+  grid-template-columns: 1fr;
+  margin-top: var(--space-4);
+}
+
+.book-service.sucar-page .carwash-list,
+.book-service.sucar-page .services-list,
+.book-service.sucar-page .vehicles-list {
+  grid-template-columns: 1fr;
+}
+
 .book-header {
   background: var(--bg-primary);
   border-bottom: 1px solid var(--border-primary);
@@ -532,6 +615,13 @@
 .submit-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.book-service-map-preview {
+  margin-top: var(--space-3);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--border-primary);
 }
 
 @media (max-width: 768px) {

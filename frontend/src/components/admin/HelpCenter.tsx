@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { ONBOARDING_SECTIONS } from '../../services/onboarding-service';
+import Icon from '../icons/Icon';
 import './HelpCenter.css';
 
 interface HelpCenterProps {
@@ -39,8 +40,8 @@ const HelpCenter: React.FC<HelpCenterProps> = ({ onClose }) => {
       <div className="help-center" onClick={(e) => e.stopPropagation()}>
         <div className="help-center-header">
           <h2>Help Center</h2>
-          <button className="help-center-close" onClick={onClose}>
-            ✕
+          <button className="help-center-close" onClick={onClose} aria-label="Close">
+            <Icon name="x" size={16} />
           </button>
         </div>
 
