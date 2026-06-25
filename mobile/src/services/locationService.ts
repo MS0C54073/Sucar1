@@ -10,6 +10,116 @@ export interface Coordinates {
   lng: number;
 }
 
+/** Central Lusaka — default map focus for SuCAR */
+export const LUSAKA_CENTER: Coordinates = { lat: -15.3875, lng: 28.3228 };
+
+/** Haversine distance in km */
+export function distanceKm(a: Coordinates, b: Coordinates): number {
+  const R = 6371;
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+  const lat1 = (a.lat * Math.PI) / 180;
+  const lat2 = (b.lat * Math.PI) / 180;
+  const x =
+    Math.sin(dLat / 2) ** 2 +
+    Math.sin(dLng / 2) ** 2 * Math.cos(lat1) * Math.cos(lat2);
+  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+}
+
+/** True when coords are plausibly in the Lusaka service area */
+export function isNearLusaka(coords: Coordinates, radiusKm = 120): boolean {
+  return distanceKm(coords, LUSAKA_CENTER) <= radiusKm;
+}
+
+/**
+ * Ignore emulator / stale GPS that would zoom the map to another continent.
+ * Returns coords only when they are near Lusaka or near known car washes.
+ */
+export function sanitizeUserLocationForMap(
+  userCoords: Coordinates | undefined,
+  markerCoords: Coordinates[] = []
+): Coordinates | undefined {
+  if (!userCoords) return undefined;
+  if (isNearLusaka(userCoords)) return userCoords;
+
+  if (markerCoords.length > 0) {
+    const nearestKm = Math.min(...markerCoords.map((m) => distanceKm(userCoords, m)));
+    if (nearestKm <= 60) return userCoords;
+  }
+
+  return undefined;
+}
+
+export type LocationPermissionStatus = 'undetermined' | 'granted' | 'denied';
+
+export interface ResolvedUserLocation {
+  coords?: Coordinates;
+  permission: LocationPermissionStatus;
+  loading: boolean;
+  error: string | null;
+  /** Raw GPS reading — may be outside Lusaka (e.g. emulator default) */
+  rawCoords?: Coordinates;
+}
+
+/**
+ * Request permission, read last-known position, then fetch a fresh fix.
+ */
+export async function resolveUserLocation(): Promise<ResolvedUserLocation> {
+  try {
+    const servicesOn = await Location.hasServicesEnabledAsync();
+    if (!servicesOn) {
+      return {
+        permission: 'denied',
+        loading: false,
+        error: 'Turn on location services in your device settings.',
+      };
+    }
+
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== 'granted') {
+      return {
+        permission: 'denied',
+        loading: false,
+        error: 'Location permission is required to show car washes near you.',
+      };
+    }
+
+    let rawCoords: Coordinates | undefined;
+
+    const last = await Location.getLastKnownPositionAsync();
+    if (last) {
+      rawCoords = {
+        lat: last.coords.latitude,
+        lng: last.coords.longitude,
+      };
+    }
+
+    const pos = await Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.High,
+      mayShowUserSettingsDialog: true,
+    });
+
+    rawCoords = {
+      lat: pos.coords.latitude,
+      lng: pos.coords.longitude,
+    };
+
+    return {
+      coords: rawCoords,
+      rawCoords,
+      permission: 'granted',
+      loading: false,
+      error: null,
+    };
+  } catch (error: any) {
+    return {
+      permission: 'undetermined',
+      loading: false,
+      error: error?.message || 'Could not detect your location.',
+    };
+  }
+}
+
 /**
  * Request location permissions
  */

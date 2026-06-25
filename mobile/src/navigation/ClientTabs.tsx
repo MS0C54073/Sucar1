@@ -8,7 +8,7 @@ import MyBookingsScreen from '../screens/client/MyBookingsScreen';
 
 import VehicleListScreen from '../screens/client/VehicleListScreen';
 
-import FavoritesScreen from '../screens/FavoritesScreen';
+import DealsMapScreen from '../screens/client/DealsMapScreen';
 
 import ProfileScreen from '../screens/ProfileScreen';
 
@@ -28,7 +28,7 @@ const CLIENT_ICONS: Record<string, [string, string]> = {
 
   MyCarTab: ['car-sport', 'car-sport-outline'],
 
-  DealsTab: ['pricetag', 'pricetag-outline'],
+  DealsTab: ['shield-checkmark', 'shield-checkmark-outline'],
 
   ProfileTab: ['person', 'person-outline'],
 
@@ -74,7 +74,7 @@ const ClientTabs = () => (
 
     <Tab.Screen name="MyCarTab" component={VehicleListScreen} options={{ title: 'My Car' }} />
 
-    <Tab.Screen name="DealsTab" component={FavoritesScreen} options={{ title: 'Deals' }} />
+    <Tab.Screen name="DealsTab" component={DealsMapScreen} options={{ title: 'Nearby' }} />
 
     <Tab.Screen name="ProfileTab" component={ProfileScreen} options={{ title: 'Profile' }} />
 

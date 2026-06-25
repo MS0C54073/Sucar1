@@ -12,6 +12,8 @@ interface ClientHomeHeaderProps {
   firstName: string;
   searchQuery: string;
   onSearchChange: (q: string) => void;
+  onSearchFocus?: () => void;
+  onSearchBlur?: () => void;
   notificationCount?: number;
 }
 
@@ -19,6 +21,8 @@ const ClientHomeHeader = ({
   firstName,
   searchQuery,
   onSearchChange,
+  onSearchFocus,
+  onSearchBlur,
   notificationCount = 0,
 }: ClientHomeHeaderProps) => {
   const navigation = useNavigation();
@@ -82,6 +86,8 @@ const ClientHomeHeader = ({
           placeholderTextColor={ClientColors.textMuted}
           value={searchQuery}
           onChangeText={onSearchChange}
+          onFocus={onSearchFocus}
+          onBlur={onSearchBlur}
           returnKeyType="search"
           autoCorrect={false}
           autoCapitalize="none"
@@ -100,7 +106,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: AppLayout.screenPadding,
     paddingTop: 8,
     paddingBottom: 22,
-    overflow: 'hidden',
+    overflow: 'visible',
+    zIndex: 10,
   },
   decorA: {
     position: 'absolute',

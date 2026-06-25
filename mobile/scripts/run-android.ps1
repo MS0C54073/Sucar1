@@ -28,10 +28,31 @@ function Get-OnlineDevice {
     return ($lines | Select-String '^\S+\s+device$').Count -gt 0
 }
 
+function Test-UnauthorizedDevice {
+    $lines = & $adb devices 2>&1
+    return ($lines | Select-String 'unauthorized').Count -gt 0
+}
+
+function Get-FreeMetroPort {
+    param([int[]]$Candidates = @(8081, 8082, 8083, 8084, 8085))
+    foreach ($port in $Candidates) {
+        $inUse = netstat -ano | Select-String ":$port\s" | Select-String 'LISTENING'
+        if (-not $inUse) { return $port }
+    }
+    return 8090
+}
+
 function Start-EmulatorIfNeeded {
     & $adb kill-server | Out-Null
     Start-Sleep -Seconds 1
     & $adb start-server | Out-Null
+
+    if (Test-UnauthorizedDevice) {
+        Write-Host 'USB device is unauthorized.' -ForegroundColor Red
+        Write-Host 'On your phone: Settings -> Developer options -> Revoke USB debugging authorizations,' -ForegroundColor Yellow
+        Write-Host 'then reconnect USB and tap Allow on the debugging prompt.' -ForegroundColor Yellow
+        exit 1
+    }
 
     if (Get-OnlineDevice) {
         Write-Host 'Android device already online.' -ForegroundColor Green
@@ -76,8 +97,21 @@ function Start-EmulatorIfNeeded {
 $mobileRoot = Split-Path $PSScriptRoot -Parent
 Set-Location $mobileRoot
 
+# Clear stale Metro instances that block Expo from starting
+& (Join-Path $PSScriptRoot 'kill-metro.ps1')
+
 Start-EmulatorIfNeeded
 
+$metroPort = Get-FreeMetroPort
+Write-Host "Using Metro port $metroPort" -ForegroundColor Cyan
+
+# Route device traffic to dev machine (physical USB + emulator)
+& $adb reverse tcp:5000 tcp:5000 2>$null | Out-Null
+& $adb reverse tcp:$metroPort tcp:$metroPort 2>$null | Out-Null
+
 Write-Host "Launching SuCAR ($Variant) on Android..." -ForegroundColor Cyan
+Write-Host 'Ensure backend is running: cd backend && npm run dev' -ForegroundColor Gray
+
 $env:APP_VARIANT = $Variant
-npx expo start --android
+$env:EXPO_NO_DOTENV = '0'
+npx expo start --android --port $metroPort

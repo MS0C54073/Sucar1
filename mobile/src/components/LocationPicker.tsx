@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,13 +7,14 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
-  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getCurrentPosition, Coordinates } from '../services/locationService';
 import { searchLocations, reverseGeocode, GeocodingResult } from '../services/geocodingService';
 import { useMapbox } from '../context/MapboxContext';
 import { ClientColors } from '../constants/sucarTheme';
+import SearchAutocomplete, { AutocompleteItem } from './ui/SearchAutocomplete';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 
 interface LocationPickerProps {
   onLocationSelect: (location: string, coordinates: Coordinates) => void;
@@ -41,6 +42,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const debouncedLocation = useDebouncedValue(location, 300);
   const { token: mapboxToken, loading: tokenLoading } = useMapbox();
 
   useEffect(() => {
@@ -63,22 +65,25 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       });
   }, []);
 
-  // Search locations with debounce — re-runs when token becomes available
+  // Search locations when debounced query changes — re-runs when token becomes available
   useEffect(() => {
-    if (!location || location.length < 2) {
+    if (!debouncedLocation || debouncedLocation.length < 2) {
       setSearchResults([]);
-      setShowResults(false);
       setSearchError(null);
+      if (debouncedLocation.length < 2) setShowResults(false);
       return;
     }
 
     if (tokenLoading) return;
 
-    const timeoutId = setTimeout(async () => {
+    let cancelled = false;
+
+    (async () => {
       setIsSearching(true);
       setSearchError(null);
       try {
-        const results = await searchLocations(location, userLocation || undefined);
+        const results = await searchLocations(debouncedLocation, userLocation || undefined);
+        if (cancelled) return;
         setSearchResults(results);
         setShowResults(true);
         if (results.length === 0 && !mapboxToken) {
@@ -87,15 +92,30 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
           setSearchError('No locations found. Try a different search.');
         }
       } catch {
-        setSearchError('Search failed. Check your connection.');
-        setSearchResults([]);
+        if (!cancelled) {
+          setSearchError('Search failed. Check your connection.');
+          setSearchResults([]);
+        }
       } finally {
-        setIsSearching(false);
+        if (!cancelled) setIsSearching(false);
       }
-    }, 300);
+    })();
 
-    return () => clearTimeout(timeoutId);
-  }, [location, userLocation, mapboxToken, tokenLoading]);
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedLocation, userLocation, mapboxToken, tokenLoading]);
+
+  const autocompleteItems: AutocompleteItem[] = useMemo(
+    () =>
+      searchResults.map((r) => ({
+        id: r.id,
+        title: r.placeName.split(',')[0]?.trim() || r.placeName,
+        subtitle: r.context?.length ? r.context.join(', ') : r.placeName,
+        icon: 'location-outline' as const,
+      })),
+    [searchResults]
+  );
 
   const handleLocationChange = (text: string) => {
     setLocation(text);
@@ -175,35 +195,19 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       </View>
 
       {/* Autocomplete Results */}
-      {showResults && searchResults.length > 0 && (
-        <ScrollView
-          style={styles.resultsContainer}
-          nestedScrollEnabled={true}
-          keyboardShouldPersistTaps="always"
-        >
-          {searchResults.map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              style={styles.resultItem}
-              onPressIn={() => handleResultSelect(item)}
-            >
-              <Ionicons name="location-outline" size={18} color="#64748B" style={styles.resultIcon} />
-              <View style={styles.resultContent}>
-                <Text style={styles.resultName}>{item.placeName}</Text>
-                {item.context && item.context.length > 0 && (
-                  <Text style={styles.resultContext}>{item.context.join(', ')}</Text>
-                )}
-              </View>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      )}
-
-      {showResults && searchResults.length === 0 && location.length >= 2 && !isSearching && searchError && (
-        <View style={styles.noResults}>
-          <Text style={styles.noResultsText}>{searchError}</Text>
-        </View>
-      )}
+      <SearchAutocomplete
+        visible={showResults && location.length >= 2}
+        loading={isSearching}
+        items={autocompleteItems}
+        onSelect={(item) => {
+          const result = searchResults.find((r) => r.id === item.id);
+          if (result) handleResultSelect(result);
+        }}
+        emptyMessage={searchError || 'No locations found'}
+        headerLabel="Address suggestions"
+        maxHeight={200}
+        embedded
+      />
 
       {coordinates && (
         <View style={styles.coordinatesContainer}>
@@ -269,42 +273,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  resultsContainer: {
-    maxHeight: 200,
-    backgroundColor: '#fff',
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    marginTop: 5,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  resultItem: {
-    flexDirection: 'row',
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  resultIcon: {
-    fontSize: 20,
-    marginRight: 10,
-  },
-  resultContent: {
-    flex: 1,
-  },
-  resultName: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
-    marginBottom: 2,
-  },
-  resultContext: {
-    fontSize: 12,
-    color: '#666',
-  },
   coordinatesContainer: {
     marginTop: 5,
     padding: 8,
@@ -320,19 +288,6 @@ const styles = StyleSheet.create({
     color: '#999',
     marginTop: 5,
     fontStyle: 'italic',
-  },
-  noResults: {
-    marginTop: 6,
-    padding: 10,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  noResultsText: {
-    fontSize: 12,
-    color: '#64748B',
-    textAlign: 'center',
   },
 });
 

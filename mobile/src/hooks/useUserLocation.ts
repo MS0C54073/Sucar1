@@ -1,45 +1,67 @@
-import { useEffect, useState } from 'react';
-import * as Location from 'expo-location';
-import { Coordinates } from '../services/locationService';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  Coordinates,
+  resolveUserLocation,
+  sanitizeUserLocationForMap,
+  LocationPermissionStatus,
+  LUSAKA_CENTER,
+  isNearLusaka,
+  distanceKm,
+} from '../services/locationService';
 
-export function useUserLocation() {
+export { LUSAKA_CENTER, isNearLusaka, distanceKm };
+
+export function useUserLocation(markerCoords: Coordinates[] = []) {
   const [coords, setCoords] = useState<Coordinates | undefined>();
+  const [rawCoords, setRawCoords] = useState<Coordinates | undefined>();
+  const [loading, setLoading] = useState(true);
+  const [permission, setPermission] = useState<LocationPermissionStatus>('undetermined');
   const [error, setError] = useState<string | null>(null);
 
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    const result = await resolveUserLocation();
+    setPermission(result.permission);
+    setRawCoords(result.rawCoords || result.coords);
+
+    if (result.error) {
+      setError(result.error);
+    }
+
+    const sanitized = sanitizeUserLocationForMap(result.coords, markerCoords);
+    setCoords(sanitized);
+    setLoading(false);
+  }, [markerCoords]);
+
   useEffect(() => {
-    (async () => {
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          setError('Location permission denied');
-          return;
-        }
-        const pos = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
-        setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-      } catch (e: any) {
-        setError(e?.message || 'Location unavailable');
-      }
-    })();
-  }, []);
+    refresh();
+  }, [refresh]);
 
-  return { coords, error };
+  /** Re-sanitize when marker list loads after GPS fix */
+  useEffect(() => {
+    if (!rawCoords || markerCoords.length === 0) return;
+    const sanitized = sanitizeUserLocationForMap(rawCoords, markerCoords);
+    setCoords((prev) => {
+      if (prev?.lat === sanitized?.lat && prev?.lng === sanitized?.lng) return prev;
+      return sanitized;
+    });
+  }, [rawCoords, markerCoords]);
+
+  return {
+    coords,
+    rawCoords,
+    loading,
+    permission,
+    error,
+    refresh,
+    /** True when GPS was read but rejected as implausible for Lusaka map */
+    gpsRejected: Boolean(rawCoords && !coords),
+  };
 }
 
-/** Haversine distance in km */
-export function distanceKm(a: Coordinates, b: Coordinates): number {
-  const R = 6371;
-  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
-  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
-  const lat1 = (a.lat * Math.PI) / 180;
-  const lat2 = (b.lat * Math.PI) / 180;
-  const x =
-    Math.sin(dLat / 2) ** 2 +
-    Math.sin(dLng / 2) ** 2 * Math.cos(lat1) * Math.cos(lat2);
-  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
-}
-
+/** Haversine distance in km — kept for backward compatibility */
 export function parseWashCoords(wash: any): Coordinates | undefined {
   const raw = wash?.locationCoordinates || wash?.coordinates;
   if (!raw) return undefined;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -18,14 +18,25 @@ import ServicePackageCard from '../../components/ui/ServicePackageCard';
 import CarWashCard, { CarWashListItem } from '../../components/ui/CarWashCard';
 import QuickBookBlock from '../../components/ui/QuickBookBlock';
 import ClientHomeHeader from '../../components/client/ClientHomeHeader';
+import SearchAutocomplete, { AutocompleteItem } from '../../components/ui/SearchAutocomplete';
 import { ClientColors, POPULAR_SERVICES, AppLayout } from '../../constants/sucarTheme';
 import { useUserLocation, distanceKm, parseWashCoords } from '../../hooks/useUserLocation';
 import { useUnreadNotifications } from '../../hooks/useUnreadNotifications';
+import { useDebouncedValue } from '../../hooks/useDebouncedValue';
+import {
+  fetchHomeSearchSuggestions,
+  SearchSuggestion,
+} from '../../services/homeSearchService';
 
 const ClientHomeScreen = () => {
   const navigation = useNavigation<any>();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debouncedQuery = useDebouncedValue(searchQuery, 300);
   const [category, setCategory] = useState('all');
   const [carWashes, setCarWashes] = useState<CarWashListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,6 +61,93 @@ const ClientHomeScreen = () => {
   useEffect(() => {
     fetchWashes();
   }, []);
+
+  useEffect(() => {
+    if (!searchFocused) {
+      setSuggestions([]);
+      return;
+    }
+
+    const q = debouncedQuery.trim();
+    if (q.length < 1) {
+      setSuggestions([]);
+      setLoadingSuggestions(false);
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingSuggestions(true);
+
+    fetchHomeSearchSuggestions(q, carWashes, userCoords || undefined)
+      .then((items) => {
+        if (!cancelled) setSuggestions(items);
+      })
+      .catch(() => {
+        if (!cancelled) setSuggestions([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingSuggestions(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedQuery, searchFocused, carWashes, userCoords]);
+
+  const suggestionItems: AutocompleteItem[] = useMemo(
+    () =>
+      suggestions.map((s) => ({
+        id: s.id,
+        title: s.title,
+        subtitle: s.subtitle,
+        icon: s.type === 'carwash' ? 'car-outline' : 'location-outline',
+        badge: s.type === 'carwash' ? 'Car wash' : undefined,
+      })),
+    [suggestions]
+  );
+
+  const handleSearchFocus = useCallback(() => {
+    if (blurTimerRef.current) {
+      clearTimeout(blurTimerRef.current);
+      blurTimerRef.current = null;
+    }
+    setSearchFocused(true);
+  }, []);
+
+  const handleSearchBlur = useCallback(() => {
+    blurTimerRef.current = setTimeout(() => setSearchFocused(false), 200);
+  }, []);
+
+  const openBook = useCallback(
+    (wash: CarWashListItem) => {
+      navigation.navigate('Booking', { carWashId: wash.id });
+    },
+    [navigation]
+  );
+
+  const goToDealsMap = useCallback(() => {
+    navigation.navigate('DealsTab');
+  }, [navigation]);
+
+  const handleSuggestionSelect = useCallback(
+    (item: AutocompleteItem) => {
+      const match = suggestions.find((s) => s.id === item.id);
+      if (!match) return;
+
+      setSearchFocused(false);
+      setSuggestions([]);
+
+      if (match.type === 'carwash' && match.carWash) {
+        openBook(match.carWash);
+        return;
+      }
+
+      if (match.type === 'place') {
+        setSearchQuery(match.subtitle || match.title);
+      }
+    },
+    [suggestions, openBook]
+  );
 
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -98,7 +196,22 @@ const ClientHomeScreen = () => {
           firstName={firstName}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
+          onSearchFocus={handleSearchFocus}
+          onSearchBlur={handleSearchBlur}
           notificationCount={unreadCount}
+        />
+
+        <SearchAutocomplete
+          visible={searchFocused && searchQuery.trim().length > 0}
+          loading={loadingSuggestions}
+          items={suggestionItems}
+          onSelect={handleSuggestionSelect}
+          emptyMessage={
+            debouncedQuery.trim().length >= 2
+              ? 'No car washes or places found'
+              : 'Keep typing for place suggestions'
+          }
+          headerLabel="Suggestions"
         />
 
         <View style={styles.body}>
@@ -122,17 +235,19 @@ const ClientHomeScreen = () => {
 
           <View style={styles.secHead}>
             <Text style={styles.secTitle}>Quick Book</Text>
-            <TouchableOpacity onPress={() => featured && openBook(featured)}>
+            <TouchableOpacity onPress={goToDealsMap}>
               <Text style={styles.secLink}>View all</Text>
             </TouchableOpacity>
           </View>
           <QuickBookBlock
+            washId={featured?.id}
             washName={featured?.carWashName || featured?.name}
             distance={featuredDistance}
             rating={featured?.rating ? `${featured.rating.toFixed(1)}` : '4.8'}
             userLocation={userCoords}
             washLocation={featuredCoords}
             onBook={() => (featured ? openBook(featured) : navigation.navigate('Booking'))}
+            onMapPress={goToDealsMap}
           />
 
           <View style={[styles.secHead, { marginTop: 12 }]}>
@@ -156,10 +271,6 @@ const ClientHomeScreen = () => {
       </ScrollView>
     </SafeAreaView>
   );
-
-  function openBook(wash: CarWashListItem) {
-    navigation.navigate('Booking', { carWashId: wash.id });
-  }
 };
 
 const styles = StyleSheet.create({
