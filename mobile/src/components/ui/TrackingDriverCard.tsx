@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ClientColors } from '../../constants/sucarTheme';
+import { getStatusLabel, isActiveBooking } from '../../constants/bookingStatus';
 
 interface TrackingDriverCardProps {
   driverName?: string;
@@ -12,10 +13,8 @@ interface TrackingDriverCardProps {
   onChat?: () => void;
 }
 
-const ACTIVE = ['accepted', 'picked_up', 'at_wash', 'washing_bay', 'drying_bay'];
-
-export const isActiveBooking = (status?: string) =>
-  status ? ACTIVE.includes(status) : false;
+// Re-exported for backwards compatibility; canonical source is bookingStatus.ts
+export { isActiveBooking };
 
 const TrackingDriverCard = ({
   driverName,
@@ -25,10 +24,7 @@ const TrackingDriverCard = ({
   status,
   onChat,
 }: TrackingDriverCardProps) => {
-  const label = status
-    ?.split('_')
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ') || 'En route';
+  const label = status ? getStatusLabel(status) : 'En route';
 
   return (
     <View style={styles.sheet}>

@@ -38,6 +38,7 @@ const BookingScreen = () => {
   const [selectedVehicle, setSelectedVehicle] = useState('');
   const [pickupLocation, setPickupLocation] = useState('');
   const [pickupCoordinates, setPickupCoordinates] = useState<Coordinates | undefined>();
+  const [bookingType, setBookingType] = useState<'pickup_delivery' | 'drive_in'>('pickup_delivery');
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { user } = useAuth();
@@ -114,8 +115,11 @@ const BookingScreen = () => {
     console.log('📍 Location selected:', location, coordinates);
   };
 
+  const isPickupDelivery = bookingType === 'pickup_delivery';
+
   const handleReview = () => {
-    if (!selectedCarWash || !selectedService || !selectedVehicle || !pickupLocation) {
+    const baseValid = selectedCarWash && selectedService && selectedVehicle;
+    if (!baseValid || (isPickupDelivery && !pickupLocation)) {
       Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
@@ -126,6 +130,7 @@ const BookingScreen = () => {
     const driver = drivers.find((d: any) => (d.id || d._id) === selectedDriver);
 
     navigation.navigate('ConfirmBooking', {
+      bookingType,
       carWashId: selectedCarWash,
       carWashName: wash?.carWashName || wash?.name || 'Car wash',
       serviceId: selectedService,
@@ -135,12 +140,13 @@ const BookingScreen = () => {
       vehicleLabel: vehicle
         ? `${vehicle.make} ${vehicle.model} · ${vehicle.plateNo}`
         : 'Vehicle',
-      driverId: selectedDriver || undefined,
-      driverName: driver?.name,
-      pickupLocation,
-      pickupCoordinates: pickupCoordinates
-        ? { lat: pickupCoordinates.lat, lng: pickupCoordinates.lng }
-        : undefined,
+      driverId: isPickupDelivery ? selectedDriver || undefined : undefined,
+      driverName: isPickupDelivery ? driver?.name : undefined,
+      pickupLocation: isPickupDelivery ? pickupLocation : '',
+      pickupCoordinates:
+        isPickupDelivery && pickupCoordinates
+          ? { lat: pickupCoordinates.lat, lng: pickupCoordinates.lng }
+          : undefined,
     });
   };
 
@@ -157,6 +163,45 @@ const BookingScreen = () => {
             <Ionicons name="calendar-outline" size={28} color={theme.colors.primary} />
             <Text style={[styles.title, { color: theme.colors.textPrimary }]}>New Booking</Text>
           </Animatable.View>
+
+          <View style={styles.segment}>
+            {([
+              { key: 'pickup_delivery', label: 'Pickup & Delivery', icon: 'car-outline' as const },
+              { key: 'drive_in', label: 'Drive-In', icon: 'business-outline' as const },
+            ] as const).map((opt) => {
+              const active = bookingType === opt.key;
+              return (
+                <TouchableOpacity
+                  key={opt.key}
+                  style={[
+                    styles.segmentBtn,
+                    active && { backgroundColor: theme.colors.primary },
+                  ]}
+                  onPress={() => setBookingType(opt.key)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name={opt.icon}
+                    size={16}
+                    color={active ? theme.colors.white : theme.colors.textSecondary}
+                  />
+                  <Text
+                    style={[
+                      styles.segmentText,
+                      { color: active ? theme.colors.white : theme.colors.textSecondary },
+                    ]}
+                  >
+                    {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          <Text style={styles.segmentHint}>
+            {isPickupDelivery
+              ? 'A driver collects your car and returns it after washing.'
+              : 'You drive to the car wash yourself — no pickup needed.'}
+          </Text>
 
           <View style={styles.section}>
             <Text style={styles.label}>
@@ -228,44 +273,50 @@ const BookingScreen = () => {
               </View>
             )}
 
-            <Text style={styles.label}>
-              <Ionicons name="person-outline" size={16} color={Colors.textSecondary} /> Select Driver (Optional)
-            </Text>
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={selectedDriver}
-                onValueChange={setSelectedDriver}
-                style={styles.picker}
-              >
-                <Picker.Item label="Auto Assign" value="" />
-                {drivers.map((driver: any) => (
-                  <Picker.Item key={driver.id || driver._id} label={driver.name} value={driver.id || driver._id} />
-                ))}
-              </Picker>
-            </View>
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.label}>
-              <Ionicons name="location-outline" size={16} color={Colors.textSecondary} /> Pickup Location *
-            </Text>
-            <LocationPicker
-              onLocationSelect={handleLocationSelect}
-              initialLocation={pickupLocation}
-              initialCoordinates={pickupCoordinates}
-            />
-
-            {/* Map Preview */}
-            {pickupCoordinates && (
-              <View style={styles.mapContainer}>
-                <Text style={styles.mapLabel}>Location Preview</Text>
-                <CustomMapView
-                  pickupLocation={pickupCoordinates}
-                  height={200}
-                />
-              </View>
+            {isPickupDelivery && (
+              <>
+                <Text style={styles.label}>
+                  <Ionicons name="person-outline" size={16} color={Colors.textSecondary} /> Select Driver (Optional)
+                </Text>
+                <View style={styles.pickerContainer}>
+                  <Picker
+                    selectedValue={selectedDriver}
+                    onValueChange={setSelectedDriver}
+                    style={styles.picker}
+                  >
+                    <Picker.Item label="Auto Assign" value="" />
+                    {drivers.map((driver: any) => (
+                      <Picker.Item key={driver.id || driver._id} label={driver.name} value={driver.id || driver._id} />
+                    ))}
+                  </Picker>
+                </View>
+              </>
             )}
           </View>
+
+          {isPickupDelivery && (
+            <View style={styles.section}>
+              <Text style={styles.label}>
+                <Ionicons name="location-outline" size={16} color={Colors.textSecondary} /> Pickup Location *
+              </Text>
+              <LocationPicker
+                onLocationSelect={handleLocationSelect}
+                initialLocation={pickupLocation}
+                initialCoordinates={pickupCoordinates}
+              />
+
+              {/* Map Preview */}
+              {pickupCoordinates && (
+                <View style={styles.mapContainer}>
+                  <Text style={styles.mapLabel}>Location Preview</Text>
+                  <CustomMapView
+                    pickupLocation={pickupCoordinates}
+                    height={200}
+                  />
+                </View>
+              )}
+            </View>
+          )}
 
           <Animatable.View animation="fadeInUp" duration={600} useNativeDriver>
             <TouchableOpacity
@@ -310,6 +361,32 @@ const styles = StyleSheet.create({
     fontSize: Typography['2xl'],
     fontWeight: Typography.bold,
     color: Colors.textPrimary,
+  },
+  segment: {
+    flexDirection: 'row',
+    backgroundColor: Colors.gray100,
+    borderRadius: BorderRadius.md,
+    padding: 4,
+    gap: 4,
+    marginBottom: Spacing.sm,
+  },
+  segmentBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.xs,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.sm,
+  },
+  segmentText: {
+    fontSize: Typography.sm,
+    fontWeight: Typography.semibold,
+  },
+  segmentHint: {
+    fontSize: Typography.xs,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.lg,
   },
   section: {
     marginBottom: Spacing.lg,

@@ -16,10 +16,11 @@ import { useAuth } from '../context/AuthContext';
 import CustomMapView from '../components/MapView';
 import { Coordinates } from '../services/locationService';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors, Typography, Spacing, BorderRadius, Shadows, StatusColors } from '../constants/theme';
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../constants/theme';
+import { getStatusColor, getStatusLabel, isActiveBooking } from '../constants/bookingStatus';
 import { ClientColors } from '../constants/sucarTheme';
 import { useTheme } from '../context/ThemeContext';
-import TrackingDriverCard, { isActiveBooking } from '../components/ui/TrackingDriverCard';
+import TrackingDriverCard from '../components/ui/TrackingDriverCard';
 import { isDriverApp } from '../config/appVariant';
 import { openDriverNavigation } from '../utils/navigation';
 
@@ -102,17 +103,6 @@ const BookingDetailScreen = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    return StatusColors[status] || Colors.gray500;
-  };
-
-  const getStatusLabel = (status: string) => {
-    return status
-      .split('_')
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-  };
-
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
@@ -184,17 +174,42 @@ const BookingDetailScreen = () => {
   const tracking = clientView && isActiveBooking(booking.status);
   const needsPickupConfirm = clientView && booking.status === 'picked_up_pending_confirmation';
 
-  const confirmPickup = async () => {
+  const isPaid = booking.paymentStatus === 'paid';
+  const deliveredToClient = booking.status === 'delivered_to_client' || booking.status === 'delivered';
+  // Driver/car-wash collects cash and confirms payment once the car is delivered back.
+  const canConfirmPayment = driverView && deliveredToClient && !isPaid;
+  // Client confirms final receipt — backend requires delivered_to_client + payment paid.
+  const canCompleteBooking = clientView && deliveredToClient && isPaid;
+  const awaitingPayment = clientView && deliveredToClient && !isPaid;
+
+  const updateStatus = async (status: string, successMsg: string) => {
     try {
-      const response = await apiClient.put(`/bookings/${bookingId}/status`, { status: 'picked_up' });
+      const response = await apiClient.put(`/bookings/${bookingId}/status`, { status });
       if (response.data.success) {
-        Alert.alert('Confirmed', 'Vehicle pickup confirmed.');
+        Alert.alert('Confirmed', successMsg);
         fetchBooking();
       } else {
-        Alert.alert('Error', response.data.message || 'Could not confirm pickup');
+        Alert.alert('Error', response.data.message || 'Action failed');
       }
     } catch (error: any) {
-      Alert.alert('Error', error?.message || 'Could not confirm pickup');
+      Alert.alert('Error', error?.message || error?.response?.data?.message || 'Action failed');
+    }
+  };
+
+  const confirmPickup = () => updateStatus('picked_up', 'Vehicle pickup confirmed.');
+  const completeBooking = () => updateStatus('completed', 'Thank you! Your booking is complete.');
+
+  const confirmPayment = async () => {
+    try {
+      const response = await apiClient.post('/payments/confirm', { bookingId });
+      if (response.data.success) {
+        Alert.alert('Payment confirmed', 'Cash payment has been recorded.');
+        fetchBooking();
+      } else {
+        Alert.alert('Error', response.data.message || 'Could not confirm payment');
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error?.message || error?.response?.data?.message || 'Could not confirm payment');
     }
   };
 
@@ -351,6 +366,40 @@ const BookingDetailScreen = () => {
               <Ionicons name="checkmark-circle" size={20} color={Colors.white} />
               <Text style={styles.cancelButtonText}>Confirm Vehicle Pickup</Text>
             </TouchableOpacity>
+          </Animatable.View>
+        )}
+        {canConfirmPayment && (
+          <Animatable.View animation="fadeInUp" duration={500} useNativeDriver style={styles.actions}>
+            <TouchableOpacity style={styles.confirmPickupBtn} onPress={confirmPayment} activeOpacity={0.85}>
+              <Ionicons name="cash-outline" size={20} color={Colors.white} />
+              <Text style={styles.cancelButtonText}>Confirm Cash Payment</Text>
+            </TouchableOpacity>
+          </Animatable.View>
+        )}
+        {awaitingPayment && (
+          <Animatable.View animation="fadeInUp" duration={500} useNativeDriver style={styles.actions}>
+            <View style={styles.infoBanner}>
+              <Ionicons name="time-outline" size={18} color={ClientColors.primary} />
+              <Text style={styles.infoBannerText}>
+                Your vehicle has been delivered. Awaiting payment confirmation.
+              </Text>
+            </View>
+          </Animatable.View>
+        )}
+        {canCompleteBooking && (
+          <Animatable.View animation="fadeInUp" duration={500} useNativeDriver style={styles.actions}>
+            <TouchableOpacity style={styles.confirmPickupBtn} onPress={completeBooking} activeOpacity={0.85}>
+              <Ionicons name="checkmark-done-circle" size={20} color={Colors.white} />
+              <Text style={styles.cancelButtonText}>Confirm Receipt & Complete</Text>
+            </TouchableOpacity>
+          </Animatable.View>
+        )}
+        {booking.status === 'completed' && (
+          <Animatable.View animation="fadeInUp" duration={500} useNativeDriver style={styles.actions}>
+            <View style={styles.completedBanner}>
+              <Ionicons name="checkmark-done-circle" size={20} color={Colors.success} />
+              <Text style={styles.completedBannerText}>This booking is complete.</Text>
+            </View>
           </Animatable.View>
         )}
         {canCancel && (
@@ -513,6 +562,34 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     color: Colors.white,
     fontSize: Typography.base,
+    fontWeight: Typography.semibold,
+  },
+  infoBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    backgroundColor: ClientColors.greenLight,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+  },
+  infoBannerText: {
+    flex: 1,
+    fontSize: Typography.sm,
+    color: ClientColors.primaryDark,
+    fontWeight: Typography.medium,
+  },
+  completedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    backgroundColor: Colors.successLight,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+  },
+  completedBannerText: {
+    fontSize: Typography.base,
+    color: Colors.success,
     fontWeight: Typography.semibold,
   },
   errorText: {

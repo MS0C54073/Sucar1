@@ -15,7 +15,14 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { apiClient } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
-import { Colors, Typography, Spacing, BorderRadius, StatusColors } from '../../constants/theme';
+import { Colors, Typography, Spacing, BorderRadius } from '../../constants/theme';
+import {
+  getStatusColor,
+  getStatusLabel,
+  getDriverNextAction,
+  getDriverWaitingHint,
+  type DriverAction,
+} from '../../constants/bookingStatus';
 import { DriverColors, AppLayout } from '../../constants/sucarTheme';
 import TabPageHeader from '../../components/layout/TabPageHeader';
 import { useTheme } from '../../context/ThemeContext';
@@ -88,22 +95,35 @@ const DriverBookingsScreen = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    return StatusColors[status] || Colors.gray500;
+  const handlePost = async (path: string, successMsg: string) => {
+    try {
+      const response = await apiClient.post(path);
+      if (response.data.success) {
+        Alert.alert('Success', successMsg);
+        fetchBookings();
+      } else {
+        Alert.alert('Error', response.data.message || 'Action failed');
+      }
+    } catch (error: any) {
+      const errorMessage = error?.message || error?.response?.data?.message || 'Action failed';
+      Alert.alert('Error', errorMessage);
+      console.error('Driver action error:', error);
+    }
   };
 
-  const getStatusLabel = (status: string) => {
-    return status
-      .split('_')
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-  };
-
-  const getNextAction = (status: string) => {
-    if (status === 'pending') return { label: 'Accept', action: 'accept', icon: 'checkmark-circle' as const };
-    if (status === 'accepted') return { label: 'Mark Picked Up', action: 'picked_up', icon: 'car' as const };
-    if (status === 'wash_completed') return { label: 'Mark Delivered', action: 'delivered', icon: 'checkmark-done' as const };
-    return null;
+  const runDriverAction = (bookingId: string, action: DriverAction) => {
+    switch (action.kind) {
+      case 'accept':
+        return handleAccept(bookingId);
+      case 'status':
+        return handleStatusUpdate(bookingId, action.apiStatus as string);
+      case 'return':
+        return handlePost(`/bookings/${bookingId}/return-in-progress`, 'Return started');
+      case 'delivery':
+        return handlePost(`/bookings/${bookingId}/out-for-delivery`, 'Marked out for delivery');
+      default:
+        return undefined;
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -117,7 +137,8 @@ const DriverBookingsScreen = () => {
   };
 
   const renderBooking = ({ item, index }: any) => {
-    const nextAction = getNextAction(item.status);
+    const nextAction = getDriverNextAction(item);
+    const waitingHint = nextAction ? null : getDriverWaitingHint(item.status);
 
     return (
       <Animatable.View animation="fadeInUp" duration={600} delay={(index || 0) * 80} useNativeDriver>
@@ -170,24 +191,24 @@ const DriverBookingsScreen = () => {
             <Text style={[styles.amountLabel, { color: theme.colors.textSecondary }]}>Amount</Text>
             <Text style={[styles.amount, { color: theme.colors.primary }]}>K{item.totalAmount || '0'}</Text>
           </View>
-          {nextAction && (
+          {nextAction ? (
             <TouchableOpacity
               style={[styles.actionButton, { backgroundColor: theme.colors.primary }]}
               onPress={(e) => {
                 e.stopPropagation();
-                const bookingId = item.id || item._id;
-                if (nextAction.action === 'accept') {
-                  handleAccept(bookingId);
-                } else {
-                  handleStatusUpdate(bookingId, nextAction.action);
-                }
+                runDriverAction(item.id || item._id, nextAction);
               }}
               activeOpacity={0.7}
             >
               <Ionicons name={nextAction.icon} size={16} color={theme.colors.white} />
               <Text style={[styles.actionButtonText, { color: theme.colors.white }]}>{nextAction.label}</Text>
             </TouchableOpacity>
-          )}
+          ) : waitingHint ? (
+            <View style={styles.waitingHint}>
+              <Ionicons name="time-outline" size={14} color={Colors.textSecondary} />
+              <Text style={styles.waitingHintText} numberOfLines={2}>{waitingHint}</Text>
+            </View>
+          ) : null}
         </View>
         </TouchableOpacity>
       </Animatable.View>
@@ -346,6 +367,19 @@ const styles = StyleSheet.create({
     color: Colors.white,
     fontSize: Typography.sm,
     fontWeight: Typography.semibold,
+  },
+  waitingHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    flexShrink: 1,
+    maxWidth: '60%',
+  },
+  waitingHintText: {
+    fontSize: Typography.xs,
+    color: Colors.textSecondary,
+    fontStyle: 'italic',
+    flexShrink: 1,
   },
   empty: {
     flex: 1,

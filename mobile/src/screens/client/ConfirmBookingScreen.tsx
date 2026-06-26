@@ -15,6 +15,7 @@ import { apiClient } from '../../utils/api';
 import { ClientColors } from '../../constants/sucarTheme';
 
 export type ConfirmBookingParams = {
+  bookingType?: 'pickup_delivery' | 'drive_in';
   carWashId: string;
   carWashName: string;
   serviceId: string;
@@ -34,6 +35,9 @@ const ConfirmBookingScreen = () => {
   const params = route.params as ConfirmBookingParams;
   const [loading, setLoading] = useState(false);
 
+  const bookingType = params.bookingType || 'pickup_delivery';
+  const isPickupDelivery = bookingType === 'pickup_delivery';
+
   const confirm = async () => {
     setLoading(true);
     try {
@@ -41,11 +45,13 @@ const ConfirmBookingScreen = () => {
         carWashId: params.carWashId,
         serviceId: params.serviceId,
         vehicleId: params.vehicleId,
-        pickupLocation: params.pickupLocation,
-        bookingType: 'pickup_delivery',
+        bookingType,
       };
-      if (params.driverId) bookingData.driverId = params.driverId;
-      if (params.pickupCoordinates) bookingData.pickupCoordinates = params.pickupCoordinates;
+      if (isPickupDelivery) {
+        bookingData.pickupLocation = params.pickupLocation;
+        if (params.driverId) bookingData.driverId = params.driverId;
+        if (params.pickupCoordinates) bookingData.pickupCoordinates = params.pickupCoordinates;
+      }
 
       const response = await apiClient.post('/bookings', bookingData);
       if (response.data.success) {
@@ -65,10 +71,21 @@ const ConfirmBookingScreen = () => {
   const rows = [
     { icon: 'car-sport-outline' as const, title: params.serviceName, sub: params.vehicleLabel, right: `K${params.servicePrice}` },
     { icon: 'business-outline' as const, title: params.carWashName, sub: 'Car wash location' },
-    { icon: 'location-outline' as const, title: 'Pickup', sub: params.pickupLocation },
-    ...(params.driverName
-      ? [{ icon: 'person-outline' as const, title: params.driverName, sub: 'Assigned driver' }]
-      : [{ icon: 'person-outline' as const, title: 'Auto assign', sub: 'Nearest available driver' }]),
+    {
+      icon: isPickupDelivery ? ('car-outline' as const) : ('business-outline' as const),
+      title: isPickupDelivery ? 'Pickup & Delivery' : 'Drive-In',
+      sub: isPickupDelivery
+        ? 'Driver collects and returns your car'
+        : 'You drive to the car wash',
+    },
+    ...(isPickupDelivery
+      ? [{ icon: 'location-outline' as const, title: 'Pickup', sub: params.pickupLocation }]
+      : []),
+    ...(isPickupDelivery
+      ? params.driverName
+        ? [{ icon: 'person-outline' as const, title: params.driverName, sub: 'Assigned driver' }]
+        : [{ icon: 'person-outline' as const, title: 'Auto assign', sub: 'Nearest available driver' }]
+      : []),
   ];
 
   return (
