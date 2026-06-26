@@ -7,6 +7,8 @@ import {
     SafeAreaView,
     TouchableOpacity,
     RefreshControl,
+    Alert,
+    ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Animatable from 'react-native-animatable';
@@ -15,18 +17,21 @@ import { useTheme } from '../../context/ThemeContext';
 import { apiClient } from '../../utils/api';
 import GradientBackground from '../../components/common/GradientBackground';
 import StatCard from '../../components/common/StatCard';
-import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import { Colors, Typography, Spacing, BorderRadius, Shadows, StatusColors } from '../../constants/theme';
 
 type TabKey = 'pending' | 'in_progress' | 'done';
 
 interface QueueItem {
     id: string;
-    vehicle_make: string;
-    vehicle_model: string;
-    vehicle_plate: string;
-    client_name: string;
+    vehicleId?: { make?: string; model?: string; plateNo?: string };
+    clientId?: { name?: string };
+    carWashId?: { carWashName?: string; name?: string };
     status: string;
-    created_at: string;
+    bookingType?: string;
+    paymentStatus?: string;
+    totalAmount?: number;
+    createdAt?: string;
+    created_at?: string;
 }
 
 const TABS: { key: TabKey; label: string; icon: string }[] = [
@@ -36,13 +41,15 @@ const TABS: { key: TabKey; label: string; icon: string }[] = [
 ];
 
 const statusGroupMap: Record<TabKey, string[]> = {
-    pending: ['pending', 'accepted', 'picked_up'],
+    pending: ['pending', 'accepted', 'picked_up', 'picked_up_pending_confirmation', 'delivered_to_wash', 'waiting_bay'],
     in_progress: ['at_wash', 'washing_bay', 'drying_bay'],
-    done: ['wash_completed', 'completed', 'delivered'],
+    done: ['wash_completed', 'delivered', 'delivered_to_client', 'completed'],
 };
 
 /**
- * Carwash owner dashboard with queue management tabs.
+ * Carwash owner dashboard with queue management tabs and action buttons.
+ * Implements full car wash workflow: confirm arrival, start washing, move to drying,
+ * complete service, and confirm payment.
  */
 const CarwashHomeScreen = () => {
     const { user } = useAuth();
@@ -51,18 +58,21 @@ const CarwashHomeScreen = () => {
     const [allBookings, setAllBookings] = useState<QueueItem[]>([]);
     const [refreshing, setRefreshing] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
 
     const fetchBookings = useCallback(async () => {
         try {
             const res = await apiClient.get('/bookings');
             const bookings = (res.data.data || []).map((b: any) => ({
                 id: b._id || b.id,
-                vehicle_make: b.vehicle?.make || 'Unknown',
-                vehicle_model: b.vehicle?.model || '',
-                vehicle_plate: b.vehicle?.plate_number || '',
-                client_name: b.client?.name || 'Client',
+                vehicleId: b.vehicleId || b.vehicle,
+                clientId: b.clientId || b.client,
+                carWashId: b.carWashId || b.carWash,
                 status: b.status,
-                created_at: b.created_at,
+                bookingType: b.bookingType || b.booking_type,
+                paymentStatus: b.paymentStatus || b.payment_status,
+                totalAmount: b.totalAmount || b.total_amount,
+                createdAt: b.createdAt || b.created_at,
             }));
             setAllBookings(bookings);
         } catch {
@@ -80,6 +90,56 @@ const CarwashHomeScreen = () => {
     const onRefresh = () => {
         setRefreshing(true);
         fetchBookings();
+    };
+
+    const handleStatusUpdate = (bookingId: string, status: string, confirmMsg: string) => {
+        Alert.alert('Confirm', confirmMsg, [
+            { text: 'Cancel', style: 'cancel' },
+            {
+                text: 'Confirm',
+                onPress: async () => {
+                    setActionLoading(bookingId);
+                    try {
+                        const response = await apiClient.put(`/bookings/${bookingId}/status`, { status });
+                        if (response.data.success !== false) {
+                            Alert.alert('Success', 'Status updated');
+                            fetchBookings();
+                        } else {
+                            Alert.alert('Error', response.data.message || 'Failed to update');
+                        }
+                    } catch (error: any) {
+                        Alert.alert('Error', error?.message || 'Failed to update status');
+                    } finally {
+                        setActionLoading(null);
+                    }
+                },
+            },
+        ]);
+    };
+
+    const handleConfirmPayment = (bookingId: string) => {
+        Alert.alert('Confirm Payment', 'Confirm that payment has been received?', [
+            { text: 'Cancel', style: 'cancel' },
+            {
+                text: 'Confirm',
+                onPress: async () => {
+                    setActionLoading(bookingId);
+                    try {
+                        const response = await apiClient.post('/payments/confirm', { bookingId });
+                        if (response.data.success !== false) {
+                            Alert.alert('Success', 'Payment confirmed');
+                            fetchBookings();
+                        } else {
+                            Alert.alert('Error', response.data.message || 'Failed to confirm payment');
+                        }
+                    } catch (error: any) {
+                        Alert.alert('Error', error?.message || 'Failed to confirm payment');
+                    } finally {
+                        setActionLoading(null);
+                    }
+                },
+            },
+        ]);
     };
 
     const filtered = allBookings.filter((b) =>
@@ -100,21 +160,136 @@ const CarwashHomeScreen = () => {
         }
     };
 
+    const getStatusLabel = (status: string) => {
+        const labels: Record<string, string> = {
+            pending: 'Pending',
+            accepted: 'Accepted',
+            picked_up: 'Picked Up',
+            picked_up_pending_confirmation: 'Awaiting Confirmation',
+            delivered_to_wash: 'Delivered to Wash',
+            waiting_bay: 'Waiting',
+            at_wash: 'At Wash',
+            washing_bay: 'Washing',
+            drying_bay: 'Drying',
+            wash_completed: 'Completed',
+            delivered: 'Delivered',
+            delivered_to_client: 'Delivered',
+            completed: 'Completed',
+        };
+        return labels[status] || status.split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    };
+
+    const renderActions = (item: QueueItem) => {
+        const status = item.status;
+        const isLoading = actionLoading === item.id;
+
+        if (isLoading) {
+            return <ActivityIndicator size="small" color={Colors.primary} style={{ marginTop: Spacing.sm }} />;
+        }
+
+        const actions: JSX.Element[] = [];
+
+        // Confirm arrival (delivered_to_wash or waiting_bay)
+        if (['delivered_to_wash', 'waiting_bay'].includes(status)) {
+            actions.push(
+                <TouchableOpacity
+                    key="arrival"
+                    style={[styles.actionBtn, { backgroundColor: Colors.info }]}
+                    onPress={() => handleStatusUpdate(item.id, 'at_wash', 'Confirm vehicle arrival at car wash?')}
+                    activeOpacity={0.7}
+                >
+                    <Ionicons name="enter-outline" size={14} color={Colors.white} />
+                    <Text style={styles.actionBtnText}>Confirm Arrival</Text>
+                </TouchableOpacity>
+            );
+        }
+
+        // Start washing (delivered_to_wash, waiting_bay, or at_wash)
+        if (['delivered_to_wash', 'waiting_bay', 'at_wash'].includes(status)) {
+            actions.push(
+                <TouchableOpacity
+                    key="wash"
+                    style={[styles.actionBtn, { backgroundColor: Colors.primary }]}
+                    onPress={() => handleStatusUpdate(item.id, 'washing_bay', 'Move to washing bay?')}
+                    activeOpacity={0.7}
+                >
+                    <Ionicons name="water-outline" size={14} color={Colors.white} />
+                    <Text style={styles.actionBtnText}>Start Washing</Text>
+                </TouchableOpacity>
+            );
+        }
+
+        // Move to drying
+        if (status === 'washing_bay') {
+            actions.push(
+                <TouchableOpacity
+                    key="dry"
+                    style={[styles.actionBtn, { backgroundColor: Colors.primary }]}
+                    onPress={() => handleStatusUpdate(item.id, 'drying_bay', 'Move to drying bay?')}
+                    activeOpacity={0.7}
+                >
+                    <Ionicons name="sunny-outline" size={14} color={Colors.white} />
+                    <Text style={styles.actionBtnText}>Move to Drying</Text>
+                </TouchableOpacity>
+            );
+        }
+
+        // Complete service
+        if (status === 'drying_bay') {
+            actions.push(
+                <TouchableOpacity
+                    key="complete"
+                    style={[styles.actionBtn, { backgroundColor: Colors.success }]}
+                    onPress={() => handleStatusUpdate(item.id, 'wash_completed', 'Mark service as completed?')}
+                    activeOpacity={0.7}
+                >
+                    <Ionicons name="checkmark-done-circle-outline" size={14} color={Colors.white} />
+                    <Text style={styles.actionBtnText}>Complete</Text>
+                </TouchableOpacity>
+            );
+        }
+
+        // Confirm payment
+        if (['wash_completed', 'delivered_to_client', 'delivered'].includes(status) && item.paymentStatus === 'pending') {
+            actions.push(
+                <TouchableOpacity
+                    key="payment"
+                    style={[styles.actionBtn, { backgroundColor: Colors.success }]}
+                    onPress={() => handleConfirmPayment(item.id)}
+                    activeOpacity={0.7}
+                >
+                    <Ionicons name="card-outline" size={14} color={Colors.white} />
+                    <Text style={styles.actionBtnText}>Confirm Payment</Text>
+                </TouchableOpacity>
+            );
+        }
+
+        if (actions.length === 0) return null;
+
+        return <View style={styles.actionsRow}>{actions}</View>;
+    };
+
     const renderItem = ({ item }: { item: QueueItem }) => (
         <View style={styles.card}>
             <View style={styles.cardRow}>
-                <View style={[styles.statusDot, { backgroundColor: statusColor(activeTab) }]} />
+                <View style={[styles.statusDot, { backgroundColor: StatusColors[item.status] || Colors.gray400 }]} />
                 <View style={styles.cardContent}>
                     <Text style={styles.vehicleText}>
-                        {item.vehicle_make} {item.vehicle_model}
+                        {item.vehicleId?.make || 'Unknown'} {item.vehicleId?.model || ''}
                     </Text>
-                    <Text style={styles.plateText}>{item.vehicle_plate}</Text>
-                    <Text style={styles.clientText}>{item.client_name}</Text>
+                    <Text style={styles.plateText}>{item.vehicleId?.plateNo || ''}</Text>
+                    <Text style={styles.clientText}>{item.clientId?.name || 'Client'}</Text>
                 </View>
-                <Text style={styles.timeText}>
-                    {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </Text>
+                <View style={styles.cardRight}>
+                    <View style={[styles.statusBadge, { backgroundColor: StatusColors[item.status] || Colors.gray400 }]}>
+                        <Text style={styles.statusBadgeText}>{getStatusLabel(item.status)}</Text>
+                    </View>
+                    <Text style={styles.timeText}>
+                        {item.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                    </Text>
+                </View>
             </View>
+            {renderActions(item)}
         </View>
     );
 
@@ -267,10 +442,35 @@ const styles = StyleSheet.create({
     cardRow: { flexDirection: 'row', alignItems: 'center' },
     statusDot: { width: 10, height: 10, borderRadius: 5, marginRight: Spacing.md },
     cardContent: { flex: 1 },
+    cardRight: { alignItems: 'flex-end', gap: Spacing.xs },
     vehicleText: { fontSize: Typography.base, fontWeight: Typography.semibold, color: Colors.textPrimary },
     plateText: { fontSize: Typography.sm, color: Colors.textSecondary, marginTop: 2 },
     clientText: { fontSize: Typography.xs, color: Colors.textTertiary, marginTop: 2 },
-    timeText: { fontSize: Typography.sm, color: Colors.textSecondary },
+    statusBadge: {
+        paddingHorizontal: Spacing.sm,
+        paddingVertical: 2,
+        borderRadius: BorderRadius.full,
+    },
+    statusBadgeText: { fontSize: Typography.xs, color: Colors.white, fontWeight: Typography.semibold },
+    timeText: { fontSize: Typography.xs, color: Colors.textTertiary },
+    actionsRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: Spacing.sm,
+        marginTop: Spacing.sm,
+        paddingTop: Spacing.sm,
+        borderTopWidth: 1,
+        borderTopColor: Colors.borderLight,
+    },
+    actionBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: Spacing.sm,
+        paddingVertical: Spacing.xs + 2,
+        borderRadius: BorderRadius.md,
+        gap: 4,
+    },
+    actionBtnText: { fontSize: Typography.xs, color: Colors.white, fontWeight: Typography.semibold },
     emptyContainer: { alignItems: 'center' },
     emptyTitle: { fontSize: Typography.xl, fontWeight: Typography.bold, color: Colors.textPrimary, marginTop: Spacing.md },
     emptySubtitle: { fontSize: Typography.base, color: Colors.textSecondary, marginTop: Spacing.xs, textAlign: 'center' },

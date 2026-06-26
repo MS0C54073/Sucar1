@@ -70,13 +70,17 @@ const MyBookingsScreen = () => {
     // Apply status filter
     if (selectedFilter !== 'all') {
       if (selectedFilter === 'active') {
+        // Active = everything except terminal states
         filtered = filtered.filter(
-          (b: any) => !['completed', 'cancelled', 'delivered'].includes(b.status)
+          (b: any) => !['completed', 'cancelled', 'delivered', 'delivered_to_client'].includes(b.status)
         );
       } else {
         filtered = filtered.filter((b: any) => {
           if (selectedFilter === 'completed') {
-            return ['completed', 'delivered'].includes(b.status);
+            return ['completed', 'delivered', 'delivered_to_client'].includes(b.status);
+          }
+          if (selectedFilter === 'pending') {
+            return ['pending', 'accepted', 'picked_up_pending_confirmation'].includes(b.status);
           }
           return b.status === selectedFilter;
         });

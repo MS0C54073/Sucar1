@@ -1,8 +1,19 @@
-// User Types
-export type UserRole = 'client' | 'driver' | 'carwash' | 'admin';
+/**
+ * SuCAR Shared Types
+ *
+ * Single source of truth for type definitions shared across backend, web, and mobile.
+ * All IDs use UUID format (Supabase/PostgreSQL).
+ */
+
+// Re-export the centralized booking state machine
+export * from './booking-state-machine';
+
+// ─── User Types ──────────────────────────────────────────────────────────────
+
+export type UserRole = 'client' | 'driver' | 'carwash' | 'admin' | 'subadmin';
 
 export interface User {
-  _id: string;
+  id: string;
   name: string;
   email: string;
   phone: string;
@@ -11,11 +22,11 @@ export interface User {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
-  
+
   // Client specific
   businessName?: string;
   isBusiness?: boolean;
-  
+
   // Driver specific
   licenseNo?: string;
   licenseType?: string;
@@ -23,16 +34,20 @@ export interface User {
   address?: string;
   maritalStatus?: string;
   availability?: boolean;
-  
+
   // Car Wash specific
   carWashName?: string;
   location?: string;
   washingBays?: number;
+
+  /** @deprecated Use `id` instead. Kept for backward compatibility. */
+  _id?: string;
 }
 
-// Vehicle Types
+// ─── Vehicle Types ───────────────────────────────────────────────────────────
+
 export interface Vehicle {
-  _id: string;
+  id: string;
   clientId: string;
   make: string;
   model: string;
@@ -40,18 +55,23 @@ export interface Vehicle {
   color: string;
   createdAt: string;
   updatedAt: string;
+
+  /** @deprecated Use `id` instead. */
+  _id?: string;
 }
 
-// Service Types
-export type ServiceName = 
-  | 'Full Basic Wash' 
-  | 'Engine Wash' 
-  | 'Exterior Wash' 
-  | 'Interior Wash' 
-  | 'Wax and Polishing';
+// ─── Service Types ───────────────────────────────────────────────────────────
+
+export type ServiceName =
+  | 'Full Basic Wash'
+  | 'Engine Wash'
+  | 'Exterior Wash'
+  | 'Interior Wash'
+  | 'Wax and Polishing'
+  | string; // Allow custom service names
 
 export interface Service {
-  _id: string;
+  id: string;
   carWashId: string;
   name: ServiceName;
   description?: string;
@@ -59,35 +79,28 @@ export interface Service {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+
+  /** @deprecated Use `id` instead. */
+  _id?: string;
 }
 
-// Booking Status Types
-export type BookingStatus =
-  | 'pending'
-  | 'accepted'
-  | 'declined'
-  | 'picked_up'
-  | 'at_wash'
-  | 'waiting_bay'
-  | 'washing_bay'
-  | 'drying_bay'
-  | 'wash_completed'
-  | 'delivered'
-  | 'completed'
-  | 'cancelled';
+// ─── Booking Types ───────────────────────────────────────────────────────────
+
+// BookingStatus and BookingType are re-exported from booking-state-machine.ts
+import type { BookingStatus, BookingType } from './booking-state-machine';
 
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
-export type PaymentMethod = 'cash' | 'card' | 'mobile_money' | 'bank_transfer';
+export type PaymentMethod = 'cash' | 'card' | 'mobile_money' | 'bank_transfer' | 'pending';
 
-// Booking Types
 export interface Booking {
-  _id: string;
+  id: string;
   clientId: string;
   driverId?: string;
   carWashId: string;
   vehicleId: string;
   serviceId: string;
-  pickupLocation: string;
+  bookingType: BookingType;
+  pickupLocation?: string;
   pickupCoordinates?: {
     lat: number;
     lng: number;
@@ -101,20 +114,35 @@ export interface Booking {
   washCompleteTime?: string;
   deliveryTime?: string;
   notes?: string;
+
+  // Workflow flags
+  washAcceptancePending?: boolean;
+  clientConfirmPending?: boolean;
+  returnInProgress?: boolean;
+  outForDelivery?: boolean;
+
+  // Queue fields (drive-in)
+  queuePosition?: number;
+  estimatedWaitTime?: number;
+
   createdAt: string;
   updatedAt: string;
-  
+
   // Populated fields (when fetched with relations)
   client?: User;
   driver?: User;
   carWash?: User;
   vehicle?: Vehicle;
   service?: Service;
+
+  /** @deprecated Use `id` instead. */
+  _id?: string;
 }
 
-// Payment Types
+// ─── Payment Types ───────────────────────────────────────────────────────────
+
 export interface Payment {
-  _id: string;
+  id: string;
   bookingId: string;
   amount: number;
   method: PaymentMethod;
@@ -123,21 +151,33 @@ export interface Payment {
   paymentDate?: string;
   createdAt: string;
   updatedAt: string;
+
+  /** @deprecated Use `id` instead. */
+  _id?: string;
 }
 
-// Car Wash Types
+// ─── Car Wash Types ──────────────────────────────────────────────────────────
+
 export interface CarWash {
-  _id: string;
+  id: string;
   name: string;
   carWashName: string;
   location: string;
+  locationCoordinates?: {
+    lat: number;
+    lng: number;
+  };
   washingBays: number;
   email: string;
   phone: string;
   services?: Service[];
+
+  /** @deprecated Use `id` instead. */
+  _id?: string;
 }
 
-// Dashboard Stats Types
+// ─── Dashboard Stats Types ───────────────────────────────────────────────────
+
 export interface AdminDashboardStats {
   totalBookings: number;
   pendingPickups: number;
@@ -156,7 +196,8 @@ export interface CarWashDashboardStats {
   totalRevenue: number;
 }
 
-// API Response Types
+// ─── API Response Types ──────────────────────────────────────────────────────
+
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;
@@ -165,7 +206,8 @@ export interface ApiResponse<T> {
   count?: number;
 }
 
-// Registration Types
+// ─── Registration Types ──────────────────────────────────────────────────────
+
 export interface ClientRegistrationData {
   name: string;
   email: string;
@@ -203,48 +245,52 @@ export interface CarWashRegistrationData {
   washingBays: number;
 }
 
-export type RegistrationData = 
-  | ClientRegistrationData 
-  | DriverRegistrationData 
+export type RegistrationData =
+  | ClientRegistrationData
+  | DriverRegistrationData
   | CarWashRegistrationData;
 
-// Vehicle Status Helper
-export const VehicleStatus = {
-  PENDING: 'pending' as BookingStatus,
-  ACCEPTED: 'accepted' as BookingStatus,
-  PICKED_UP: 'picked_up' as BookingStatus,
-  AT_WASH: 'at_wash' as BookingStatus,
-  WAITING_BAY: 'waiting_bay' as BookingStatus,
-  WASHING_BAY: 'washing_bay' as BookingStatus,
-  DRYING_BAY: 'drying_bay' as BookingStatus,
-  WASH_COMPLETED: 'wash_completed' as BookingStatus,
-  DELIVERED: 'delivered' as BookingStatus,
-  COMPLETED: 'completed' as BookingStatus,
-  CANCELLED: 'cancelled' as BookingStatus,
-} as const;
+// ─── Notification Types ──────────────────────────────────────────────────────
 
-// Status progression helpers
-export const getNextStatus = (currentStatus: BookingStatus): BookingStatus | null => {
-  const statusFlow: Record<BookingStatus, BookingStatus | null> = {
-    pending: 'accepted',
-    accepted: 'picked_up',
-    declined: null,
-    picked_up: 'at_wash',
-    at_wash: 'waiting_bay',
-    waiting_bay: 'washing_bay',
-    washing_bay: 'drying_bay',
-    drying_bay: 'wash_completed',
-    wash_completed: 'delivered',
-    delivered: 'completed',
-    completed: null,
-    cancelled: null,
-  };
-  return statusFlow[currentStatus] || null;
-};
+export type NotificationType = 'booking_update' | 'payment' | 'system' | 'chat';
+export type NotificationPriority = 'low' | 'medium' | 'high';
 
-export const getStatusLabel = (status: BookingStatus): string => {
-  return status
-    .split('_')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-};
+export interface Notification {
+  id: string;
+  userId: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  data?: Record<string, any>;
+  priority: NotificationPriority;
+  read: boolean;
+  createdAt: string;
+}
+
+// ─── Booking Status Log ──────────────────────────────────────────────────────
+
+export interface BookingStatusLog {
+  id: string;
+  bookingId: string;
+  actorId: string;
+  actorRole: UserRole;
+  fromStatus: BookingStatus;
+  toStatus: BookingStatus;
+  note?: string;
+  metadata?: Record<string, any>;
+  createdAt: string;
+}
+
+// ─── Location Tracking ───────────────────────────────────────────────────────
+
+export interface LocationUpdate {
+  id: string;
+  bookingId: string;
+  userId: string;
+  latitude: number;
+  longitude: number;
+  heading?: number;
+  speed?: number;
+  accuracy?: number;
+  createdAt: string;
+}

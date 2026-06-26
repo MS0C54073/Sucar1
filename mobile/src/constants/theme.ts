@@ -140,12 +140,17 @@ export const Shadows = {
 export const StatusColors: Record<string, string> = {
   pending: Colors.warning,
   accepted: Colors.info,
+  declined: Colors.error,
   picked_up: Colors.primary,
+  picked_up_pending_confirmation: Colors.warning,
   at_wash: Colors.gray500,
+  delivered_to_wash: Colors.info,
+  waiting_bay: Colors.gray500,
   washing_bay: Colors.primary,
   drying_bay: Colors.info,
   wash_completed: Colors.success,
   delivered: Colors.success,
+  delivered_to_client: Colors.success,
   completed: Colors.success,
   cancelled: Colors.error,
 };

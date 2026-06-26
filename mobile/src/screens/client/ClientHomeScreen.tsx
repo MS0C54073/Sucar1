@@ -55,10 +55,10 @@ const ClientHomeScreen = () => {
       const vehicles = vehiclesResponse.data.data || [];
 
       const activeBookings = bookings.filter(
-        (b: any) => !['completed', 'cancelled', 'delivered'].includes(b.status),
+        (b: any) => !['completed', 'cancelled', 'delivered', 'delivered_to_client'].includes(b.status),
       );
       const completedBookings = bookings.filter(
-        (b: any) => ['completed', 'delivered'].includes(b.status),
+        (b: any) => ['completed', 'delivered', 'delivered_to_client'].includes(b.status),
       );
 
       setStats({

@@ -22,13 +22,17 @@ import { Coordinates } from '../../services/locationService';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/theme';
 import { useTheme } from '../../context/ThemeContext';
 
+type BookingType = 'pickup_delivery' | 'drive_in';
+
 /**
  * Screen for creating a new car wash booking.
  *
- * Loads car washes, services, drivers, and vehicles from the backend
- * and lets the client choose a pickup location using the LocationPicker.
+ * Supports both Pickup & Delivery and Drive-In booking types.
+ * Payloads match backend expectations including pickupCoordinates as object
+ * and bookingType field.
  */
 const BookingScreen = () => {
+  const [bookingType, setBookingType] = useState<BookingType>('pickup_delivery');
   const [carWashes, setCarWashes] = useState([]);
   const [services, setServices] = useState([]);
   const [drivers, setDrivers] = useState([]);
@@ -39,6 +43,7 @@ const BookingScreen = () => {
   const [selectedVehicle, setSelectedVehicle] = useState('');
   const [pickupLocation, setPickupLocation] = useState('');
   const [pickupCoordinates, setPickupCoordinates] = useState<Coordinates | undefined>();
+  const [scheduledPickupTime, setScheduledPickupTime] = useState('');
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
   const { user } = useAuth();
@@ -110,25 +115,45 @@ const BookingScreen = () => {
   };
 
   const handleBooking = async () => {
-    if (!selectedCarWash || !selectedService || !selectedVehicle || !pickupLocation) {
+    if (!selectedCarWash || !selectedService || !selectedVehicle) {
       Alert.alert('Error', 'Please fill in all required fields');
+      return;
+    }
+
+    // Pickup location is required for pickup_delivery bookings
+    if (bookingType === 'pickup_delivery' && !pickupLocation) {
+      Alert.alert('Error', 'Please select a pickup location for Pickup & Delivery bookings');
       return;
     }
 
     setLoading(true);
     try {
-      const bookingData: any = {
+      const bookingData: Record<string, any> = {
         carWashId: selectedCarWash,
         serviceId: selectedService,
         vehicleId: selectedVehicle,
-        driverId: selectedDriver || undefined,
-        pickupLocation,
+        bookingType,
       };
 
-      // Add coordinates if available
-      if (pickupCoordinates) {
-        bookingData.pickupLatitude = pickupCoordinates.lat;
-        bookingData.pickupLongitude = pickupCoordinates.lng;
+      // Only include pickup-related fields for pickup_delivery
+      if (bookingType === 'pickup_delivery') {
+        bookingData.pickupLocation = pickupLocation;
+
+        if (selectedDriver) {
+          bookingData.driverId = selectedDriver;
+        }
+
+        // Send pickupCoordinates as an object (matches backend validation)
+        if (pickupCoordinates) {
+          bookingData.pickupCoordinates = {
+            lat: pickupCoordinates.lat,
+            lng: pickupCoordinates.lng,
+          };
+        }
+
+        if (scheduledPickupTime) {
+          bookingData.scheduledPickupTime = scheduledPickupTime;
+        }
       }
 
       const response = await apiClient.post('/bookings', bookingData);
@@ -157,6 +182,63 @@ const BookingScreen = () => {
             <Text style={[styles.title, { color: theme.colors.textPrimary }]}>New Booking</Text>
           </Animatable.View>
 
+          {/* Booking Type Selection */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionLabel, { color: theme.colors.textPrimary }]}>Booking Type</Text>
+            <View style={styles.bookingTypeContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.bookingTypeOption,
+                  bookingType === 'pickup_delivery' && styles.bookingTypeSelected,
+                  bookingType === 'pickup_delivery' && { borderColor: theme.colors.primary },
+                ]}
+                onPress={() => setBookingType('pickup_delivery')}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name="car"
+                  size={24}
+                  color={bookingType === 'pickup_delivery' ? theme.colors.primary : Colors.gray400}
+                />
+                <Text
+                  style={[
+                    styles.bookingTypeText,
+                    bookingType === 'pickup_delivery' && { color: theme.colors.primary, fontWeight: Typography.bold },
+                  ]}
+                >
+                  Pickup & Delivery
+                </Text>
+                <Text style={styles.bookingTypeDesc}>Driver picks up and returns your vehicle</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.bookingTypeOption,
+                  bookingType === 'drive_in' && styles.bookingTypeSelected,
+                  bookingType === 'drive_in' && { borderColor: theme.colors.primary },
+                ]}
+                onPress={() => setBookingType('drive_in')}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name="navigate"
+                  size={24}
+                  color={bookingType === 'drive_in' ? theme.colors.primary : Colors.gray400}
+                />
+                <Text
+                  style={[
+                    styles.bookingTypeText,
+                    bookingType === 'drive_in' && { color: theme.colors.primary, fontWeight: Typography.bold },
+                  ]}
+                >
+                  Drive-In
+                </Text>
+                <Text style={styles.bookingTypeDesc}>Drive your vehicle to the car wash</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Car Wash & Service Selection */}
           <View style={styles.section}>
             <Text style={styles.label}>
               <Ionicons name="business-outline" size={16} color={theme.colors.textSecondary} /> Select Car Wash *
@@ -195,6 +277,7 @@ const BookingScreen = () => {
             )}
           </View>
 
+          {/* Vehicle Selection */}
           <View style={styles.section}>
             <Text style={styles.label}>
               <Ionicons name="car-sport-outline" size={16} color={theme.colors.textSecondary} /> Select Vehicle *
@@ -203,7 +286,7 @@ const BookingScreen = () => {
               <View style={styles.emptyVehicleCard}>
                 <Text style={styles.emptyVehicleTitle}>No vehicles added yet</Text>
                 <Text style={styles.emptyVehicleText}>
-                  Add at least one vehicle in My Vehicles to create a booking. You can add your car details there and then return here to continue.
+                  Add at least one vehicle in My Vehicles to create a booking.
                 </Text>
                 <TouchableOpacity
                   style={styles.addVehicleButton}
@@ -226,45 +309,48 @@ const BookingScreen = () => {
                 </Picker>
               </View>
             )}
-
-            <Text style={styles.label}>
-              <Ionicons name="person-outline" size={16} color={Colors.textSecondary} /> Select Driver (Optional)
-            </Text>
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={selectedDriver}
-                onValueChange={setSelectedDriver}
-                style={styles.picker}
-              >
-                <Picker.Item label="Auto Assign" value="" />
-                {drivers.map((driver: any) => (
-                  <Picker.Item key={driver.id || driver._id} label={driver.name} value={driver.id || driver._id} />
-                ))}
-              </Picker>
-            </View>
           </View>
 
-          <View style={styles.section}>
-            <Text style={styles.label}>
-              <Ionicons name="location-outline" size={16} color={Colors.textSecondary} /> Pickup Location *
-            </Text>
-            <LocationPicker
-              onLocationSelect={handleLocationSelect}
-              initialLocation={pickupLocation}
-              initialCoordinates={pickupCoordinates}
-            />
-
-            {/* Map Preview */}
-            {pickupCoordinates && (
-              <View style={styles.mapContainer}>
-                <Text style={styles.mapLabel}>Location Preview</Text>
-                <CustomMapView
-                  pickupLocation={pickupCoordinates}
-                  height={200}
-                />
+          {/* Pickup & Delivery specific fields */}
+          {bookingType === 'pickup_delivery' && (
+            <View style={styles.section}>
+              <Text style={styles.label}>
+                <Ionicons name="person-outline" size={16} color={Colors.textSecondary} /> Select Driver (Optional)
+              </Text>
+              <View style={styles.pickerContainer}>
+                <Picker
+                  selectedValue={selectedDriver}
+                  onValueChange={setSelectedDriver}
+                  style={styles.picker}
+                >
+                  <Picker.Item label="Auto Assign" value="" />
+                  {drivers.map((driver: any) => (
+                    <Picker.Item key={driver.id || driver._id} label={driver.name} value={driver.id || driver._id} />
+                  ))}
+                </Picker>
               </View>
-            )}
-          </View>
+
+              <Text style={styles.label}>
+                <Ionicons name="location-outline" size={16} color={Colors.textSecondary} /> Pickup Location *
+              </Text>
+              <LocationPicker
+                onLocationSelect={handleLocationSelect}
+                initialLocation={pickupLocation}
+                initialCoordinates={pickupCoordinates}
+              />
+
+              {/* Map Preview */}
+              {pickupCoordinates && (
+                <View style={styles.mapContainer}>
+                  <Text style={styles.mapLabel}>Location Preview</Text>
+                  <CustomMapView
+                    pickupLocation={pickupCoordinates}
+                    height={200}
+                  />
+                </View>
+              )}
+            </View>
+          )}
 
           <Animatable.View animation="fadeInUp" duration={600} useNativeDriver>
             <TouchableOpacity
@@ -316,6 +402,40 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: Spacing.lg,
+  },
+  sectionLabel: {
+    fontSize: Typography.base,
+    fontWeight: Typography.semibold,
+    color: Colors.textPrimary,
+    marginBottom: Spacing.sm,
+  },
+  bookingTypeContainer: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  bookingTypeOption: {
+    flex: 1,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 2,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    gap: Spacing.xs,
+    backgroundColor: Colors.white,
+  },
+  bookingTypeSelected: {
+    backgroundColor: Colors.primaryLight + '10',
+  },
+  bookingTypeText: {
+    fontSize: Typography.sm,
+    fontWeight: Typography.medium,
+    color: Colors.textPrimary,
+    textAlign: 'center',
+  },
+  bookingTypeDesc: {
+    fontSize: Typography.xs,
+    color: Colors.textSecondary,
+    textAlign: 'center',
   },
   label: {
     fontSize: Typography.sm,

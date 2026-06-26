@@ -22,8 +22,12 @@ import { useTheme } from '../context/ThemeContext';
 /**
  * Detailed view for a single booking.
  *
- * Shows vehicle, service, car wash, payment, and location information
- * and (for eligible statuses) lets the client cancel the booking.
+ * Shows vehicle, service, car wash, payment, and location information.
+ * Implements role-based actions matching the web BookingCard:
+ *   - Client: confirm pickup, cancel, confirm received & pay
+ *   - Driver: accept, decline, picked_up, delivered_to_wash, return-in-progress,
+ *             out-for-delivery, delivered_to_client, confirm payment
+ *   - Car Wash: confirm arrival, start washing, move to drying, complete service, confirm payment
  */
 const BookingDetailScreen = () => {
   const route = useRoute();
@@ -31,6 +35,7 @@ const BookingDetailScreen = () => {
   const { bookingId } = route.params as { bookingId: string };
   const [booking, setBooking] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
   const [pickupCoordinates, setPickupCoordinates] = useState<Coordinates | undefined>();
   const [destinationCoordinates, setDestinationCoordinates] = useState<Coordinates | undefined>();
   const { user } = useAuth();
@@ -98,15 +103,143 @@ const BookingDetailScreen = () => {
     }
   };
 
+  // ─── Action Handlers ───────────────────────────────────────────────────────
+
+  const performAction = async (fn: () => Promise<any>, successMsg: string) => {
+    setActionLoading(true);
+    try {
+      const response = await fn();
+      if (response.data.success !== false) {
+        Alert.alert('Success', successMsg);
+        fetchBooking();
+      } else {
+        Alert.alert('Error', response.data.message || 'Action failed');
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error?.message || error?.response?.data?.message || 'Action failed');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleStatusUpdate = (status: string, confirmMsg: string, successMsg: string) => {
+    Alert.alert('Confirm', confirmMsg, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Confirm',
+        onPress: () => performAction(
+          () => apiClient.put(`/bookings/${bookingId}/status`, { status }),
+          successMsg
+        ),
+      },
+    ]);
+  };
+
+  const handleCancelBooking = () => {
+    Alert.alert('Cancel Booking', 'Are you sure you want to cancel this booking?', [
+      { text: 'No', style: 'cancel' },
+      {
+        text: 'Yes, Cancel',
+        style: 'destructive',
+        onPress: () => performAction(
+          () => apiClient.put(`/bookings/${bookingId}/cancel`),
+          'Booking cancelled successfully'
+        ),
+      },
+    ]);
+  };
+
+  const handleAccept = () => {
+    Alert.alert('Accept Booking', 'Accept this booking?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Accept',
+        onPress: () => performAction(
+          () => apiClient.put(`/drivers/bookings/${bookingId}/accept`),
+          'Booking accepted'
+        ),
+      },
+    ]);
+  };
+
+  const handleDecline = () => {
+    Alert.alert('Decline Booking', 'Decline this booking?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Decline',
+        style: 'destructive',
+        onPress: () => performAction(
+          () => apiClient.put(`/drivers/bookings/${bookingId}/decline`),
+          'Booking declined'
+        ),
+      },
+    ]);
+  };
+
+  const handleReturnInProgress = () => {
+    Alert.alert('Pick from Wash', 'Confirm picking the vehicle from the car wash?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Confirm',
+        onPress: () => performAction(
+          () => apiClient.post(`/bookings/${bookingId}/return-in-progress`),
+          'Vehicle picked from wash'
+        ),
+      },
+    ]);
+  };
+
+  const handleOutForDelivery = () => {
+    Alert.alert('Out for Delivery', 'Confirm heading to deliver the vehicle?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Confirm',
+        onPress: () => performAction(
+          () => apiClient.post(`/bookings/${bookingId}/out-for-delivery`),
+          'Marked as out for delivery'
+        ),
+      },
+    ]);
+  };
+
+  const handleConfirmPayment = () => {
+    Alert.alert('Confirm Payment', 'Confirm that payment has been received?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Confirm',
+        onPress: () => performAction(
+          () => apiClient.post('/payments/confirm', { bookingId }),
+          'Payment confirmed'
+        ),
+      },
+    ]);
+  };
+
+  // ─── Status Helpers ────────────────────────────────────────────────────────
+
   const getStatusColor = (status: string) => {
     return StatusColors[status] || Colors.gray500;
   };
 
   const getStatusLabel = (status: string) => {
-    return status
-      .split('_')
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+    const labels: Record<string, string> = {
+      pending: 'Pending',
+      accepted: 'Accepted',
+      declined: 'Declined',
+      picked_up: 'Picked Up',
+      picked_up_pending_confirmation: 'Awaiting Client Confirmation',
+      at_wash: 'At Car Wash',
+      delivered_to_wash: 'Delivered to Wash',
+      waiting_bay: 'Waiting Bay',
+      washing_bay: 'Washing',
+      drying_bay: 'Drying',
+      wash_completed: 'Wash Completed',
+      delivered: 'Delivered',
+      delivered_to_client: 'Delivered to Client',
+      completed: 'Completed',
+      cancelled: 'Cancelled',
+    };
+    return labels[status] || status.split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   };
 
   const formatDate = (dateString: string) => {
@@ -122,34 +255,147 @@ const BookingDetailScreen = () => {
     });
   };
 
-  const handleCancelBooking = () => {
-    Alert.alert(
-      'Cancel Booking',
-      'Are you sure you want to cancel this booking?',
-      [
-        { text: 'No', style: 'cancel' },
-        {
-          text: 'Yes, Cancel',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const response = await apiClient.put(`/bookings/${bookingId}/status`, {
-                status: 'cancelled',
-              });
-              if (response.data.success) {
-                Alert.alert('Success', 'Booking cancelled successfully');
-                navigation.goBack();
-              } else {
-                Alert.alert('Error', response.data.message || 'Failed to cancel booking');
-              }
-            } catch (error: any) {
-              Alert.alert('Error', error?.message || 'Failed to cancel booking');
-            }
-          },
-        },
-      ]
+  // ─── Render Actions Based on Role & Status ─────────────────────────────────
+
+  const renderActions = () => {
+    if (!booking || !user) return null;
+    const status = booking.status;
+    const role = user.role;
+    const actions: JSX.Element[] = [];
+
+    // ── Client Actions ──
+    if (role === 'client') {
+      // Cancel (pending or accepted)
+      if (['pending', 'accepted'].includes(status)) {
+        actions.push(
+          <ActionButton key="cancel" label="Cancel Booking" icon="close-circle" variant="danger" onPress={handleCancelBooking} />
+        );
+      }
+
+      // Confirm pickup (dual confirmation)
+      if (status === 'picked_up_pending_confirmation') {
+        actions.push(
+          <ActionButton
+            key="confirm-pickup"
+            label="Confirm Vehicle Pickup"
+            icon="checkmark-circle"
+            variant="primary"
+            onPress={() => handleStatusUpdate('picked_up', 'Confirm that the driver has picked up your vehicle?', 'Pickup confirmed')}
+          />
+        );
+      }
+
+      // Confirm received & pay (after delivery)
+      if (['delivered_to_client', 'delivered'].includes(status) && booking.paymentStatus === 'pending') {
+        actions.push(
+          <ActionButton key="pay" label="Confirm Received & Pay" icon="card" variant="primary" onPress={() => {
+            Alert.alert('Payment', 'Vehicle received. Please proceed with payment.', [{ text: 'OK' }]);
+            // In a full implementation, navigate to a payment screen
+          }} />
+        );
+      }
+    }
+
+    // ── Driver Actions ──
+    if (role === 'driver') {
+      if (status === 'pending') {
+        actions.push(<ActionButton key="accept" label="Accept" icon="checkmark-circle" variant="primary" onPress={handleAccept} />);
+        if (booking.driverId) {
+          actions.push(<ActionButton key="decline" label="Decline" icon="close-circle" variant="danger" onPress={handleDecline} />);
+        }
+      }
+
+      if (status === 'accepted') {
+        actions.push(
+          <ActionButton key="pickup" label="Mark Picked Up" icon="car" variant="primary"
+            onPress={() => handleStatusUpdate('picked_up', 'Mark vehicle as picked up?', 'Status updated')} />
+        );
+        actions.push(<ActionButton key="decline2" label="Decline" icon="close-circle" variant="danger" onPress={handleDecline} />);
+      }
+
+      if (status === 'picked_up_pending_confirmation') {
+        // No action, just waiting
+        actions.push(
+          <View key="waiting" style={styles.noticeContainer}>
+            <Ionicons name="time-outline" size={16} color={Colors.warning} />
+            <Text style={styles.noticeText}>Waiting for client to confirm pickup...</Text>
+          </View>
+        );
+      }
+
+      if (status === 'picked_up') {
+        actions.push(
+          <ActionButton key="to-wash" label="Delivered to Wash" icon="business" variant="primary"
+            onPress={() => handleStatusUpdate('delivered_to_wash', 'Confirm delivered to car wash?', 'Status updated')} />
+        );
+      }
+
+      if (status === 'wash_completed') {
+        actions.push(<ActionButton key="return" label="Pick from Wash" icon="arrow-undo" variant="secondary" onPress={handleReturnInProgress} />);
+        actions.push(<ActionButton key="ofd" label="Out for Delivery" icon="navigate" variant="secondary" onPress={handleOutForDelivery} />);
+        actions.push(
+          <ActionButton key="to-client" label="Delivered to Client" icon="checkmark-done" variant="primary"
+            onPress={() => handleStatusUpdate('delivered_to_client', 'Confirm delivered to client?', 'Status updated')} />
+        );
+      }
+
+      if (status === 'drying_bay') {
+        actions.push(
+          <ActionButton key="to-client2" label="Delivered to Client" icon="checkmark-done" variant="primary"
+            onPress={() => handleStatusUpdate('delivered_to_client', 'Confirm delivered to client?', 'Status updated')} />
+        );
+      }
+
+      if (['wash_completed', 'delivered_to_client', 'delivered'].includes(status) && booking.paymentStatus === 'pending') {
+        actions.push(<ActionButton key="pay-confirm" label="Confirm Payment" icon="card" variant="primary" onPress={handleConfirmPayment} />);
+      }
+    }
+
+    // ── Car Wash Actions ──
+    if (role === 'carwash') {
+      if (['delivered_to_wash', 'waiting_bay'].includes(status)) {
+        actions.push(
+          <ActionButton key="arrival" label="Confirm Arrival" icon="enter" variant="secondary"
+            onPress={() => handleStatusUpdate('at_wash', 'Confirm vehicle arrival?', 'Status updated')} />
+        );
+      }
+
+      if (['delivered_to_wash', 'waiting_bay', 'at_wash'].includes(status)) {
+        actions.push(
+          <ActionButton key="washing" label="Start Washing" icon="water" variant="primary"
+            onPress={() => handleStatusUpdate('washing_bay', 'Move to washing bay?', 'Status updated')} />
+        );
+      }
+
+      if (status === 'washing_bay') {
+        actions.push(
+          <ActionButton key="drying" label="Move to Drying" icon="sunny" variant="primary"
+            onPress={() => handleStatusUpdate('drying_bay', 'Move to drying bay?', 'Status updated')} />
+        );
+      }
+
+      if (status === 'drying_bay') {
+        actions.push(
+          <ActionButton key="complete" label="Complete Service" icon="checkmark-done-circle" variant="primary"
+            onPress={() => handleStatusUpdate('wash_completed', 'Mark service as completed?', 'Service completed')} />
+        );
+      }
+
+      if (['wash_completed', 'delivered_to_client', 'delivered'].includes(status) && booking.paymentStatus === 'pending') {
+        actions.push(<ActionButton key="pay-confirm-cw" label="Confirm Payment" icon="card" variant="primary" onPress={handleConfirmPayment} />);
+      }
+    }
+
+    if (actions.length === 0) return null;
+
+    return (
+      <Animatable.View animation="fadeInUp" duration={500} useNativeDriver style={styles.actionsSection}>
+        {actions}
+      </Animatable.View>
     );
   };
+
+  // ─── Loading & Error States ────────────────────────────────────────────────
 
   if (loading) {
     return (
@@ -172,8 +418,6 @@ const BookingDetailScreen = () => {
     );
   }
 
-  const canCancel = ['pending', 'accepted'].includes(booking.status);
-
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]} edges={['top']}>
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
@@ -181,8 +425,13 @@ const BookingDetailScreen = () => {
         <Animatable.View style={[styles.statusHeader, { backgroundColor: getStatusColor(booking.status) }]} animation="fadeIn" duration={500} useNativeDriver>
           <View style={styles.statusContent}>
             <Ionicons name="checkmark-circle" size={32} color={theme.colors.white} />
-            <Text style={[styles.statusText, { color: theme.colors.white }]}>{getStatusLabel(booking.status)}</Text>
+            <Text style={[styles.statusHeaderText, { color: theme.colors.white }]}>{getStatusLabel(booking.status)}</Text>
           </View>
+          {booking.bookingType && (
+            <Text style={styles.bookingTypeBadge}>
+              {booking.bookingType === 'drive_in' ? 'Drive-In' : 'Pickup & Delivery'}
+            </Text>
+          )}
         </Animatable.View>
 
         {/* Main Card */}
@@ -218,10 +467,11 @@ const BookingDetailScreen = () => {
               <Ionicons name="calendar" size={20} color={Colors.primary} />
               <Text style={styles.sectionTitle}>Booking Details</Text>
             </View>
-            <InfoItem label="Pickup Location" value={booking.pickupLocation} />
+            {booking.pickupLocation && <InfoItem label="Pickup Location" value={booking.pickupLocation} />}
             <InfoItem label="Booking Date" value={formatDate(booking.createdAt || booking.created_at)} />
             {booking.driverId && <InfoItem label="Driver" value={booking.driverId.name} />}
             {booking.driverId?.phone && <InfoItem label="Driver Phone" value={booking.driverId.phone} />}
+            {booking.scheduledPickupTime && <InfoItem label="Scheduled Pickup" value={formatDate(booking.scheduledPickupTime)} />}
           </View>
 
           {/* Payment Information */}
@@ -268,22 +518,19 @@ const BookingDetailScreen = () => {
         </Animatable.View>
 
         {/* Action Buttons */}
-        {canCancel && (
-          <Animatable.View animation="fadeInUp" duration={500} useNativeDriver style={styles.actions}>
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={handleCancelBooking}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="close-circle" size={20} color={Colors.white} />
-              <Text style={styles.cancelButtonText}>Cancel Booking</Text>
-            </TouchableOpacity>
-          </Animatable.View>
+        {actionLoading ? (
+          <View style={styles.actionsSection}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+          </View>
+        ) : (
+          renderActions()
         )}
       </ScrollView>
     </SafeAreaView>
   );
 };
+
+// ─── Sub-components ────────────────────────────────────────────────────────────
 
 const InfoItem = ({ label, value }: { label: string; value: string | undefined }) => (
   <View style={styles.infoItem}>
@@ -291,6 +538,25 @@ const InfoItem = ({ label, value }: { label: string; value: string | undefined }
     <Text style={styles.infoValue}>{value || 'N/A'}</Text>
   </View>
 );
+
+interface ActionButtonProps {
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  variant: 'primary' | 'secondary' | 'danger';
+  onPress: () => void;
+}
+
+const ActionButton = ({ label, icon, variant, onPress }: ActionButtonProps) => {
+  const bgColor = variant === 'danger' ? Colors.error : variant === 'secondary' ? Colors.gray600 : Colors.primary;
+  return (
+    <TouchableOpacity style={[styles.actionButton, { backgroundColor: bgColor }]} onPress={onPress} activeOpacity={0.7}>
+      <Ionicons name={icon} size={18} color={Colors.white} />
+      <Text style={styles.actionButtonText}>{label}</Text>
+    </TouchableOpacity>
+  );
+};
+
+// ─── Styles ────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -317,10 +583,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.sm,
   },
-  statusText: {
+  statusHeaderText: {
     color: Colors.white,
     fontSize: Typography.xl,
     fontWeight: Typography.bold,
+  },
+  bookingTypeBadge: {
+    color: Colors.white,
+    fontSize: Typography.sm,
+    fontWeight: Typography.medium,
+    marginTop: Spacing.xs,
+    opacity: 0.9,
   },
   card: {
     backgroundColor: Colors.white,
@@ -393,23 +666,39 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     lineHeight: Typography.base * Typography.lineHeight.relaxed,
   },
-  actions: {
+  actionsSection: {
     paddingHorizontal: Spacing.md,
     marginTop: Spacing.md,
+    gap: Spacing.sm,
   },
-  cancelButton: {
+  actionButton: {
     flexDirection: 'row',
-    backgroundColor: Colors.error,
     padding: Spacing.md,
     borderRadius: BorderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.sm,
+    marginBottom: Spacing.sm,
   },
-  cancelButtonText: {
+  actionButtonText: {
     color: Colors.white,
     fontSize: Typography.base,
     fontWeight: Typography.semibold,
+  },
+  noticeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.warningLight,
+    padding: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    gap: Spacing.xs,
+    marginBottom: Spacing.sm,
+  },
+  noticeText: {
+    fontSize: Typography.sm,
+    color: Colors.warning,
+    fontWeight: Typography.medium,
+    flex: 1,
   },
   errorText: {
     fontSize: Typography.lg,
