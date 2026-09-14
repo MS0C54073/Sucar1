@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import { apiClient } from '../utils/api';
+import { apiClient, setAuthExpiredHandler } from '../utils/api';
 import { getRequiredRole, getOtherAppName, getAppDisplayName } from '../config/appVariant';
 
 interface User {
@@ -178,6 +178,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.error('❌ Logout error:', error);
     }
   };
+
+  useEffect(() => {
+    setAuthExpiredHandler(() => {
+      void logout();
+    });
+
+    return () => setAuthExpiredHandler(null);
+  }, [logout]);
 
   return (
     <AuthContext.Provider value={{ user, token, sendPhoneCode, loginWithPhone, logout, loading }}>

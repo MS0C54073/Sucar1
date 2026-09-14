@@ -186,6 +186,25 @@ const Profile = () => {
                     <ThemeToggle variant="segmented" />
                 </div>
 
+                {(user.role === 'client' || user.role === 'driver') && (
+                    <div className="profile-card profile-referral-card">
+                        <div className="profile-referral-head">
+                            <Icon name="userPlus" size={22} />
+                            <div>
+                                <h3>SuCAR Referral Program</h3>
+                                <p>Earn K25 for every friend who completes their first car wash.</p>
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            className="btn btn-primary"
+                            onClick={() => navigate('/referrals')}
+                        >
+                            Open referral dashboard
+                        </button>
+                    </div>
+                )}
+
                 <div className="profile-card main-info">
                     <div className="profile-pic-section">
                         <div className="profile-pic-container">

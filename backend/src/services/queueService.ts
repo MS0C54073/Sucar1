@@ -15,6 +15,17 @@ export interface QueueEntry {
 }
 
 export class QueueService {
+  static async getQueueEntry(queueId: string) {
+    const { data, error } = await supabase
+      .from('car_wash_queue')
+      .select('id, car_wash_id, booking_id')
+      .eq('id', queueId)
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
   // Add booking to queue
   static async addToQueue(
     carWashId: string,

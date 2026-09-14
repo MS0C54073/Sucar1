@@ -28,6 +28,7 @@ import notificationRoutes from './routes/notificationRoutes';
 import reviewRoutes from './routes/reviewRoutes';
 import favoritesRoutes from './routes/favoritesRoutes';
 import configRoutes from './routes/configRoutes';
+import referralRoutes from './routes/referralRoutes';
 
 // Connect to database
 connectDB().then(async () => {
@@ -46,6 +47,8 @@ connectDB().then(async () => {
   await ensureFavoritesSchema();
   const { ensurePhoneVerificationSchema } = await import('./services/phoneVerificationService');
   await ensurePhoneVerificationSchema();
+  const { ensureReferralSchema } = await import('./services/referralService');
+  await ensureReferralSchema();
 }).catch((error) => {
   console.error('Database setup error:', error);
 });
@@ -132,6 +135,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/favorites', favoritesRoutes);
 app.use('/api/config', configRoutes);
+app.use('/api/referrals', referralRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => {

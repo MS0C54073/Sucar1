@@ -246,7 +246,7 @@ export class DBService {
     if (hashedPassword.startsWith('$2a$') || hashedPassword.startsWith('$2b$')) {
       return bcrypt.compare(plainPassword, hashedPassword);
     }
-    return plainPassword === hashedPassword;
+    return false;
   }
 
   // Vehicle operations
@@ -616,6 +616,20 @@ export class DBService {
         booking_id:bookings(*)
       `)
       .eq('booking_id', bookingId)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data ? toCamelCase(data) : null;
+  }
+
+  static async getPaymentById(paymentId: string) {
+    const { data, error } = await supabase
+      .from('payments')
+      .select(`
+        *,
+        booking_id:bookings(*)
+      `)
+      .eq('id', paymentId)
       .maybeSingle();
 
     if (error) throw error;

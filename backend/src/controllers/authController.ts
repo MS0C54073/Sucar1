@@ -37,7 +37,7 @@ export const register = asyncHandler(async (req: Request, res: Response): Promis
     throw new ValidationError('Validation failed', errorMap);
   }
 
-  const { name, email, password, phone, nrc, role, ...roleSpecificData } = req.body;
+  const { name, email, password, phone, nrc, role, referralCode, ...roleSpecificData } = req.body;
 
   // Validate role.
   // SECURITY: privileged roles (admin/subadmin) must NEVER be self-assignable via
@@ -93,6 +93,16 @@ export const register = asyncHandler(async (req: Request, res: Response): Promis
 
   if (!user || !user.id) {
     throw new InternalServerError('Failed to create user');
+  }
+
+  // Record referral signup when a new client registers with a valid code
+  if (referralCode && typeof referralCode === 'string' && role === 'client') {
+    try {
+      const { recordReferralSignup } = await import('../services/referralService');
+      await recordReferralSignup(user.id, referralCode);
+    } catch (refErr) {
+      console.warn('[referral] Could not record signup:', refErr);
+    }
   }
 
   const response: ApiSuccessResponse = {

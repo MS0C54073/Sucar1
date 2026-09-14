@@ -13,7 +13,7 @@ import * as Animatable from 'react-native-animatable';
 import { Picker } from '@react-native-picker/picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
-import { apiClient, API_URL } from '../../utils/api';
+import { apiClient, API_URL, isUnauthorizedError } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import LocationPicker from '../../components/LocationPicker';
 import CustomMapView from '../../components/MapView';
@@ -74,6 +74,7 @@ const BookingScreen = () => {
       const response = await apiClient.get('/carwash/list');
       setCarWashes(response.data.data || []);
     } catch (error: any) {
+      if (isUnauthorizedError(error)) return;
       console.error('Error fetching car washes:', error);
       Alert.alert('Error', error?.message || 'Failed to load car washes');
     }
@@ -84,6 +85,7 @@ const BookingScreen = () => {
       const response = await apiClient.get(`/carwash/services?carWashId=${selectedCarWash}`);
       setServices(response.data.data || []);
     } catch (error: any) {
+      if (isUnauthorizedError(error)) return;
       console.error('Error fetching services:', error);
       Alert.alert('Error', error?.message || 'Failed to load services');
     }
@@ -94,6 +96,7 @@ const BookingScreen = () => {
       const response = await apiClient.get('/drivers/available');
       setDrivers(response.data.data || []);
     } catch (error: any) {
+      if (isUnauthorizedError(error)) return;
       console.error('Error fetching drivers:', error);
       Alert.alert('Error', error?.message || 'Failed to load drivers');
     }
@@ -104,6 +107,7 @@ const BookingScreen = () => {
       const response = await apiClient.get('/vehicles');
       setVehicles(response.data.data || []);
     } catch (error: any) {
+      if (isUnauthorizedError(error)) return;
       console.error('Error fetching vehicles:', error);
       Alert.alert('Error', error?.message || 'Failed to load vehicles');
     }

@@ -533,6 +533,16 @@ export const updateBookingStatus = asyncHandler(async (req: AuthRequest, res: Re
     });
   }
 
+  // Credit referrer when a booking is fully completed
+  if (appliedStatus === 'completed' && bookingClientId) {
+    try {
+      const { creditReferralOnBookingComplete } = await import('../services/referralService');
+      await creditReferralOnBookingComplete(updatedBooking.id, bookingClientId as string);
+    } catch (refErr) {
+      console.warn('[referral] Could not credit referral:', refErr);
+    }
+  }
+
   const response: ApiSuccessResponse = {
     success: true,
     data: updatedBooking,

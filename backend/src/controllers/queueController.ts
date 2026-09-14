@@ -2,6 +2,15 @@ import { Response } from 'express';
 import { QueueService } from '../services/queueService';
 import { DBService } from '../services/db-service';
 import { AuthRequest } from '../middleware/auth';
+import { ForbiddenError } from '../shared/errors/AppError';
+
+async function assertQueueAccess(req: AuthRequest, queueId: string): Promise<void> {
+  const entry = await QueueService.getQueueEntry(queueId);
+  if (req.user!.role !== 'carwash') return;
+  if (entry.car_wash_id !== req.user!.id) {
+    throw new ForbiddenError('Not authorized for this car wash');
+  }
+}
 
 // @desc    Get queue for a car wash
 // @route   GET /api/queue/carwash/:carWashId
@@ -12,7 +21,7 @@ export const getQueue = async (req: AuthRequest, res: Response): Promise<void> =
     const userId = req.user!.id;
 
     // Verify access
-    if (req.user!.role !== 'admin' && userId !== carWashId) {
+    if (!['admin', 'subadmin'].includes(req.user!.role) && userId !== carWashId) {
       res.status(403).json({ success: false, message: 'Not authorized' });
       return;
     }
@@ -99,12 +108,16 @@ export const addToQueue = async (req: AuthRequest, res: Response): Promise<void>
 
     // Verify booking belongs to this car wash
     const booking = await DBService.getBookingById(bookingId);
+    if (!booking) {
+      res.status(404).json({ success: false, message: 'Booking not found' });
+      return;
+    }
     const bookingCarWashId =
       typeof booking.carWashId === 'object'
         ? (booking.carWashId as { id?: string })?.id
         : booking.carWashId;
 
-    if (!booking || bookingCarWashId !== carWashId) {
+    if (bookingCarWashId !== carWashId) {
       res.status(404).json({ success: false, message: 'Booking not found' });
       return;
     }
@@ -133,6 +146,7 @@ export const addToQueue = async (req: AuthRequest, res: Response): Promise<void>
 export const startService = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { queueId } = req.params;
+    await assertQueueAccess(req, queueId);
 
     const queueEntry = await QueueService.startService(queueId);
 
@@ -154,6 +168,7 @@ export const startService = async (req: AuthRequest, res: Response): Promise<voi
 export const completeService = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { queueId } = req.params;
+    await assertQueueAccess(req, queueId);
 
     const queueEntry = await QueueService.completeService(queueId);
 
@@ -179,6 +194,7 @@ export const updateServiceDuration = async (
   try {
     const { queueId } = req.params;
     const { durationMinutes } = req.body;
+    await assertQueueAccess(req, queueId);
 
     if (!durationMinutes || durationMinutes < 1) {
       res.status(400).json({

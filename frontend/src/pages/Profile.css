@@ -665,3 +665,32 @@ input:checked+.slider:before {
 [data-theme='dark'] .form-hint {
     color: var(--text-secondary, #cbd5e1);
 }
+
+.profile-referral-card {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.profile-referral-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.profile-referral-head h3 {
+    margin: 0 0 4px;
+    font-size: var(--text-lg);
+}
+
+.profile-referral-head p {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+}
+
+.profile-referral-head svg {
+    color: var(--primary, #1e73d8);
+    flex-shrink: 0;
+    margin-top: 2px;
+}

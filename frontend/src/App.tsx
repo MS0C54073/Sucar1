@@ -22,6 +22,7 @@ const BookService = lazy(() => import('./pages/BookService'));
 const AddVehicle = lazy(() => import('./pages/AddVehicle'));
 const Payment = lazy(() => import('./pages/Payment'));
 const Profile = lazy(() => import('./pages/Profile'));
+const ReferralDashboard = lazy(() => import('./pages/ReferralDashboard'));
 const MessagesInbox = lazy(() => import('./pages/MessagesInbox'));
 const BookingChat = lazy(() => import('./pages/BookingChat'));
 
@@ -190,6 +191,16 @@ function App() {
                       <ProtectedRoute>
                         <Suspense fallback={<DashboardSkeleton />}>
                           <Profile />
+                        </Suspense>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/referrals"
+                    element={
+                      <ProtectedRoute>
+                        <Suspense fallback={<DashboardSkeleton />}>
+                          <ReferralDashboard />
                         </Suspense>
                       </ProtectedRoute>
                     }

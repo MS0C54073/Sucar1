@@ -70,6 +70,17 @@ export const apiClient: AxiosInstance = axios.create({
   },
 });
 
+type AuthExpiredHandler = () => void;
+let authExpiredHandler: AuthExpiredHandler | null = null;
+
+/** Register the app-level handler used when the backend rejects an expired token. */
+export const setAuthExpiredHandler = (handler: AuthExpiredHandler | null): void => {
+  authExpiredHandler = handler;
+};
+
+export const isUnauthorizedError = (error: unknown): boolean =>
+  Boolean(error && typeof error === 'object' && (error as { code?: string }).code === 'UNAUTHORIZED');
+
 // Request interceptor - Add auth token
 apiClient.interceptors.request.use(
   async (config) => {
@@ -105,6 +116,8 @@ apiClient.interceptors.response.use(
 
     switch (status) {
       case 401:
+        void AsyncStorage.multiRemove(['token', 'user']);
+        authExpiredHandler?.();
         return Promise.reject({
           message: (data?.message as string) || 'Unauthorized. Please login again.',
           code: 'UNAUTHORIZED',

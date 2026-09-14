@@ -165,6 +165,12 @@ const ProfileScreen = () => {
 
   const walletRows: ListRow[] = [
     {
+      icon: 'people-outline',
+      label: 'Refer & earn',
+      value: 'K25 per referral',
+      onPress: () => go('ReferralDashboard'),
+    },
+    {
       icon: 'gift-outline',
       label: 'Discounts and gifts',
       value: 'Enter promo code',

@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import PageLayout from '../components/PageLayout';
 import GoogleLoginButton from '../components/auth/GoogleLoginButton';
@@ -214,6 +214,21 @@ const RegisterContent = memo(({
                       required
                     />
                   </div>
+                  {role === 'client' && (
+                    <div className="form-field">
+                      <label htmlFor="reg-referral">Referral code (optional)</label>
+                      <input
+                        id="reg-referral"
+                        className="input input-sm"
+                        name="referralCode"
+                        type="text"
+                        value={String(formData.referralCode || '')}
+                        onChange={onChangeField}
+                        placeholder="Enter a friend's SuCAR code"
+                        autoComplete="off"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {role === 'client' && (
@@ -395,6 +410,7 @@ const RegisterContent = memo(({
 
 const Register = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [role, setRole] = useState<Role>('client');
   const [formData, setFormData] = useState({
     name: '',
@@ -402,6 +418,7 @@ const Register = () => {
     password: '',
     phone: '',
     nrc: '',
+    referralCode: searchParams.get('ref') || '',
     businessName: '',
     isBusiness: false,
     licenseNo: '',
@@ -452,6 +469,9 @@ const Register = () => {
       if (role === 'client') {
         payload.businessName = formData.businessName;
         payload.isBusiness = formData.isBusiness;
+        if (formData.referralCode) {
+          payload.referralCode = String(formData.referralCode).trim().toUpperCase();
+        }
       } else if (role === 'driver') {
         Object.assign(payload, {
           licenseNo: formData.licenseNo,

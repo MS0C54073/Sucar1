@@ -13,6 +13,7 @@ import MyBookingsScreen from '../screens/client/MyBookingsScreen';
 import VehicleListScreen from '../screens/client/VehicleListScreen';
 import BookingDetailScreen from '../screens/BookingDetailScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import ReferralDashboardScreen from '../screens/ReferralDashboardScreen';
 import { Colors, Typography } from '../constants/theme';
 import { ClientColors, DriverColors } from '../constants/sucarTheme';
 
@@ -52,6 +53,11 @@ const RootNavigator = () => {
             options={{ title: 'Job details', headerBackTitle: 'Back' }}
           />
           <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
+          <Stack.Screen
+            name="ReferralDashboard"
+            component={ReferralDashboardScreen}
+            options={{ title: 'Referrals', headerBackTitle: 'Back' }}
+          />
         </>
       ) : (
         <>
@@ -92,6 +98,11 @@ const RootNavigator = () => {
             })}
           />
           <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
+          <Stack.Screen
+            name="ReferralDashboard"
+            component={ReferralDashboardScreen}
+            options={{ title: 'Referrals', headerBackTitle: 'Back' }}
+          />
         </>
       )}
     </Stack.Navigator>

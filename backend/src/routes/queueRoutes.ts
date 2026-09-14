@@ -7,17 +7,17 @@ import {
   completeService,
   updateServiceDuration,
 } from '../controllers/queueController';
-import { protect } from '../middleware/auth';
+import { protect, authorize } from '../middleware/auth';
 
 const router = express.Router();
 
 router.use(protect);
 
-router.get('/carwash/:carWashId', getQueue);
+router.get('/carwash/:carWashId', authorize('carwash', 'admin', 'subadmin'), getQueue);
 router.get('/booking/:bookingId', getBookingQueuePosition);
-router.post('/add', addToQueue);
-router.put('/:queueId/start', startService);
-router.put('/:queueId/complete', completeService);
-router.put('/:queueId/duration', updateServiceDuration);
+router.post('/add', authorize('carwash'), addToQueue);
+router.put('/:queueId/start', authorize('carwash', 'admin', 'subadmin'), startService);
+router.put('/:queueId/complete', authorize('carwash', 'admin', 'subadmin'), completeService);
+router.put('/:queueId/duration', authorize('carwash', 'admin', 'subadmin'), updateServiceDuration);
 
 export default router;

@@ -184,7 +184,7 @@ export const verifyPayment = async (req: AuthRequest, res: Response): Promise<vo
   try {
     const { paymentId, status } = req.body;
 
-    const payment = await DBService.getPaymentByBookingId(paymentId);
+    const payment = await DBService.getPaymentById(paymentId);
     if (!payment) {
       res.status(404).json({ success: false, message: 'Payment not found' });
       return;

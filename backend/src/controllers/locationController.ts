@@ -78,10 +78,9 @@ export const getDriverLocation = async (req: AuthRequest, res: Response): Promis
     const requestingUserId = req.user!.id;
     const requestingUserRole = req.user!.role;
 
-    // Role-based access: drivers can only see their own location
-    // Clients can see assigned driver location
-    // Admins can see all
-    if (requestingUserRole === 'driver' && driverId !== requestingUserId) {
+    // Direct driver lookup is limited to the driver and privileged operators.
+    // Booking-scoped access is handled by getBookingLocation instead.
+    if (!['admin', 'subadmin'].includes(requestingUserRole) && driverId !== requestingUserId) {
       res.status(403).json({
         success: false,
         message: 'Unauthorized: Cannot access other driver locations',
