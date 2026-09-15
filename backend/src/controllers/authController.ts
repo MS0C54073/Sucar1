@@ -16,8 +16,21 @@ import { SMSService } from '../services/smsService';
 import { OAuth2Client } from 'google-auth-library';
 import { SELF_REGISTERABLE_ROLES, isSelfRegisterableRole } from '../domain/roles';
 import { sanitizeProfileUpdate } from '../domain/profileUpdate';
+import { randomInt } from 'crypto';
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+const isApprovedDriver = (user: any): boolean => {
+  const approvalStatus = user?.approvalStatus || user?.approval_status;
+  return user?.role === 'driver' && user?.isActive !== false && approvalStatus === 'approved';
+};
+
+const throwDriverRegistrationError = (): never => {
+  throw new UnauthorizedError(
+    'You are not registered as a driver. Please contact the administrator to register as a driver.',
+    'DRIVER_NOT_APPROVED'
+  );
+};
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -209,6 +222,10 @@ export const login = asyncHandler(async (req: Request, res: Response): Promise<v
     throw new UnauthorizedError('Account is deactivated. Please contact support.');
   }
 
+  if (user.role === 'driver' && !isApprovedDriver(user)) {
+    throwDriverRegistrationError();
+  }
+
   console.log(`✅ Account is active`);
 
   // Generate token
@@ -354,6 +371,10 @@ export const googleLogin = asyncHandler(async (req: Request, res: Response) => {
         throw new BadRequestError('User role is required for new accounts');
       }
 
+      if (role === 'driver') {
+        throwDriverRegistrationError();
+      }
+
       // SECURITY: never allow a privileged role to be self-assigned via OAuth sign-up.
       if (!isSelfRegisterableRole(role)) {
         throw new BadRequestError(
@@ -372,6 +393,10 @@ export const googleLogin = asyncHandler(async (req: Request, res: Response) => {
       });
     }
 
+    if (user.role === 'driver' && !isApprovedDriver(user)) {
+      throwDriverRegistrationError();
+    }
+
     const jwtToken = generateToken(user.id);
 
     res.status(200).json({
@@ -386,6 +411,9 @@ export const googleLogin = asyncHandler(async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Google verification error:', error);
+    if (error instanceof UnauthorizedError) {
+      throw error;
+    }
     throw new UnauthorizedError('Google authentication failed');
   }
 });
@@ -406,7 +434,7 @@ export const sendOTP = asyncHandler(async (req: Request, res: Response) => {
   const formattedPhone = phone.startsWith('+') ? phone : `+${phone}`;
 
   // Generate 6-digit code
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  const code = randomInt(100000, 1000000).toString();
 
   // Store code in database (for fallback if Twilio not configured)
   await DBService.storePhoneVerificationCode(formattedPhone, code, 10);
@@ -433,7 +461,7 @@ export const sendOTP = asyncHandler(async (req: Request, res: Response) => {
  * @access  Public
  */
 export const verifyOTP = asyncHandler(async (req: Request, res: Response) => {
-  const { phone, code, role, name } = req.body;
+  const { phone, code, role, name, register = false } = req.body;
 
   if (!phone || !code) {
     throw new BadRequestError('Phone and code are required');
@@ -457,9 +485,24 @@ export const verifyOTP = asyncHandler(async (req: Request, res: Response) => {
   // Check if user exists by phone
   let user = await DBService.findUserByPhone(formattedPhone);
 
-  // If not found, create new user
+  // Driver accounts are provisioned and approved by an administrator. Phone
+  // verification must never create or activate a driver account.
   if (!user) {
-    if (!role || !name) {
+    if (role === 'driver') {
+      throw new UnauthorizedError(
+        'You are not registered as a driver. Please contact the administrator to register as a driver.',
+        'DRIVER_NOT_APPROVED'
+      );
+    }
+
+    if (role !== 'client' || !register) {
+      throw new UnauthorizedError(
+        'You are not registered. Please register to continue.',
+        'ACCOUNT_NOT_REGISTERED'
+      );
+    }
+
+    if (!name) {
       throw new BadRequestError('Role and Name are required for new registration');
     }
 
@@ -480,6 +523,21 @@ export const verifyOTP = asyncHandler(async (req: Request, res: Response) => {
       nrc: `P-${formattedPhone.substring(formattedPhone.length - 8)}`, // Temporary NRC - user should update
     });
   } else {
+    const userApprovalStatus = (user as any).approvalStatus || (user as any).approval_status;
+    if (role === 'driver' && (user.role !== 'driver' || user.isActive === false || userApprovalStatus !== 'approved')) {
+      throw new UnauthorizedError(
+        'You are not registered as a driver. Please contact the administrator to register as a driver.',
+        'DRIVER_NOT_APPROVED'
+      );
+    }
+
+    if (role === 'client' && user.role !== 'client') {
+      throw new UnauthorizedError(
+        'You are not registered. Please register to continue.',
+        'ACCOUNT_NOT_REGISTERED'
+      );
+    }
+
     // Update existing user to mark phone as verified
     await DBService.updateUser(user.id, {
       phone_verified: true,

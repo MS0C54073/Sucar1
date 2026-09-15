@@ -21,7 +21,7 @@ const router = Router();
 router.use(protect);
 
 // Update driver location
-router.post('/update', updateLocation);
+router.post('/update', authorize('driver'), updateLocation);
 
 // Get driver location
 router.get('/driver/:driverId', getDriverLocation);

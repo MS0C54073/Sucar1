@@ -16,7 +16,7 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   sendPhoneCode: (phone: string) => Promise<{ devCode?: string }>;
-  loginWithPhone: (phone: string, code: string, name?: string) => Promise<void>;
+  loginWithPhone: (phone: string, code: string, name?: string, register?: boolean) => Promise<void>;
   logout: () => Promise<void>;
   loading: boolean;
 }
@@ -117,17 +117,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   /**
-   * Verify a phone OTP and sign in. New accounts are created with this app
-   * variant's role (client / driver); `name` is only used for first-time sign-up.
+  * Verify a phone OTP and sign in. New accounts are created only after the
+  * client explicitly chooses registration; driver accounts are provisioned
+  * and approved by an administrator.
    * Persists the token + user so the session survives app restarts.
    */
-  const loginWithPhone = async (phone: string, code: string, name?: string) => {
+  const loginWithPhone = async (phone: string, code: string, name?: string, register = false) => {
     try {
       const response = await apiClient.post('/auth/phone/verify', {
         phone,
         code,
         role: getRequiredRole(),
         name,
+        register,
       });
 
       if (!response.data.success) {
@@ -154,6 +156,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
     } catch (error: any) {
       console.error('❌ Phone sign-in error:', error);
+      if (error.code === 'ACCOUNT_NOT_REGISTERED' || error.code === 'DRIVER_NOT_APPROVED') {
+        const authError = new Error(error.message);
+        Object.assign(authError, { code: error.code });
+        throw authError;
+      }
       if (error.response?.status === 401) {
         throw new Error('Invalid or expired code. Please try again.');
       }

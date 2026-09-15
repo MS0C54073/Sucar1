@@ -4,6 +4,7 @@
  */
 
 import * as Location from 'expo-location';
+import { Linking, Platform } from 'react-native';
 
 export interface Coordinates {
   lat: number;
@@ -50,7 +51,13 @@ export function sanitizeUserLocationForMap(
   return undefined;
 }
 
-export type LocationPermissionStatus = 'undetermined' | 'granted' | 'denied';
+export type LocationPermissionStatus = 'undetermined' | 'granted' | 'denied' | 'blocked';
+
+export interface LocationAccessStatus {
+  servicesEnabled: boolean;
+  permission: LocationPermissionStatus;
+  canAskAgain: boolean;
+}
 
 export interface ResolvedUserLocation {
   coords?: Coordinates;
@@ -59,6 +66,61 @@ export interface ResolvedUserLocation {
   error: string | null;
   /** Raw GPS reading — may be outside Lusaka (e.g. emulator default) */
   rawCoords?: Coordinates;
+}
+
+/** Read the device service and foreground permission state without prompting. */
+export async function getLocationAccessStatus(): Promise<LocationAccessStatus> {
+  const [servicesEnabled, permission] = await Promise.all([
+    Location.hasServicesEnabledAsync(),
+    Location.getForegroundPermissionsAsync(),
+  ]);
+
+  return {
+    servicesEnabled,
+    permission:
+      permission.status === 'granted'
+        ? 'granted'
+        : permission.status === 'denied' && !permission.canAskAgain
+          ? 'blocked'
+          : permission.status === 'denied'
+            ? 'denied'
+            : 'undetermined',
+    canAskAgain: permission.canAskAgain,
+  };
+}
+
+/** Request foreground access once, leaving repeated prompting to the UI. */
+export async function requestForegroundLocationAccess(): Promise<LocationAccessStatus> {
+  const current = await getLocationAccessStatus();
+  if (!current.servicesEnabled || current.permission === 'granted' || current.permission === 'blocked') {
+    return current;
+  }
+
+  const permission = await Location.requestForegroundPermissionsAsync();
+  return {
+    servicesEnabled: await Location.hasServicesEnabledAsync(),
+    permission:
+      permission.status === 'granted'
+        ? 'granted'
+        : permission.status === 'denied' && !permission.canAskAgain
+          ? 'blocked'
+          : 'denied',
+    canAskAgain: permission.canAskAgain,
+  };
+}
+
+/** Open the platform-native control for enabling location services. */
+export async function openLocationServicesSettings(): Promise<void> {
+  if (Platform.OS === 'android') {
+    try {
+      await Location.enableNetworkProviderAsync();
+      return;
+    } catch {
+      // The user may dismiss the Android dialog; app settings remain a fallback.
+    }
+  }
+
+  await Linking.openSettings();
 }
 
 /**

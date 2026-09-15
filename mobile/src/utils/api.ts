@@ -120,7 +120,7 @@ apiClient.interceptors.response.use(
         authExpiredHandler?.();
         return Promise.reject({
           message: (data?.message as string) || 'Unauthorized. Please login again.',
-          code: 'UNAUTHORIZED',
+          code: (data?.code as string) || 'UNAUTHORIZED',
         });
       case 403:
         return Promise.reject({

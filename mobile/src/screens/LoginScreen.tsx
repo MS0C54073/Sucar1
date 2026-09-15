@@ -30,6 +30,7 @@ const LoginScreen = () => {
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [devCode, setDevCode] = useState<string | undefined>();
+  const [registrationMode, setRegistrationMode] = useState(false);
 
   const { sendPhoneCode, loginWithPhone } = useAuth();
   const insets = useSafeAreaInsets();
@@ -74,10 +75,31 @@ const LoginScreen = () => {
     }
     setLoading(true);
     try {
-      await loginWithPhone(phone, code.trim(), name.trim() || undefined);
+      await loginWithPhone(phone, code.trim(), name.trim() || undefined, registrationMode);
     } catch (e: any) {
       const msg = e?.message || 'Verification failed.';
-      if (/name/i.test(msg)) {
+      if (e?.code === 'ACCOUNT_NOT_REGISTERED' || /You are not registered\./i.test(msg)) {
+        Alert.alert(
+          'Registration required',
+          'You are not registered. Please register to continue.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Register',
+              onPress: () => {
+                setRegistrationMode(true);
+                setStep('phone');
+                setCode('');
+              },
+            },
+          ]
+        );
+      } else if (e?.code === 'DRIVER_NOT_APPROVED' || /not registered as a driver/i.test(msg)) {
+        Alert.alert(
+          'Driver registration required',
+          'You are not registered as a driver. Please contact the administrator to register as a driver.'
+        );
+      } else if (/name/i.test(msg)) {
         Alert.alert('One more thing', 'Looks like this is your first time. Please add your full name, then verify again.');
         setStep('phone');
       } else {
@@ -113,9 +135,9 @@ const LoginScreen = () => {
           <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 20) }]}>
             {step === 'phone' ? (
               <>
-                <Text style={styles.welcome}>Enter your phone</Text>
+                <Text style={styles.welcome}>{registrationMode ? 'Register your account' : 'Enter your phone'}</Text>
                 <Text style={styles.signingAs}>
-                  We'll text you a code to sign in as <Text style={styles.signingAsAccent}>{roleLabel}</Text>
+                  We'll text you a code to {registrationMode ? 'register as' : 'sign in as'} <Text style={styles.signingAsAccent}>{roleLabel}</Text>
                 </Text>
 
                 <View style={styles.field}>
@@ -135,7 +157,7 @@ const LoginScreen = () => {
                   <Ionicons name="person-outline" size={20} color={C.textDim} style={styles.fieldIcon} />
                   <TextInput
                     style={styles.input}
-                    placeholder="Full name (first time only)"
+                    placeholder={registrationMode ? 'Full name' : 'Full name (first time only)'}
                     placeholderTextColor={C.textDim}
                     value={name}
                     onChangeText={setName}

@@ -9,6 +9,7 @@ import { AuthProvider } from './src/context/AuthContext';
 import { ThemeProvider } from './src/context/ThemeContext';
 import { MapboxProvider } from './src/context/MapboxContext';
 import RootNavigator from './src/navigation/RootNavigator';
+import LocationAccessGate from './src/components/LocationAccessGate';
 
 export default function App() {
   return (
@@ -18,7 +19,9 @@ export default function App() {
           <AuthProvider>
             <ThemeProvider>
               <NavigationContainer>
-                <RootNavigator />
+                <LocationAccessGate>
+                  <RootNavigator />
+                </LocationAccessGate>
               </NavigationContainer>
             </ThemeProvider>
           </AuthProvider>

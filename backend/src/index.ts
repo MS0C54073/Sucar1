@@ -30,29 +30,6 @@ import favoritesRoutes from './routes/favoritesRoutes';
 import configRoutes from './routes/configRoutes';
 import referralRoutes from './routes/referralRoutes';
 
-// Connect to database
-connectDB().then(async () => {
-  // Auto-create tables if they don't exist (only if DATABASE_URL is set)
-  const { initDatabase } = await import('./migrations/init-database');
-  await initDatabase();
-  const { ensureDefaultAdmin } = await import('./services/ensure-default-admin');
-  await ensureDefaultAdmin();
-  const { ensureSeedUsers } = await import('./services/ensure-seed-users');
-  await ensureSeedUsers();
-  const { ensureOperatorSchema } = await import('./services/operatorSchemaService');
-  await ensureOperatorSchema();
-  const { ensureReviewsSchema } = await import('./services/reviewService');
-  await ensureReviewsSchema();
-  const { ensureFavoritesSchema } = await import('./services/favoritesService');
-  await ensureFavoritesSchema();
-  const { ensurePhoneVerificationSchema } = await import('./services/phoneVerificationService');
-  await ensurePhoneVerificationSchema();
-  const { ensureReferralSchema } = await import('./services/referralService');
-  await ensureReferralSchema();
-}).catch((error) => {
-  console.error('Database setup error:', error);
-});
-
 const app = express();
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -104,8 +81,8 @@ app.use((req, res, next) => {
 });
 
 // Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 
 // Request logging middleware (development only)
 if (process.env.NODE_ENV === 'development') {
@@ -156,25 +133,43 @@ app.use(errorHandler);
 const PORT: number = Number(process.env.PORT) || 5000;
 const HOST = process.env.HOST || '0.0.0.0'; // Listen on all interfaces for mobile access
 
-const server = app.listen(PORT, HOST, () => {
-  console.log(`🚀 SuCAR API Server`);
-  console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`   Host: ${HOST}`);
-  console.log(`   Port: ${PORT}`);
-  console.log(`   Health: http://localhost:${PORT}/api/health`);
-  console.log(`   Mobile (Android): http://10.0.2.2:${PORT}/api/health`);
-}).on('error', (error: NodeJS.ErrnoException) => {
-  if (error.code === 'EADDRINUSE') {
-    console.error(`\n❌ Port ${PORT} is already in use!`);
-    console.error('\n💡 To fix this:');
-    console.error(`   1. Kill the process using port ${PORT}:`);
-    console.error(`      Windows: netstat -ano | findstr :${PORT}`);
-    console.error(`      Then: taskkill /F /PID <process_id>`);
-    console.error(`   2. Or use the helper script: .\\kill-port.ps1`);
-    console.error(`   3. Or change the port in .env: PORT=5001\n`);
-    process.exit(1);
-  } else {
-    console.error('❌ Server error:', error);
-    process.exit(1);
+const startServer = async (): Promise<void> => {
+  const connected = await connectDB();
+  if (!connected && isProduction) {
+    throw new Error('Database connection is required in production. Server startup aborted.');
   }
+
+  // Schema changes and fixture creation belong in deployment jobs, not replicas.
+  if (process.env.RUN_STARTUP_DB_SETUP === 'true') {
+    const { initDatabase } = await import('./migrations/init-database');
+    await initDatabase();
+    const { ensureDefaultAdmin } = await import('./services/ensure-default-admin');
+    await ensureDefaultAdmin();
+    const { ensureSeedUsers } = await import('./services/ensure-seed-users');
+    await ensureSeedUsers();
+    const { ensureOperatorSchema } = await import('./services/operatorSchemaService');
+    await ensureOperatorSchema();
+    const { ensureReviewsSchema } = await import('./services/reviewService');
+    await ensureReviewsSchema();
+    const { ensureFavoritesSchema } = await import('./services/favoritesService');
+    await ensureFavoritesSchema();
+    const { ensurePhoneVerificationSchema } = await import('./services/phoneVerificationService');
+    await ensurePhoneVerificationSchema();
+    const { ensureReferralSchema } = await import('./services/referralService');
+    await ensureReferralSchema();
+  }
+
+  const server = app.listen(PORT, HOST, () => {
+    console.log(`SuCAR API listening on ${HOST}:${PORT}`);
+  });
+
+  server.on('error', (error: NodeJS.ErrnoException) => {
+    console.error('Server error:', error);
+    process.exit(1);
+  });
+};
+
+startServer().catch((error) => {
+  console.error('Startup failed:', error instanceof Error ? error.message : error);
+  process.exit(1);
 });
