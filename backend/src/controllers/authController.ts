@@ -474,7 +474,7 @@ export const verifyOTP = asyncHandler(async (req: Request, res: Response) => {
   let isValid = await SMSService.verifyCode(formattedPhone, code);
 
   // If Twilio not configured or verification fails, check database
-  if (!isValid && (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN)) {
+  if (!isValid && !SMSService.isConfigured()) {
     isValid = await DBService.verifyPhoneCode(formattedPhone, code);
   }
 

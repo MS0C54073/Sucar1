@@ -62,7 +62,7 @@ const ChatWindow = ({
     },
   });
 
-  const markAsReadMutation = useMutation({
+  const { mutate: markAsRead } = useMutation({
     mutationFn: async () => {
       await api.put(`/chat/read/${bookingId}`);
     },
@@ -74,10 +74,10 @@ const ChatWindow = ({
 
   useEffect(() => {
     if (messages && messages.some((m: Message) => !m.read && m.receiver_id === user?.id)) {
-      markAsReadMutation.mutate();
+      markAsRead();
     }
     scrollToBottom();
-  }, [messages]);
+  }, [messages, user?.id, markAsRead]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

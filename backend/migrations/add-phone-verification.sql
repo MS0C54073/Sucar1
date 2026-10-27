@@ -6,3 +6,7 @@ CREATE TABLE IF NOT EXISTS phone_verification_codes (
   expires_at  timestamptz NOT NULL,
   created_at  timestamptz NOT NULL DEFAULT now()
 );
+
+-- Wrong guesses against the current code; it is burned after 5 (see domain/otp.ts).
+ALTER TABLE phone_verification_codes
+  ADD COLUMN IF NOT EXISTS attempts integer NOT NULL DEFAULT 0;

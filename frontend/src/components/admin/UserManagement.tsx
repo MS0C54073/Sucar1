@@ -191,7 +191,7 @@ const UserManagement = () => {
     });
 
     return filtered;
-  }, [users, searchTerm, roleFilter, statusFilter, sortField, sortDirection]);
+  }, [users, searchTerm, roleFilter, statusFilter, approvalFilter, sortField, sortDirection]);
 
   const handleSort = (field: keyof User) => {
     if (sortField === field) {

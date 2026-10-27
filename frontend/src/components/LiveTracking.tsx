@@ -94,7 +94,7 @@ const LiveTracking = ({ bookingId, onClose }: LiveTrackingProps) => {
         watchIdRef.current = -1;
       }
     };
-  }, [booking, isTracking]);
+  }, [booking, isTracking, user?.role]);
 
   // Auto-start tracking for active bookings
   useEffect(() => {

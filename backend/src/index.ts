@@ -7,6 +7,7 @@ import cors from 'cors';
 import connectDB from './config/database';
 import { errorHandler, notFoundHandler } from './shared/errors/errorHandler';
 import { assertAuthConfig } from './config/jwt';
+import { resolveTrustProxy } from './config/proxy';
 
 // Fail fast if auth-critical config is missing in production
 assertAuthConfig();
@@ -32,6 +33,10 @@ import referralRoutes from './routes/referralRoutes';
 
 const app = express();
 const isProduction = process.env.NODE_ENV === 'production';
+
+// Real client IPs behind the hosting proxy, so per-IP rate limits work.
+app.set('trust proxy', resolveTrustProxy());
+app.disable('x-powered-by');
 
 // CORS allow-list. In production ONLY the configured origins are allowed
 // (FRONTEND_URL plus a comma-separated CORS_ORIGINS); localhost/emulator

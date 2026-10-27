@@ -1,5 +1,6 @@
 import { supabase } from '../config/supabase';
 import bcrypt from 'bcryptjs';
+import { otpMatches, otpPrecheck } from '../domain/otp';
 
 // Helper to convert Supabase row to camelCase
 export const toCamelCase = (obj: any): any => {
@@ -213,7 +214,7 @@ export class DBService {
     const { error } = await supabase
       .from('phone_verification_codes')
       .upsert(
-        { phone, code, expires_at: expiresAt.toISOString() },
+        { phone, code, expires_at: expiresAt.toISOString(), attempts: 0 },
         { onConflict: 'phone' }
       );
 
@@ -224,13 +225,34 @@ export class DBService {
   static async verifyPhoneCode(phone: string, code: string): Promise<boolean> {
     const { data, error } = await supabase
       .from('phone_verification_codes')
-      .select('code, expires_at')
+      .select('code, expires_at, attempts')
       .eq('phone', phone)
       .maybeSingle();
 
     if (error || !data) return false;
 
-    if (data.code === code && new Date(data.expires_at) > new Date()) {
+    const stored = {
+      code: data.code,
+      expiresAt: new Date(data.expires_at),
+      attempts: Number(data.attempts) || 0,
+    };
+    if (otpPrecheck(stored) !== 'ok') {
+      // Expired or out of guesses: burn it so a fresh code must be requested.
+      await supabase.from('phone_verification_codes').delete().eq('phone', phone);
+      return false;
+    }
+
+    // Count the guess BEFORE comparing. The update only succeeds if nobody else
+    // counted one in between, so parallel guesses cannot exceed the limit.
+    const { data: counted } = await supabase
+      .from('phone_verification_codes')
+      .update({ attempts: stored.attempts + 1 })
+      .eq('phone', phone)
+      .eq('attempts', stored.attempts)
+      .select('phone');
+    if (!counted || counted.length === 0) return false;
+
+    if (otpMatches(stored.code, code)) {
       // Consume the code so it cannot be replayed.
       await supabase.from('phone_verification_codes').delete().eq('phone', phone);
       // Mark an existing user verified (no-op for first-time sign-ups).

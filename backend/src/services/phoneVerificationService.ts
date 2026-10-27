@@ -27,7 +27,7 @@ function isMissingTableError(err: unknown): boolean {
 
 export async function isPhoneVerificationSchemaReady(): Promise<boolean> {
   if (schemaReadyCache === true) return true;
-  const { error } = await supabase.from('phone_verification_codes').select('phone').limit(0);
+  const { error } = await supabase.from('phone_verification_codes').select('phone, attempts').limit(0);
   if (!error) {
     schemaReadyCache = true;
     return true;

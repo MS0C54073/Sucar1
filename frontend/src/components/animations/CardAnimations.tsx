@@ -26,13 +26,14 @@ export const AnimatedCard: React.FC<CardAnimationsProps> = ({
       { threshold: 0.1 }
     );
 
-    if (cardRef.current) {
-      observer.observe(cardRef.current);
+    const card = cardRef.current;
+    if (card) {
+      observer.observe(card);
     }
 
     return () => {
-      if (cardRef.current) {
-        observer.unobserve(cardRef.current);
+      if (card) {
+        observer.unobserve(card);
       }
     };
   }, []);

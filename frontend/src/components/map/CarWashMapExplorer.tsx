@@ -173,7 +173,7 @@ const CarWashMapExplorer = ({
       setRouteSegments([]);
       setRouteError(null);
     }
-  }, [selectedWash?.id]);
+  }, [selectedWash]);
 
   const handleMapClick = useCallback(
     (cw: { id: string }) => {
